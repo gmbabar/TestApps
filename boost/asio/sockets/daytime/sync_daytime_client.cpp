@@ -1,0 +1,50 @@
+
+// This program takes hostname and try resolve "daytime" service on it and get data from it using socket.
+// NOTE: service port is given in /etc/services
+
+// We need to run server first.
+
+#include <iostream>
+#include <boost/array.hpp>
+#include <boost/asio.hpp>
+
+using boost::asio::ip::tcp;
+
+int main(int argc, char* argv[]) {
+    try {
+        if (argc != 2) {
+            std::cerr << "Usage: <hostname> " << std::endl;
+            return 1;
+        }
+
+        boost::asio::io_context io_context;
+        tcp::resolver resolver(io_context);
+        tcp::resolver::results_type endpoints = resolver.resolve(argv[1], "daytime");
+        tcp::socket socket(io_context);
+
+    for(tcp::endpoint const& endpoint : endpoints)
+    {
+	std::cout << "connecting ... " << endpoint << std::endl;
+    }
+        boost::asio::connect(socket, endpoints);
+
+        for (;;) {
+            boost::array<char, 128> buf;
+            boost::system::error_code error;
+
+            size_t len = socket.read_some(boost::asio::buffer(buf), error);
+
+            if (error == boost::asio::error::eof)
+                break; // Connection closed cleanly by peer.
+            else if (error)
+                throw boost::system::system_error(error); // Some other error.
+
+            std::cout.write(buf.data(), len);
+        }
+    }
+    catch (std::exception& e) { std::cerr << e.what() << std::endl; }
+
+    return 0;
+}
+
+
