@@ -9,23 +9,24 @@
 #include <boost/beast/version.hpp>
 #include <boost/iostreams/copy.hpp>
 #include <boost/iostreams/filtering_streambuf.hpp>
+#include <boost/iostreams/filtering_stream.hpp>
 #include <boost/iostreams/filter/gzip.hpp>
 
 
 int main () {
 
-	std::string stringToBeCompressed = "quick brown fox jumps over the lazy dog";
+	std::string stringData = "quick brown fox jumps over the lazy dog";
 
 	// Compression
 	std::string compressedString;
 	{
-		filtering_ostream compressingStream;
-		compressingStream.push(boost::iostreams::gzip_compressor(gzip_params(gzip::best_compression)));
+		boost::iostreams::filtering_ostream compressingStream;
+		compressingStream.push(boost::iostreams::gzip_compressor(boost::iostreams::gzip_params(boost::iostreams::gzip::best_compression)));
 		compressingStream.push(boost::iostreams::back_inserter(compressedString));
-		compressingStream << stringToBeCompressed;
+		compressingStream << stringData;
 		boost::iostreams::close(compressingStream);
 	}
-	std::cout << "Pre-compression: " << stringToBeCompressed << std::endl;
+	std::cout << "Pre-compression: " << stringData << std::endl;
 	std::cout << "Postcompression: " << compressedString << std::endl;
 
 	// Decompression 
@@ -34,7 +35,7 @@ int main () {
 		boost::iostreams::filtering_ostream decompressingStream;
 		decompressingStream.push(boost::iostreams::gzip_decompressor());
 		decompressingStream.push(boost::iostreams::back_inserter(decompressedString));
-		decompressingStream << stringToBeDecompressed;
+		decompressingStream << compressedString;
 		boost::iostreams::close(decompressingStream);
 	}
 
