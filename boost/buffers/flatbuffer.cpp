@@ -16,7 +16,8 @@ void TestFlatBuffer(boost::beast::flat_buffer &flatbuff, const std::string &msg,
 	if (debug) printf("prepared %ld bytes. fbuf size: %ld, flatbuff size: %ld\n", msg.size(), fbuf.size(), flatbuff.size());
 	char *p = static_cast<char*>(fbuf.data());
 	memcpy(p, msg.c_str(), msg.size());
-	flatbuff.commit(msg.size());
+	flatbuff.consume(msg.size());	// in theory, remove bytes front (make it readable)
+	//flatbuff.commit(msg.size());	// in theory, moves bytes from front to back (make it readable)
 	if (debug) printf("commit %ld bytes. fbuf size: %ld, flatbuff size: %ld\n", msg.size(), fbuf.size(), flatbuff.size());
 
 	// read data.
@@ -35,7 +36,7 @@ void TestFlatBuffer(boost::beast::flat_buffer &flatbuff, const std::string &msg,
 int main () {
 	boost::beast::flat_buffer flatbuff(1024);
 	std::string msg = "quick brown fox jumps over the lazy dog";
-	const unsigned count = 1000;
+	const unsigned count = 100000;
 	auto t1 = std::chrono::steady_clock::now();
 	for (int i=0; i<count; ++i)
 	    TestFlatBuffer(flatbuff, msg, false);
