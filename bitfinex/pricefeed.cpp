@@ -104,6 +104,8 @@ int main(int argc, char** argv)
 
         // Perform the websocket handshake
         ws.handshake(host, "/ws/2");
+
+	// Send auth msg.
         std::string msg = "{ \"event\": \"auth\", \"apiKey\": \"";
         msg = msg + API_Key;
         msg = msg  + "\", \"authSig\": \"";
