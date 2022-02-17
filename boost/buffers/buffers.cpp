@@ -4,6 +4,13 @@
 
 #include <boost/beast/core/flat_buffer.hpp> // flat_buffer
 
+/** Summary:
+ * prepare() takes data from buffer & make it mutable buffer
+ * commit() makes data ready for read
+ * size() tells read/write data available
+ * clear() kind of reset buffer
+ **/
+
 int main () {
 
 	// construct
