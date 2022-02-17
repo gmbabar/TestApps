@@ -1,8 +1,8 @@
 
 all:
-	g++ authenticate.cpp -o authenticate -I/home/centos/Downloads/cppcodec -L/usr/local/lib -lssl -lboost_system -lcrypto -lpthread
+	g++ pricefeed.cpp -o pricefeed -I./ -L/usr/local/lib -lssl -lboost_system -lcrypto -lpthread
 
 clean:
-	rm -f authenticate
+	rm -f pricefeed
 
 

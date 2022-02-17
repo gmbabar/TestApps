@@ -1,4 +1,3 @@
-
 #include <boost/beast.hpp>
 #include <boost/beast/core.hpp>
 #include <boost/beast/ssl.hpp>
@@ -58,22 +57,19 @@ int main(int argc, char** argv)
 {
     try
      {
-
-        // auto const host  = "stream.binance.com";
+        
         std::stringstream ss;
-        auto const host = "api.bitfinex.com";
+        auto const host = "api.bitfinex.com";  
         auto const port = "443";
-        auto const API_Key = "TppZvj6Jc0N2emFwrWSMeWMNelVae7RXK8XaY5JIEr5";
-        auto const API_Secret = "NNXd824IH0DohgYG7MXwwHZUciTQOQyUMs8DJRHHZlE";
+        auto const API_Key = "l1cM7WW2Iph8z0xApK6MPkWfLBpNeariVzVm6h9mLK6";
+        auto const API_Secret = "0hW3lkf9NolzEe5vWLiqc0p7AJ1txB4fZsqpTb9nzUN";
         std::ostringstream Nonce;
         Nonce << std::chrono::duration_cast <std::chrono::milliseconds>(
-            std::chrono::system_clock::now().time_since_epoch()).count();
-	Nonce.str("16303752641052");  // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+        std::chrono::system_clock::now().time_since_epoch()).count();
         // std::string Payload = Nonce;
         std::string Payload = "AUTH" + Nonce.str();
         std::string Auth_Sig = bitfinexSignature(API_Secret, Payload);
 
-        // Auth_Sig = ss.str();
 
         // The io_context is required for all I/O
         net::io_context ioc;
@@ -97,7 +93,7 @@ int main(int argc, char** argv)
         // Perform the SSL handshake
         ws.next_layer().handshake(ssl::stream_base::client);
 
-        // Set a decorator to change the User-Agent of the handshake
+        // Optional: Set a decorator to change the User-Agent of the handshake
         ws.set_option(websocket::stream_base::decorator(
             [](websocket::request_type& req)
             {
@@ -108,45 +104,40 @@ int main(int argc, char** argv)
 
         // Perform the websocket handshake
         ws.handshake(host, "/ws/2");
-        std::string msg = "{ event: \"auth\", apiKey: ";
-        msg += API_Key;
-        msg += ", authSig: ";
-        msg += Auth_Sig ;
-        msg += ", authPayload: ";
-        msg += Payload;
-        msg += ", authNonce: ";
-        msg += Nonce.str() ;
-        msg += "}";
+        std::string msg = "{ \"event\": \"auth\", \"apiKey\": \"";
+        msg = msg + API_Key;
+        msg = msg  + "\", \"authSig\": \"";
+        msg = msg + Auth_Sig ;
+        msg = msg + "\", \"authPayload\": \"";
+        msg = msg  + Payload;
+        msg = msg  + "\", \"authNonce\": \"";
+        msg = msg + Nonce.str() ;
+        msg = msg + "\"}";
 
-        // std::cout<< "line 62" << std::endl;
         // Our message in this case should be stringified JSON-RPC request
         ws.write(net::buffer(std::string(msg)));
-        std::cout << "Massage Sent : \n\n" << msg <<std::endl;
-        std::ofstream DumpFile("BTCUSDTLog.txt");
+        std::cout << "OUT: " << msg <<std::endl;
 
+        // This buffer will hold the incoming message
+        beast::flat_buffer buffer;
+        ws.read(buffer);
+        std::cout << "IN: " << beast::make_printable(buffer.data()) << std::endl;
+
+	// subscribe symbols.
+        msg = std::string("{ \"event\": \"os\", \"symbol\": \"tBTCUSD\", symbol: \"tBTCUSD\" }");
+        ws.write(net::buffer(msg));
+        std::cout << "OUT: " << msg <<std::endl;
         while(true){
-
-            // This buffer will hold the incoming message
-            beast::flat_buffer buffer;
-            // char* buffer;
-
-            // std::cout<< "line 69" << std::endl;
+            
 
             // Read a message into our buffer
             // ws.ReadFrame();
             ws.read(buffer);
 
-            // std::cout<< "line 72" << std::endl;
-
-            // const auto &msg = buffer.str();
             // The make_printable() function helps print a ConstBufferSequence
-            // std::cout << beast::make_printable(buffer.data()) << std::endl;
-            DumpFile << beast::make_printable(buffer.data()) << std::endl;
-            ws.write(net::buffer(std::string("{ \"event\": \"os\", \"symbol\": \"tBTCUSD\", symbol: \"tBTCUSD\" }")));
+            std::cout << "IN: " << beast::make_printable(buffer.data()) << std::endl;
        }
         ws.close(websocket::close_code::normal);
-        DumpFile.close();
-        remove("BTCUSDTLog.txt");
     }
     catch(std::exception const& e)
     {
