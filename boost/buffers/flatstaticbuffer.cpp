@@ -16,8 +16,7 @@ void TestFlatBuffer(boost::beast::flat_static_buffer<1024> &flatbuff, const std:
 	if (debug) printf("prepared %ld bytes. fbuf size: %ld, flatbuff size: %ld\n", msg.size(), fbuf.size(), flatbuff.size());
 	char *p = static_cast<char*>(fbuf.data());
 	memcpy(p, msg.c_str(), msg.size());
-	flatbuff.consume(msg.size());		// in theory, remove bytes from front (make it readable)
-	//flatbuff.commit(msg.size());		// in theory, move bytes from front to back (make it readable)
+	flatbuff.commit(msg.size());		// in theory, move bytes from front to back (make it readable)
 	if (debug) printf("commit %ld bytes. fbuf size: %ld, flatbuff size: %ld\n", msg.size(), fbuf.size(), flatbuff.size());
 
 	// read data.
@@ -28,6 +27,7 @@ void TestFlatBuffer(boost::beast::flat_static_buffer<1024> &flatbuff, const std:
 		printf("%c", static_cast<const char*>(cbuf.data())[i]);
 	    printf("\n");
 	}
+	// flatbuff.consume(msg.size());	// in theory, remove bytes from front (make it available)
 	flatbuff.clear();
 	if (debug) printf("read %ld bytes. cbuf size: %ld, flatbuff size: %ld\n", msg.size(), cbuf.size(), flatbuff.size());
 
