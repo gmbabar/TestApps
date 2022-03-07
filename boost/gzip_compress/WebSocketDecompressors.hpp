@@ -54,8 +54,8 @@ struct NEBULA_DECL WebSocketPlainDecompressor {
 
     void decompress(
             const boost::beast::flat_buffer &aBuffer,
-            const char *&dataBufBegin, 
-            const char *&dataBufEnd) {
+            const char **dataBufBegin, 
+            const char **dataBufEnd) {
         dataBufBegin = (const char*) aBuffer.cdata().data();
         dataBufEnd = (dataBufBegin + aBuffer.cdata().size());
     }
@@ -63,22 +63,20 @@ struct NEBULA_DECL WebSocketPlainDecompressor {
     void reset() {}
 };
 
-namespace nebula { namespace tr { namespace ds { namespace impl {
-    template<typename Container>
-    class gzip_stream_writer {
-    public:
-        typedef typename Container::value_type  char_type;
-        typedef boost::iostreams::sink_tag      category;
-        gzip_stream_writer(Container& cnt) : container(&cnt) { }
-        std::streamsize write(const char_type* s, std::streamsize n)
-        { 
-            container->assign(s, n); 
-            return n;
-        }
-    protected:
-        Container* container;
-    };
-}}}}
+template<typename Container>
+class gzip_stream_writer {
+public:
+    typedef typename Container::value_type  char_type;
+    typedef boost::iostreams::sink_tag      category;
+    gzip_stream_writer(Container& cnt) : container(&cnt) { }
+    std::streamsize write(const char_type* s, std::streamsize n)
+    { 
+        container->assign(s, n); 
+        return n;
+    }
+protected:
+    Container* container;
+};
 
 // For WebSocket streams with gzip compression (HUBI)
 struct NEBULA_DECL WebSocketGzipDecompressor {
@@ -101,8 +99,8 @@ struct NEBULA_DECL WebSocketGzipDecompressor {
     // Not actively being used though
     void decompress(
             const boost::beast::flat_buffer &aBuffer,
-            const char *&dataBufBegin, 
-            const char *&dataBufEnd) {
+            const char ** dataBufBegin, 
+            const char ** dataBufEnd) {
         // decompress.
 		boost::iostreams::filtering_ostream out;
 		out.push(boost::iostreams::gzip_decompressor());
@@ -187,8 +185,8 @@ struct NEBULA_DECL WebSocketHuobiGzipDecompressor {
 
     void decompress(
             const boost::beast::flat_buffer &aBuffer,
-            const char *&dataBuffBegin, 
-            const char *&dataBuffEnd) {
+            const char ** dataBuffBegin, 
+            const char ** dataBuffEnd) {
         // Reset libz
         if(nebula_unlikely(inflateReset2(&d_stream, 15 + 32) != Z_OK)) {
             std::cerr << "inflateInit error" << std::endl;
@@ -380,8 +378,8 @@ struct NEBULA_DECL WebSocketFastGzipDecompressor {
     
     void decompress(
             const boost::beast::flat_buffer &aBuffer,
-            const char *&dataBuffBegin, 
-            const char *&dataBuffEnd) {
+            const char ** dataBuffBegin, 
+            const char ** dataBuffEnd) {
         // Reset libz
         if(nebula_unlikely(inflateReset2(&d_stream, -MAX_WBITS) != Z_OK)) {
             std::cerr << "inflateInit error" << std::endl;

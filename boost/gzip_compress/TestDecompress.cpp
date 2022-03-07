@@ -57,7 +57,7 @@ std::string CompressToStringZlib2(std::string plainString) {
 BOOST_AUTO_TEST_SUITE(Decompressor)
 
 namespace {
-    const std::string originalString = "The Quick Brown Fox Jumped Over The Lazy Dog";
+    const std::string originalString = "The Quick Brown Fox Jumps Over A Lazy Dog";
 }
 
 BOOST_AUTO_TEST_CASE(Test_PlainDecompressor_Multibuffer)
