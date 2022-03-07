@@ -1,31 +1,36 @@
 #include <ncurses.h>
 #include <map>
 
+typedef std::map<int, int, std::greater<int>> greaterMap;
+typedef std::map<int, int> nMap;
 
 class OrderBook{
 public:
-    explicit OrderBook(int height, int width, int yPos, int xPos) :  height_(height), width_(width), y_pos_(yPos), x_pos_(xPos) {}
+    explicit OrderBook(int height, int width, int yPos, int xPos) :  height_(height), width_(width), yPos_(yPos), xPos_(xPos) {}
 
     void Border()
     {
-        keypad(win, true);
+        int maxX = getmaxx(win)-2;
+        int maxY = getmaxy(win);
+
         start_color();
 
         init_pair(1, COLOR_YELLOW, COLOR_BLACK);
         init_pair(2, COLOR_GREEN, COLOR_BLACK);
         init_pair(3, COLOR_RED, COLOR_BLACK);
+        init_pair(4, COLOR_BLUE, COLOR_BLACK);
+
         char c;
         int seprator = width_/3;
         box(win, 0,0);
-        for(int i = 3; i < height_; i++)
+
+        for (int i = 4; i < height_; i++)
         {
-            for(int j = 1; j < width_-1; j++)
-            {
-                mvwprintw(win, i, j, "_");
-            }
-            mvwprintw(win, i, seprator, "|");
-            mvwprintw(win, i, seprator+seprator, "|");
+            mvwhline(win, i, 1, ACS_HLINE, maxX);
         }
+        
+        mvwvline(win, 1, seprator, ACS_VLINE, maxY);
+        mvwvline(win, 1, seprator*2, ACS_VLINE, maxY);
 
         int title = seprator/2;
         wattron(win, COLOR_PAIR(1));
@@ -40,6 +45,11 @@ public:
         mvwprintw(win, 2, title+2*seprator, "ASK");        
         wattroff(win, COLOR_PAIR(3));
 
+        attron(COLOR_PAIR(4));
+        mvprintw(height_+2, title+seprator, "Press \'x\' And Then Press Enter To Exit");
+        attroff(COLOR_PAIR(4));
+        move(height_+3, 0);
+
         refresh();
         wrefresh(win);
         while (c != 'x')
@@ -50,30 +60,30 @@ public:
         getch();
     }
 
-    void AddData(float price, float quantity, bool is_ask)
+    void AddData(float price, float quantity, bool ask)
     {
         int seprator = width_/3;
         int title = seprator/2;
-        if(is_ask)
+        if(ask)
         {
-            int number_of_row_level = 0;
-            ask.emplace(price, quantity);
-            for(auto itr: ask)
+            int numberOfRowLevel = 0;
+            asks.emplace(price, quantity);
+            for(auto itr: asks)
             {
-                mvwprintw(win, center_-number_of_row_level, title+seprator, "%f", itr.first);
-                mvwprintw(win, center_-number_of_row_level, title+2*seprator, "%f", itr.second);
-                number_of_row_level+=2;
+                mvwprintw(win, center_-numberOfRowLevel, title+seprator, "%f", itr.first);
+                mvwprintw(win, center_-numberOfRowLevel, title+2*seprator, "%f", itr.second);
+                numberOfRowLevel+=2;
             }
         }
         else
         {
-            int number_of_row_level = 0;
-            bid.emplace(price, quantity);
-            for(auto itr: bid)
+            int numberOfRowLevel = 0;
+            bids.emplace(price, quantity);
+            for(auto itr: bids)
             {
-                mvwprintw(win, center_+number_of_row_level, title+seprator, "%f", itr.first);
-                mvwprintw(win, center_+number_of_row_level, title, "%f", itr.second);
-                number_of_row_level+=2;
+                mvwprintw(win, center_+numberOfRowLevel, title+seprator, "%f", itr.first);
+                mvwprintw(win, center_+numberOfRowLevel, title, "%f", itr.second);
+                numberOfRowLevel+=2;
             }
         }
         refresh();
@@ -82,11 +92,12 @@ public:
 
     ~OrderBook(){}
 private:
-    std::map<float, float> ask, bid;
+    nMap asks;
+    greaterMap bids;
     int height_;
     int width_;
     int center_ = height_/2;
-    int y_pos_;
-    int x_pos_;
-    WINDOW *win = newwin(height_, width_, y_pos_, x_pos_);
+    int yPos_;
+    int xPos_;
+    WINDOW *win = newwin(height_, width_, yPos_, xPos_);
 };
