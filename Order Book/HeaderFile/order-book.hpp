@@ -24,7 +24,7 @@ public:
         int seprator = width_/3;
         box(win, 0,0);
 
-        for (int i = 4; i < height_; i++)
+        for (int i = 4; i < height_; i+=2)
         {
             mvwhline(win, i, 1, ACS_HLINE, maxX);
         }
@@ -66,7 +66,7 @@ public:
         int title = seprator/2;
         if(ask)
         {
-            int numberOfRowLevel = 0;
+            int numberOfRowLevel = 1;
             asks.emplace(price, quantity);
             for(auto itr: asks)
             {
