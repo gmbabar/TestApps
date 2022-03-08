@@ -31,7 +31,6 @@ int main()
         o1.AddData(33589.70, 2.5, false);
         o1.AddData(33579.70, 2.5, false);
 
-        
     }
     o1.Run();
 }
