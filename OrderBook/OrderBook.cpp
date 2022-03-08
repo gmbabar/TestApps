@@ -2,7 +2,6 @@
 
 int main()
 {
-    initscr();
     float askPrice = 33789.70;
     float bidPrice = 33659.50;
     float askAmount = 4.50;
@@ -35,5 +34,4 @@ int main()
         
     }
     o1.Run();
-    endwin();
 }

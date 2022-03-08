@@ -7,7 +7,7 @@ typedef std::map<float, float> nMap;
 class OrderBook{
 public:
     explicit OrderBook(int height, int width, int yPos, int xPos) :  height(height), width(width), yPos(yPos), xPos(xPos) {
-        // initscr();
+        initscr();
         Border();
     }
 
@@ -52,13 +52,6 @@ public:
         mvprintw(height+3, title+seprator, "\tPress \'q\' To Exit");
         attroff(COLOR_PAIR(4));
         move(height+3, 0);
-
-        // refresh();
-        // wrefresh(win);
-        // while (c != 'x')
-        // {
-        //     c = getch();
-        // }
     }
 
     void AddData(float price, float quantity, bool ask)
@@ -72,14 +65,13 @@ public:
         int seprator = width/3;
         int title = seprator/2;
         int numberOfRowLevel = 1;
-        // mvprintw(1, 2, "%d", numberOfRowLevel);
         if(ask)
         {
             if(center-numberOfRowLevel < 4)
             {
                 attron(COLOR_PAIR(4));
                 mvprintw(height+5, seprator+title, "\t[Warning] Columns Filled The Text Will Not Appear After Specific Height");
-                mvprintw(height+6, seprator+title, "\t[Hint] Increase Heigh Of OrderBook");
+                mvprintw(height+6, seprator+title, "\t[Hint] Increase Height Of OrderBook");
                 attroff(COLOR_PAIR(4));
             }
             asks.emplace(price, quantity);
@@ -98,7 +90,6 @@ public:
         }
         else
         {
-            mvprintw(1, 2, "Else Block");
             bids.emplace(price, quantity);
             for(auto itr: bids)
             {
@@ -106,7 +97,7 @@ public:
                 {
                     attron(COLOR_PAIR(4));
                     mvprintw(height+5, seprator+title, "\t[Warning] Columns Filled The Text Will Not Appear After Specific Height");
-                    mvprintw(height+6, seprator+title, "\t[Hint] Increase Heigh Of OrderBook");
+                    mvprintw(height+6, seprator+title, "\t[Hint] Increase Height Of OrderBook");
                     attroff(COLOR_PAIR(4));
                 }
 
@@ -136,7 +127,7 @@ public:
     }
 
     ~OrderBook(){
-        // endwin();
+        endwin();
     }
 private:
     nMap asks;
