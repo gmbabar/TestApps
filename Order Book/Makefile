@@ -1,4 +1,6 @@
 all:
-	g++ -g order-book.cpp -o order-book -lncurses
+	g++ -g OrderBook.cpp -o OrderBook -lncurses
 run: all
-	./order-book
+	./OrderBook
+clean:
+	rm ./OrderBook
