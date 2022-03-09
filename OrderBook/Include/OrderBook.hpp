@@ -6,13 +6,16 @@ typedef std::map<float, float> nMap;
 
 class OrderBook{
 public:
-    explicit OrderBook(int height, int width, int yPos, int xPos) :  height(height), width(width), yPos(yPos), xPos(xPos) {
+    OrderBook(int heightOfBook, int widthOfBook, int yPosition, int xPosition) :  height(heightOfBook), width(widthOfBook), yPos(yPosition), xPos(xPosition) {
         initscr();
+        win = newwin(height, width, yPos, xPos);
         Border();
     }
 
     void Border()
     {
+        int seprator = width/3;
+        int center = height/2;
         int maxX = getmaxx(win)-2;
         int maxY = getmaxy(win);
 
@@ -22,9 +25,6 @@ public:
         init_pair(2, COLOR_GREEN, COLOR_BLACK);
         init_pair(3, COLOR_RED, COLOR_BLACK);
         init_pair(4, COLOR_BLUE, COLOR_BLACK);
-
-        char c;
-        int seprator = width/3;
         box(win, 0,0);
 
         for (int i = 4; i < height; i+=2)
@@ -60,7 +60,7 @@ public:
         init_pair(2, COLOR_GREEN, COLOR_BLACK);
         init_pair(3, COLOR_RED, COLOR_BLACK);
         init_pair(4, COLOR_BLUE, COLOR_BLACK);
-        char c;
+        int center = height/2;
         int seprator = width/3;
         int title = seprator/2;
         int numberOfRowLevel = 1;
@@ -95,7 +95,7 @@ public:
                 if(numberOfRowLevel== center-3)
                 {
                     attron(COLOR_PAIR(4));
-                    mvprintw(height+5, seprator+title, "\t[Warning] Columns Filled The Text Will Not Appear After Specific Height");
+                    mvprintw(height+5, seprator+title, "\t[Warning] Columns Filled The Data Will Not Appear After Specific Height");
                     mvprintw(height+6, seprator+title, "\t[Hint] Increase Height Of OrderBook");
                     attroff(COLOR_PAIR(4));
                 }
@@ -116,12 +116,12 @@ public:
         wrefresh(win);
     }
 
-    void Run()
+    void RunOrderBook()
     {
-        char c;
-        while (c != 'q')
+        char choice;
+        while (choice != 'q')
         {
-            c = getch();
+            choice = getch();
         }
     }
 
@@ -133,8 +133,7 @@ private:
     greaterMap bids;
     int height;
     int width;
-    int center = height/2;
     int yPos;
     int xPos;
-    WINDOW *win = newwin(height, width, yPos, xPos);
+    WINDOW *win;
 };
