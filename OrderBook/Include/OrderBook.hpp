@@ -59,7 +59,7 @@ public:
         wattroff(win, COLOR_PAIR(3));
 
         attron(COLOR_PAIR(4));
-        mvprintw(height+3, title+seprator, "\tPress \'q\' To Exit");
+        mvprintw(height+3, title+seprator, "\tPress \'q And return\' To Exit");
         attroff(COLOR_PAIR(4));
         move(height+3, 0);
     }
@@ -128,11 +128,8 @@ public:
 
     void RunOrderBook()
     {
-        char choice;
-        while (choice != 'q')
-        {
-            choice = getch();
-        }
+        std::string choice;
+        ctx.post(boost::bind(boost::mem_fn(&OrderBook::ReadInput), this, std::ref(choice)));
     }
 
     ~OrderBook(){
