@@ -1,12 +1,14 @@
 #include "Include/OrderBook.hpp"
+#include <boost/asio.hpp>
 
 int main()
 {
+    boost::asio::io_context ctx;
     float askPrice = 33789.70;
     float bidPrice = 33659.50;
     float askAmount = 8.50;
     float bidAmount = 7.75;
-    OrderBook o1(52, 120, 2, 16);
+    OrderBook o1(52, 120, 2, 16, ctx);
 
     for(int i = 0; i <= 20; i++)
     {
@@ -25,4 +27,5 @@ int main()
         }
     }
     o1.RunOrderBook();
+    ctx.run();
 }

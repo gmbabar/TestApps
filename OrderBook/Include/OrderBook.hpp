@@ -1,13 +1,23 @@
 #include <ncurses.h>
 #include <map>
+#include <boost/bind.hpp>
+#include <boost/asio.hpp>
 
 typedef std::map<float, float, std::greater<float>> greaterMap;
 typedef std::map<float, float> nMap;
+typedef boost::asio::io_context context;
+typedef boost::asio::posix::stream_descriptor descriptor;
+typedef boost::asio::streambuf buffer;
+typedef const boost::system::error_code errorCode;
+
+namespace asio = boost::asio;
 
 class OrderBook{
 public:
-    OrderBook(int heightOfBook, int widthOfBook, int yPosition, int xPosition) :  height(heightOfBook), width(widthOfBook), yPos(yPosition), xPos(xPosition) {
+    OrderBook(int heightOfBook, int widthOfBook, int yPosition, int xPosition, context &ctx) :  height(heightOfBook), width(widthOfBook), yPos(yPosition), xPos(xPosition), ctx(ctx), input(ctx, ::dup(STDIN_FILENO)) 
+    {
         initscr();
+        noecho();
         win = newwin(height, width, yPos, xPos);
         Border();
     }
@@ -129,6 +139,19 @@ public:
         endwin();
     }
 private:
+    void ReadHandler(std::string &dataVar, errorCode &ec, size_t bytesRead){
+        std::ostringstream oss;
+        oss << &buff;
+        dataVar = oss.str();
+    }
+
+        void ReadInput(std::string &dataVar){        
+        int seprator = width/3;
+        int title = seprator/2;
+        mvprintw(height+4, title+seprator, "Read Input Called");  
+        asio::async_read_until(input, buff, "q\n", boost::bind(boost::mem_fn(&OrderBook::ReadHandler), this, std::ref(dataVar), boost::placeholders::_1, boost::placeholders::_2));
+    }
+
     nMap asks;
     greaterMap bids;
     int height;
@@ -136,4 +159,7 @@ private:
     int yPos;
     int xPos;
     WINDOW *win;
+    context &ctx;
+    descriptor input;
+    buffer buff;
 };
