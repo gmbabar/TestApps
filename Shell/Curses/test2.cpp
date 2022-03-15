@@ -32,9 +32,6 @@ int main(void)
     getch();
     getch();
     getch();
-    getch();
-    getch();
-    getch();
     endwin();
     return 0;
 }
