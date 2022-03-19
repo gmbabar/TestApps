@@ -10,5 +10,5 @@
         - "sudo yum install ncurses-devel" For Yum Based Systems
 
 - Starting
-    -First Run OrderBook
-    -Then Run Client~
+    - First Run OrderBook
+    - Then Run Client~
