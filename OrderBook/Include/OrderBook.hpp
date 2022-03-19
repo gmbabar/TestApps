@@ -9,19 +9,28 @@ typedef boost::asio::io_context context;
 typedef boost::asio::posix::stream_descriptor descriptor;
 typedef boost::asio::streambuf buffer;
 typedef const boost::system::error_code errorCode;
+typedef boost::asio::ip::udp udpSocket;
 
 namespace asio = boost::asio;
 
+struct Data{
+    float price;
+    float quantity;
+    int ToF;
+};
+
 class OrderBook{
 public:
-    OrderBook(context &ctx) : ctx(ctx), input_(ctx, ::dup(STDIN_FILENO)) 
+    OrderBook(context &ctx) : ctx(ctx), uSocket(ctx)
     {
+        uSocket.open(udpSocket::v4());
+        uSocket.bind(udpSocket::endpoint(boost::asio::ip::make_address("127.0.0.1"), 1234));
         initscr();
         noecho();
         getmaxyx(stdscr, scrMaxY, scrMaxX);
         win_ = newwin(scrMaxY/2, scrMaxX/2, scrMaxY/8, scrMaxX/8);
         getmaxyx(win_, winMaxY, winMaxX);
-        Border();
+        this->Border();
     }
 
     void Border()
@@ -37,8 +46,6 @@ public:
         init_pair(4, COLOR_BLUE, COLOR_BLACK);
         box(win_, 0,0);
         float addition = (winMaxY-4);
-        
-        // mvprintw(win, winMaxX+1, "%.3f", addition);
         
         for(float i = 4; i < winMaxY; i+=addition/10)
         {
@@ -127,29 +134,26 @@ public:
         wrefresh(win_);
     }
 
-    void RunOrderBook()
+    void RecieveFromSocket()
     {
-        ctx.post(boost::bind(&OrderBook::ReadInput, this));
+        ctx.post(boost::bind(&OrderBook::SetupRecieve, this));
     }
 
     ~OrderBook(){
         endwin();
     }
 private:
-    void ReadHandler(const errorCode &ec){
-        for (auto ch = getch(); ch != 'q'; ch = getch()) {
-            mvprintw(winMaxY+5, 1, "received key %d ('%c')\n", ch, ch);
-        }
-        wrefresh(win_);
-        ReadInput();
+    void SetupRecieve()
+    {
+        uSocket.async_receive_from(boost::asio::buffer(buffer), clientEP, boost::bind(&OrderBook::ReadHandle, this,
+        boost::placeholders::_1, boost::placeholders::_2));
     }
 
-    void ReadInput(){        
-        // Read a line of input entered by the user.
-        mvprintw(winMaxY+5, 1, "Enter Input: " );
-        wrefresh(win_);
-        input_.async_wait(boost::asio::posix::descriptor::wait_type::wait_read,
-                        boost::bind(&OrderBook::ReadHandler, this, boost::placeholders::_1));
+    void ReadHandle(errorCode &ec, size_t bytesRead)
+    {
+        sscanf(buffer, "%f, %f, %d", &d1.price, &d1.quantity, &d1.ToF);
+        AddData(d1.price, d1.quantity, d1.ToF);
+        SetupRecieve();
     }
 
     nMap asks;
@@ -157,8 +161,8 @@ private:
     int scrMaxX, scrMaxY, winMaxX, winMaxY;
     WINDOW *win_;
     context &ctx;
-    descriptor input_;
-    buffer buff;
+    Data d1;
+    char buffer[128];
+    udpSocket::endpoint clientEP;
+    udpSocket::socket uSocket;
 };
-
-
