@@ -1,6 +1,7 @@
 #include <boost/asio.hpp>
 #include <iostream>
 #include <cstring>
+#include <unistd.h>
 
 using namespace boost::asio;
 using namespace boost::asio::ip;
@@ -49,5 +50,6 @@ int main()
             bidPrice -= 10;
             bidAmount -= 0.75;
         }
+        sleep(1);
     }
 }
