@@ -17,8 +17,8 @@ int main()
 {
     float askPrice = 33789.70;
     float bidPrice = 33659.50;
-    float askAmount = 3.50;
-    float bidAmount = 3.50;
+    float askAmount = 25.50;
+    float bidAmount = 25.50;
     char buffer[128];
 
     io_context ctx;
@@ -28,7 +28,7 @@ int main()
 
     m_socket.open(udp::v4());
 
-    for(int i = 0; i < 7; i++)
+    for(int i = 0; i < 25; i++)
     {
         if(i%2 == 0)
         {
