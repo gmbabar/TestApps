@@ -16,7 +16,7 @@ namespace asio = boost::asio;
 struct Data{
     float price;
     float quantity;
-    int ToF;
+    int isAsk;
 };
 
 class OrderBook{
@@ -24,17 +24,21 @@ public:
     OrderBook(context &ctx) : ctx(ctx), uSocket(ctx)
     {
         uSocket.open(udpSocket::v4());
+        uSocket.set_option(boost::asio::ip::udp::socket::reuse_address(true));
         uSocket.bind(udpSocket::endpoint(boost::asio::ip::make_address("127.0.0.1"), 1234));
         initscr();
         noecho();
         getmaxyx(stdscr, scrMaxY, scrMaxX);
-        win_ = newwin(scrMaxY/2, scrMaxX/2, scrMaxY/8, scrMaxX/8);
+        win_ = newwin(scrMaxY/1.25, scrMaxX/1.2, scrMaxY/10, scrMaxX/10);
         getmaxyx(win_, winMaxY, winMaxX);
         this->Border();
     }
 
     void Border()
     {
+        float addition = (winMaxY-6);
+        addition = addition/20;
+        
         int seprator = winMaxX/3;
         int center = winMaxY/2;
 
@@ -45,9 +49,8 @@ public:
         init_pair(3, COLOR_RED, COLOR_BLACK);
         init_pair(4, COLOR_BLUE, COLOR_BLACK);
         box(win_, 0,0);
-        float addition = (winMaxY-4);
         
-        for(float i = 4; i < winMaxY; i+=addition/10)
+        for(float i = addition*3-1; i < winMaxY; i+=addition)
         {
             mvwhline(win_, i, 1, ACS_HLINE, winMaxX-2);
         }
@@ -57,18 +60,20 @@ public:
 
         int title = seprator/2;
         wattron(win_, COLOR_PAIR(1));
-        mvwprintw(win_, 2, title, "\"BID\"");
+        mvwprintw(win_, 3, title, "\"BID\"");
         wattroff(win_, COLOR_PAIR(1));
 
         wattron(win_, COLOR_PAIR(2));
-        mvwprintw(win_, 2, title+seprator, "\"Price\"");
+        mvwprintw(win_, 3, title+seprator, "\"Price\"");
         wattroff(win_, COLOR_PAIR(2));
         
         wattron(win_, COLOR_PAIR(3));
-        mvwprintw(win_, 2, title+2*seprator, "\"ASK\"");        
+        mvwprintw(win_, 3, title+2*seprator, "\"ASK\"");        
         wattroff(win_, COLOR_PAIR(3));
 
         move(winMaxY+3, 0);
+        refresh();
+        wrefresh(win_);
     }
 
     void AddData(float price, float quantity, bool ask)
@@ -77,23 +82,24 @@ public:
         init_pair(2, COLOR_GREEN, COLOR_BLACK);
         init_pair(3, COLOR_RED, COLOR_BLACK);
         init_pair(4, COLOR_BLUE, COLOR_BLACK);
-        int center = winMaxY/2;
+
+        float addition = (winMaxY-5);
+        addition = addition/20;
+
+        int center = (winMaxY/2)+2;
         int seprator = winMaxX/3;
         int title = seprator/2;
-        int numberOfRowLevel = 1;
+        long int numberOfRowLevel = 1;
         if(ask)
         {
-            if(center-numberOfRowLevel < 4)
-            {
-                attron(COLOR_PAIR(4));
-                mvprintw(winMaxY+5, seprator+title, "\t[Warning] Columns Filled The Text Will Not Appear After Specific Height");
-                mvprintw(winMaxY+6, seprator+title, "\t[Hint] Increase Height Of OrderBook");
-                numberOfRowLevel = 9999;
-                attroff(COLOR_PAIR(4));
-            }
-            asks.emplace(price, quantity);
+            asks[price] += quantity;
             for(auto itr: asks)
             {
+                if(center-numberOfRowLevel < (addition-0.5)*3)
+                {
+                    numberOfRowLevel = winMaxY;
+                }
+
                 wattron(win_, COLOR_PAIR(3));
                 mvwprintw(win_, center-numberOfRowLevel, title+2*seprator, "%.2f", itr.second);
                 wattroff(win_, COLOR_PAIR(3));
@@ -107,15 +113,12 @@ public:
         }
         else
         {
-            bids.emplace(price, quantity);
+            bids[price] += quantity;
             for(auto itr: bids)
             {
-                if(numberOfRowLevel== center-3)
+                if(numberOfRowLevel == center)
                 {
-                    attron(COLOR_PAIR(4));
-                    mvprintw(winMaxY+5, seprator+title, "\t[Warning] Columns Filled The Data Will Not Appear After Specific Height");
-                    mvprintw(winMaxY+6, seprator+title, "\t[Hint] Increase Height Of OrderBook");
-                    attroff(COLOR_PAIR(4));
+                    numberOfRowLevel = winMaxY;
                 }
 
                 wattron(win_, COLOR_PAIR(1));
@@ -151,8 +154,8 @@ private:
 
     void ReadHandle(errorCode &ec, size_t bytesRead)
     {
-        sscanf(buffer, "%f, %f, %d", &d1.price, &d1.quantity, &d1.ToF);
-        AddData(d1.price, d1.quantity, d1.ToF);
+        sscanf(buffer, "%f, %f, %d", &d1.price, &d1.quantity, &d1.isAsk);
+        AddData(d1.price, d1.quantity, d1.isAsk);
         SetupRecieve();
     }
 
