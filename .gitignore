@@ -2,3 +2,7 @@ boost/buffers/buffers
 boost/buffers/flatbuffer
 boost/buffers/flatstaticbuffer
 boost/buffers/multibuffer
+websocket_client 
+websocket_client_ssl 
+websocket_server 
+websocket_server_ssl
