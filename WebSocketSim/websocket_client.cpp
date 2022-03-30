@@ -115,7 +115,7 @@ public:
             {
                 req.set(http::field::user_agent,
                     std::string(BOOST_BEAST_VERSION_STRING) +
-                        " websocket-client-async");
+                        " websocket_client");
             }));
 
         // Update the host_ string. This will provide the value of the

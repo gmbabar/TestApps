@@ -154,7 +154,7 @@ public:
             {
                 req.set(http::field::user_agent,
                     std::string(BOOST_BEAST_VERSION_STRING) +
-                        " websocket-client-async-ssl");
+                        " websocket_client_ssl");
             }));
 
         // Perform the websocket handshake
