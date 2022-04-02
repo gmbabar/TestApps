@@ -3,8 +3,8 @@
 #include <boost/bind/bind.hpp>
 #include <boost/asio.hpp>
 
-typedef std::map<float, float, std::greater<float>> greaterMap;
-typedef std::map<float, float> nMap;
+typedef std::map<float, float, std::greater<float>> bidMap;
+typedef std::map<float, float> askMap;
 typedef boost::asio::io_context context;
 typedef boost::asio::posix::stream_descriptor descriptor;
 typedef boost::asio::streambuf buffer;
@@ -34,9 +34,21 @@ public:
         this->Border();
     }
 
+
+    void RecieveFromSocket()
+    {
+        ctx.post(boost::bind(&OrderBook::SetupRecieve, this));
+    }
+
+    ~OrderBook(){
+        endwin();
+    }
+private:
+
+
     void Border()
     {
-        float addition = (winMaxY-6);
+        float addition = (winMaxY-5);
         addition = addition/20;
         
         int seprator = winMaxX/3;
@@ -50,7 +62,7 @@ public:
         init_pair(4, COLOR_BLUE, COLOR_BLACK);
         box(win_, 0,0);
         
-        for(float i = addition*3-1; i < winMaxY; i+=addition)
+        for(float i = addition*3; i < winMaxY; i+=2)
         {
             mvwhline(win_, i, 1, ACS_HLINE, winMaxX-2);
         }
@@ -76,76 +88,92 @@ public:
         wrefresh(win_);
     }
 
+
     void AddData(float price, float quantity, bool ask)
     {
-        init_pair(1, COLOR_YELLOW, COLOR_BLACK);
-        init_pair(2, COLOR_GREEN, COLOR_BLACK);
-        init_pair(3, COLOR_RED, COLOR_BLACK);
-        init_pair(4, COLOR_BLUE, COLOR_BLACK);
-
-        float addition = (winMaxY-5);
-        addition = addition/20;
-
-        int center = (winMaxY/2)+2;
-        int seprator = winMaxX/3;
-        int title = seprator/2;
-        long int numberOfRowLevel = 1;
-        if(ask)
+        if(quantity <= 0)
         {
-            asks[price] += quantity;
-            for(auto itr: asks)
+            if(ask)
             {
-                if(center-numberOfRowLevel < (addition-0.5)*3)
-                {
-                    numberOfRowLevel = winMaxY;
-                }
-
-                wattron(win_, COLOR_PAIR(3));
-                mvwprintw(win_, center-numberOfRowLevel, title+2*seprator, "%.2f", itr.second);
-                wattroff(win_, COLOR_PAIR(3));
-                
-                wattron(win_, COLOR_PAIR(2));
-                mvwprintw(win_, center-numberOfRowLevel, title+seprator, "%.2f", itr.first);
-                wattroff(win_, COLOR_PAIR(2));
-                numberOfRowLevel+=2;
-
+                asks.erase(price);
+            }
+            else
+            {
+                bids.erase(price);
             }
         }
         else
         {
-            bids[price] += quantity;
-            for(auto itr: bids)
+            if(ask)
             {
-                if(numberOfRowLevel == center)
-                {
-                    numberOfRowLevel = winMaxY;
-                }
-
-                wattron(win_, COLOR_PAIR(1));
-                mvwprintw(win_, center+numberOfRowLevel, title, "%.2f", itr.second);
-                wattroff(win_, COLOR_PAIR(1));
-
-                wattron(win_, COLOR_PAIR(2));
-                mvwprintw(win_, center+numberOfRowLevel, title+seprator, "%.2f", itr.first);
-                wattroff(win_, COLOR_PAIR(2));
-
-                numberOfRowLevel+=2;
+                asks[price] += quantity;
             }
+            else
+            {
+                bids[price] += quantity;
+            }
+        }
+    }
 
+    void PrintData(bool isAsk)
+    {
+        init_pair(1, COLOR_YELLOW, COLOR_BLACK);
+        init_pair(2, COLOR_GREEN, COLOR_BLACK);
+        init_pair(3, COLOR_RED, COLOR_BLACK);
+        
+        int center = (winMaxY/2)+2;
+        int seprator = winMaxX/3;
+        int title = seprator/2;
+        int numberOfRowLevel = 1;
+        float addition = (winMaxY-6);
+        addition = addition/20;
+
+        if(isAsk)
+        {
+            for(auto itr: asks)
+                {
+                    if(center-numberOfRowLevel < (addition)*3)
+                    {
+                        numberOfRowLevel = winMaxY;
+                    }
+
+                    wattron(win_, COLOR_PAIR(3));
+                    mvwprintw(win_, center-numberOfRowLevel, title+2*seprator, "%.2f", itr.second);
+                    wattroff(win_, COLOR_PAIR(3));
+                    
+                    wattron(win_, COLOR_PAIR(2));
+                    mvwprintw(win_, center-numberOfRowLevel, title+seprator, "%.2f", itr.first);
+                    wattroff(win_, COLOR_PAIR(2));
+                    numberOfRowLevel+=2;
+                }
+            numberOfRowLevel = 1;
+        }
+        else
+        {
+            for(auto itr: bids)
+                {
+                    if(numberOfRowLevel == center)
+                    {
+                        numberOfRowLevel = winMaxY;
+                    }
+
+                    wattron(win_, COLOR_PAIR(1));
+                    mvwprintw(win_, center+numberOfRowLevel, title, "%.2f", itr.second);
+                    wattroff(win_, COLOR_PAIR(1));
+
+                    wattron(win_, COLOR_PAIR(2));
+                    mvwprintw(win_, center+numberOfRowLevel, title+seprator, "%.2f", itr.first);
+                    wattroff(win_, COLOR_PAIR(2));
+
+                    numberOfRowLevel+=2;
+                }
+            numberOfRowLevel = 1;
         }
         refresh();
         wrefresh(win_);
     }
 
-    void RecieveFromSocket()
-    {
-        ctx.post(boost::bind(&OrderBook::SetupRecieve, this));
-    }
 
-    ~OrderBook(){
-        endwin();
-    }
-private:
     void SetupRecieve()
     {
         uSocket.async_receive_from(boost::asio::buffer(buffer), clientEP, boost::bind(&OrderBook::ReadHandle, this,
@@ -156,11 +184,12 @@ private:
     {
         sscanf(buffer, "%f, %f, %d", &d1.price, &d1.quantity, &d1.isAsk);
         AddData(d1.price, d1.quantity, d1.isAsk);
+        PrintData(d1.isAsk);
         SetupRecieve();
     }
 
-    nMap asks;
-    greaterMap bids;
+    askMap asks;
+    bidMap bids;
     int scrMaxX, scrMaxY, winMaxX, winMaxY;
     WINDOW *win_;
     context &ctx;

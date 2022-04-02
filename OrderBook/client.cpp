@@ -52,4 +52,17 @@ int main()
         }
         sleep(1);
     }
+    std::cout << "Loop Finished" << std::endl;
+
+    p1.is_ask = false;
+    p1.price = 33659.50;
+    p1.quantity = 0;
+    sprintf(buffer, "%f, %f, %d", p1.price, p1.quantity, p1.is_ask);
+    m_socket.send_to(boost::asio::buffer(buffer), server);
+
+    p1.is_ask = true;
+    p1.price = 33569.70;
+    p1.quantity = 0;
+    sprintf(buffer, "%f, %f, %d", p1.price, p1.quantity, p1.is_ask);
+    m_socket.send_to(boost::asio::buffer(buffer), server);
 }
