@@ -1,31 +1,13 @@
 #include <ncurses.h>
 #include <map>
-#include <boost/bind/bind.hpp>
-#include <boost/asio.hpp>
 
 typedef std::map<float, float, std::greater<float>> bidMap;
 typedef std::map<float, float> askMap;
-typedef boost::asio::io_context context;
-typedef boost::asio::posix::stream_descriptor descriptor;
-typedef boost::asio::streambuf buffer;
-typedef const boost::system::error_code errorCode;
-typedef boost::asio::ip::udp udpSocket;
-
-namespace asio = boost::asio;
-
-struct Data{
-    float price;
-    float quantity;
-    int isAsk;
-};
 
 class OrderBook{
 public:
-    OrderBook(context &ctx) : ctx(ctx), uSocket(ctx)
+    OrderBook()
     {
-        uSocket.open(udpSocket::v4());
-        uSocket.set_option(boost::asio::ip::udp::socket::reuse_address(true));
-        uSocket.bind(udpSocket::endpoint(boost::asio::ip::make_address("127.0.0.1"), 1234));
         initscr();
         noecho();
         getmaxyx(stdscr, scrMaxY, scrMaxX);
@@ -34,10 +16,32 @@ public:
         this->Border();
     }
 
-
-    void RecieveFromSocket()
+    void AddData(float price, float quantity, bool ask)
     {
-        ctx.post(boost::bind(&OrderBook::SetupRecieve, this));
+        if(quantity <= 0)
+        {
+            if(ask)
+            {
+                asks.erase(price);
+            }
+            else
+            {
+                bids.erase(price);
+            }
+        }
+        else
+        {
+            if(ask)
+            {
+                asks[price] += quantity;
+                PrintData(ask);
+            }
+            else
+            {
+                bids[price] += quantity;
+                PrintData(ask);
+            }
+        }
     }
 
     ~OrderBook(){
@@ -62,7 +66,7 @@ private:
         init_pair(4, COLOR_BLUE, COLOR_BLACK);
         box(win_, 0,0);
         
-        for(float i = addition*3; i < winMaxY; i+=2)
+        for(int i = 6; i < winMaxY; i+=2)
         {
             mvwhline(win_, i, 1, ACS_HLINE, winMaxX-2);
         }
@@ -88,33 +92,6 @@ private:
         wrefresh(win_);
     }
 
-
-    void AddData(float price, float quantity, bool ask)
-    {
-        if(quantity <= 0)
-        {
-            if(ask)
-            {
-                asks.erase(price);
-            }
-            else
-            {
-                bids.erase(price);
-            }
-        }
-        else
-        {
-            if(ask)
-            {
-                asks[price] += quantity;
-            }
-            else
-            {
-                bids[price] += quantity;
-            }
-        }
-    }
-
     void PrintData(bool isAsk)
     {
         init_pair(1, COLOR_YELLOW, COLOR_BLACK);
@@ -124,7 +101,7 @@ private:
         int center = (winMaxY/2)+2;
         int seprator = winMaxX/3;
         int title = seprator/2;
-        int numberOfRowLevel = 0;
+        int numberOfRowLevel = 1;
         float addition = (winMaxY-6);
         addition = addition/20;
 
@@ -172,29 +149,9 @@ private:
         refresh();
         wrefresh(win_);
     }
-
-
-    void SetupRecieve()
-    {
-        uSocket.async_receive_from(boost::asio::buffer(buffer), clientEP, boost::bind(&OrderBook::ReadHandle, this,
-        boost::placeholders::_1, boost::placeholders::_2));
-    }
-
-    void ReadHandle(errorCode &ec, size_t bytesRead)
-    {
-        sscanf(buffer, "%f, %f, %d", &d1.price, &d1.quantity, &d1.isAsk);
-        AddData(d1.price, d1.quantity, d1.isAsk);
-        PrintData(d1.isAsk);
-        SetupRecieve();
-    }
-
+    
     askMap asks;
     bidMap bids;
     int scrMaxX, scrMaxY, winMaxX, winMaxY;
     WINDOW *win_;
-    context &ctx;
-    Data d1;
-    char buffer[128];
-    udpSocket::endpoint clientEP;
-    udpSocket::socket uSocket;
 };
