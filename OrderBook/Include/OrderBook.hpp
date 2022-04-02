@@ -124,7 +124,7 @@ private:
         int center = (winMaxY/2)+2;
         int seprator = winMaxX/3;
         int title = seprator/2;
-        int numberOfRowLevel = 1;
+        int numberOfRowLevel = 0;
         float addition = (winMaxY-6);
         addition = addition/20;
 
