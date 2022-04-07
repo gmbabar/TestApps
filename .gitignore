@@ -6,3 +6,5 @@ websocket_client
 websocket_client_ssl 
 websocket_server 
 websocket_server_ssl
+*.swp
+*.dSYM
