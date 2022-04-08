@@ -1,4 +1,5 @@
 #include "Include/OrderBook.hpp"
+#include <unistd.h>
 
 int main()
 {
@@ -21,6 +22,7 @@ int main()
             bidPrice -= 100;
             bidAmount -= 0.75;
         }
+        sleep(1);
     }
     getch();
 }
