@@ -21,6 +21,7 @@
 #include <boost/beast/websocket.hpp>
 #include <boost/beast/websocket/ssl.hpp>
 #include <boost/asio/strand.hpp>
+#include <thread>
 #include <cstdlib>
 #include <functional>
 #include <iostream>
@@ -52,6 +53,7 @@ class session : public std::enable_shared_from_this<session>
     beast::flat_buffer buffer_;
     std::string host_;
     std::string text_;
+    unsigned msg_count_ = 0;
 
 public:
     // Resolver and socket require an io_context
@@ -206,11 +208,27 @@ public:
         if(ec)
             return fail(ec, "read");
 
-        // Close the WebSocket connection
-        ws_.async_close(websocket::close_code::normal,
-            beast::bind_front_handler(
-                &session::on_close,
-                shared_from_this()));
+        // The make_printable() function helps print a ConstBufferSequence
+        std::cout << __func__ << "-" << msg_count_ + 1 << ": " << beast::make_printable(buffer_.data()) << std::endl;
+        // Clear the buffer
+        buffer_.consume(buffer_.size());
+
+        if (++msg_count_ == 15) {
+            // Close the WebSocket connection
+            ws_.async_close(websocket::close_code::normal,
+                beast::bind_front_handler(
+                    &session::on_close,
+                    shared_from_this()));
+        } else {
+            std::this_thread::sleep_for(std::chrono::seconds(1));
+
+            // Send the message
+            ws_.async_write(
+                net::buffer(text_),
+                beast::bind_front_handler(
+                    &session::on_write,
+                    shared_from_this()));
+        }
     }
 
     void
@@ -222,7 +240,7 @@ public:
         // If we get here then the connection is closed gracefully
 
         // The make_printable() function helps print a ConstBufferSequence
-        std::cout << beast::make_printable(buffer_.data()) << std::endl;
+        std::cout << __func__ << std::endl;
     }
 };
 
