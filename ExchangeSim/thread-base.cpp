@@ -20,7 +20,7 @@ void Publisher()
     {
         if (Produced)
         {
-            cout << "\t--> Server Is Waiting Subscriber To Consume Data" << endl;
+            cout << "\t--> Server Is Waiting For Client Response" << endl;
             cv_.wait(ul);
         }
         cout << __func__ << ":" << endl;
@@ -65,7 +65,7 @@ void Subscriber()
     {
         if (!Produced)
         {
-            cout << "\t--> Waiting For Server To Send Information" << endl;
+            cout << "\t--> Waiting For Server Response" << endl;
             cv_.wait(ul);
         }
         Produced = false;
@@ -75,6 +75,7 @@ void Subscriber()
 
         if(m_queue.front() == "Subscribed")
         {
+	    cout << "\tSending Unsubscribe Message To Server" << endl;
             m_queue.push("unsubscribe");
             m_queue.pop();
             cv_.notify_all();
