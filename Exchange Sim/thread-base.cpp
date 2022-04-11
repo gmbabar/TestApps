@@ -3,7 +3,6 @@
 #include <mutex>
 #include <condition_variable>
 #include <queue>
-#include "parser.hpp"
 
 using namespace std;
 
@@ -21,7 +20,7 @@ void Publisher()
     {
         if (Produced)
         {
-            cout << "\t--> Publisher Is Waiting For Consumer To Consume Data" << endl;
+            cout << "\t--> Server Is Waiting Subscriber To Consume Data" << endl;
             cv_.wait(ul);
         }
         cout << __func__ << ":" << endl;
@@ -45,10 +44,10 @@ void Publisher()
         }
         else
         {
-            cout << "\tEnter Data TO Send TO Subscriber : ";
-            getline(cin, data);
+            // cout << "\tEnter Data TO Send TO Subscriber : ";
+            // getline(cin, data);
 
-            m_queue.push(data);
+            m_queue.push("Exchange Started");
             Produced = true;
             cv_.notify_all();
         }
@@ -66,7 +65,7 @@ void Subscriber()
     {
         if (!Produced)
         {
-            cout << "\t--> Waiting For Producer TO Produce Data" << endl;
+            cout << "\t--> Waiting For Server To Send Information" << endl;
             cv_.wait(ul);
         }
         Produced = false;
