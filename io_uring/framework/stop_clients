@@ -1,5 +1,0 @@
-#!/bin/bash
-
-#pkill TcpSocket
-kill `ps -ef|grep 'TcpSocket --client' |grep -v grep| awk '{print $2}' |xargs`
-
