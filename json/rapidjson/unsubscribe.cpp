@@ -9,22 +9,18 @@
 
 using namespace rapidjson;
 
-/**** Subscribe Msg Format
+/**** Unsubscribe Msg Format
 {
-    "type"            : "subscribe",
-    "exchange"        : <string>,
-    "symbol"          : <string>,
-    "level"           : "L1|L2|L3|S|T",
-    "update_frequency": <int>,
-    "time_window_secs": <int>
-    "max_levels"      : <int>,
-    "book_type"       : "T|M|R",
-    "one_shot"        : <true|false>
+  "type"            : "unsubscribe",
+  "exchange"        : <string>,
+  "symbol"          : <string>,
+  "level"           : "L1|L2|L3|S|T|.*"
 }
+
 ****/
 
 /**
- * @brief Json subscription message
+ * @brief Json unsubscribe message
  * 
  */
 inline std::string FormatUnsubscribe(const std::string& type, 
@@ -57,7 +53,7 @@ inline std::string FormatUnsubscribe(const std::string& type,
 }
 
 /**
- * @brief Json subscription decoding
+ * @brief Json unsubscribe decoding
  * 
  */
 inline void ParseUnsubscribe(const std::string& json) {
