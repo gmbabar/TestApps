@@ -44,9 +44,6 @@ void Publisher()
         }
         else
         {
-            // cout << "\tEnter Data TO Send TO Subscriber : ";
-            // getline(cin, data);
-
             m_queue.push("Exchange Started");
             Produced = true;
             cv_.notify_all();
@@ -75,7 +72,7 @@ void Subscriber()
 
         if(m_queue.front() == "Subscribed")
         {
-	    cout << "\tSending Unsubscribe Message To Server" << endl;
+            cout << "\tSending Unsubscribe Message To Server" << endl;
             m_queue.push("unsubscribe");
             m_queue.pop();
             cv_.notify_all();
@@ -92,7 +89,6 @@ void Subscriber()
     }
 }
 
-
 int main()
 {
     thread thrd(Publisher);
@@ -101,3 +97,5 @@ int main()
     thrd1.join();
     return 0;
 }
+
+
