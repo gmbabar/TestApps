@@ -8,3 +8,12 @@ websocket_server
 websocket_server_ssl
 *.swp
 *.dSYM
+json/boost/deribit/auth
+json/boost/deribit/cancel
+json/boost/deribit/error
+json/boost/deribit/feed
+json/boost/deribit/neworder
+json/boost/deribit/open
+json/boost/deribit/subscribe
+json/boost/deribit/trade
+
