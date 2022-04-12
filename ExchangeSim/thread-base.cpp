@@ -44,7 +44,7 @@ void Publisher() {
             if(subscribed)
             {
                 m_queue.pop();
-                m_queue.push("{\"exchange\":\"Askars LTC\", \"status\":\"1\"}");
+                m_queue.push("{\"exchange\":\"Askars LTC\", \"status\":1}");
                 cout << "\t--> Server Has Sent The Information" << endl;
                 Produced = true;
                 cv_.notify_all();
@@ -52,7 +52,7 @@ void Publisher() {
             if(!subscribed)
             {
                 m_queue.pop();
-                m_queue.push("{\"exchange\":\"Askars LTC\", \"status\":\"0\"}");
+                m_queue.push("{\"exchange\":\"Askars LTC\", \"status\":0}");
                 cout << "\t--> Server Has Sent The Information" << endl;
                 Produced = true;
                 cv_.notify_all();
@@ -71,7 +71,7 @@ void Publisher() {
             if(!subscribed)
             {
                 m_queue.pop();
-                m_queue.push("{\"exchange\":\"Askars LTC\", \"status\":\"0\"}");
+                m_queue.push("{\"exchange\":\"Askars LTC\", \"status\":0}");
                 cout << "\t--> Server Has Sent The Information" << endl;
                 Produced = true;
                 cv_.notify_all();
@@ -118,5 +118,3 @@ int main() {
     thrd1.join();
     return 0;
 }
-
-
