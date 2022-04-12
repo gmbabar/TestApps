@@ -3,7 +3,7 @@ CC = g++
 FLAGS = -g -std=c++11 -I./include
 LIBS = -lboost_system -lpthread -lcrypto -lssl
 
-objects = keyVal neworder subscribe
+objects = keyVal neworder subscribe unsubscribe SymbolStatus ExchangeStatus L1Update L2Update L3Update
 
 all: $(objects)
 
