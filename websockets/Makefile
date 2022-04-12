@@ -15,5 +15,6 @@ ServerSimulator: ServerSimulator.cpp
 	g++ $(FLAGS) -o $@  $< $(LIBS)
 
 clean:
-	rm -f `ls | egrep -v "Makefile|*.cpp|*.hpp|*.h" | xargs`
+	rm -rf *.dSYM
+	rm -f `ls | egrep -v "Makefile|\.cpp|\.hpp|\.h|common" | xargs`
 
