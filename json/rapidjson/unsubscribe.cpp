@@ -16,11 +16,10 @@ using namespace rapidjson;
   "symbol"          : <string>,
   "level"           : "L1|L2|L3|S|T|.*"
 }
-
 ****/
 
 /**
- * @brief Json unsubscribe message
+ * @brief Json unsubscribe format message
  * 
  */
 inline std::string FormatUnsubscribe(const std::string& type, 
@@ -53,7 +52,7 @@ inline std::string FormatUnsubscribe(const std::string& type,
 }
 
 /**
- * @brief Json unsubscribe decoding
+ * @brief Json unsubscribe parsing
  * 
  */
 inline void ParseUnsubscribe(const std::string& json) {

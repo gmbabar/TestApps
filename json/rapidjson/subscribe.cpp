@@ -77,7 +77,7 @@ inline std::string FormatSubscribe(const std::string& type,
 }
 
 /**
- * @brief Json subscription decoding
+ * @brief Json subscription parsing
  * 
  */
 inline void ParseSubscribe(const std::string& json) {

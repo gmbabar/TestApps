@@ -47,8 +47,8 @@ inline std::string FormatSymbolStatus(const std::string& type,
 }
 
 /**
- * @brief Json SymbolStatus decoding
- * s
+ * @brief Json SymbolStatus parsing
+ * 
  */
 inline void ParseSymbolStatus(const std::string& json) {
     Document document;

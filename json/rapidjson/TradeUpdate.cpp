@@ -20,7 +20,6 @@ using namespace rapidjson;
     "qty": <double>,
     "isIntra": <bool>
 }
-
 ****/
 
 /**
@@ -69,7 +68,7 @@ inline std::string FormatTradeUpdate(const std::string& type,
 }
 
 /**
- * @brief Json SymbolStatus decoding
+ * @brief Json TradeUpdate parsing
  * s
  */
 inline void ParseTradeUpdate(const std::string& json) {
