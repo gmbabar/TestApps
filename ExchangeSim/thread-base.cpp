@@ -26,19 +26,60 @@ void Publisher() {
         if(m_queue.front() == "subscribe") {
             subscribed = 1;
             m_queue.pop();
-            m_queue.push("Subscribed");
+            m_queue.push("{\"type\":\"Subscribed\"}");
+            cout << "\t--> Server Has Sent The Information" << endl;
             Produced = true;
             cv_.notify_all();
         }
         else if(m_queue.front() == "unsubscribe") {
             subscribed = 0;
             m_queue.pop();
-            m_queue.push("Unsubscribed");
+            m_queue.push("{\"type\":\"Unsubscribed\"}");
+            cout << "\t--> Server Has Sent The Information" << endl;
             Produced = true;
             cv_.notify_all();
         }
+        else if(m_queue.front() == "exchange_status")
+        {
+            if(subscribed)
+            {
+                m_queue.pop();
+                m_queue.push("{\"exchange\":\"Askars LTC\", \"status\":\"1\"}");
+                cout << "\t--> Server Has Sent The Information" << endl;
+                Produced = true;
+                cv_.notify_all();
+            }
+            if(!subscribed)
+            {
+                m_queue.pop();
+                m_queue.push("{\"exchange\":\"Askars LTC\", \"status\":\"0\"}");
+                cout << "\t--> Server Has Sent The Information" << endl;
+                Produced = true;
+                cv_.notify_all();
+            }
+        }
+        else if(m_queue.front() == "symbol_status")
+        {
+            if(subscribed)
+            {
+                m_queue.pop();
+                m_queue.push("{\"type\":\"security_list_update\", \"action\":\"add\", \"symbol\":\"Askars LTC:BTC-Future\"}");
+                cout << "\t--> Server Has Sent The Information" << endl;
+                Produced = true;
+                cv_.notify_all();
+            }
+            if(!subscribed)
+            {
+                m_queue.pop();
+                m_queue.push("{\"exchange\":\"Askars LTC\", \"status\":\"0\"}");
+                cout << "\t--> Server Has Sent The Information" << endl;
+                Produced = true;
+                cv_.notify_all();
+            }
+        }
         else {
-            m_queue.push("Exchange Started");
+            m_queue.push("Exchange Commands:\n\t- subscribe\n\t- unsubscribe\n\t- exchange_status\n\t- symbol_status");
+            cout << "\t--> Server Has Sent The Information" << endl;
             Produced = true;
             cv_.notify_all();
         }
@@ -60,21 +101,13 @@ void Subscriber() {
 
         cout << __func__ << ":" << endl;
         cout << "\tData Recived From Publisher : " << m_queue.front() << endl;
+        m_queue.pop();
 
-        if(m_queue.front() == "Subscribed") {
-            cout << "\tSending Unsubscribe Message To Server" << endl;
-            m_queue.push("unsubscribe");
-            m_queue.pop();
-            cv_.notify_all();
-        }
-        else {
-            m_queue.pop();
-            cout << "\tEnter Data TO Send TO Publisher : ";
-            getline(cin, data);
-            if(data == "quit" || data == "exit") return;
-            m_queue.push(data);
-            cv_.notify_one();
-        }
+        cout << "\tEnter Command TO Send TO Publisher : ";
+        getline(cin, data);
+        if(data == "quit" || data == "exit") return;
+        m_queue.push(data);
+        cv_.notify_one();
     }
 }
 
