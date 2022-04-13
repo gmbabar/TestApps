@@ -78,7 +78,7 @@ inline std::string FormatL2Update(const std::string& type,
 }
 
 /**
- * @brief Json SymbolStatus decoding
+ * @brief Json L2Update decoding
  * s
  */
 inline void ParseL2Update(const std::string& json) {
