@@ -6,6 +6,7 @@
 #include "rapidjson/stringbuffer.h"
 #include <iostream>
 #include <chrono>
+#include <sstream>
 
 using namespace rapidjson;
 
@@ -25,19 +26,46 @@ using namespace rapidjson;
 
 ****/
 
+inline std::string FormatL3UpdateSS(const std::string& type,
+        const std::string& key,
+        const std::string& symbol,
+        const std::string& exchange,
+        const std::string& id,
+        const double price,
+        const double qty,
+        const int side,
+        const bool isIntra) {
+    std::ostringstream oss;
+    // std::string res = (isIntra == true) ? "true" : "false";
+    oss << "{"
+    << "\"type\":\"" << type << "\""
+    << ", \"key\":\"" << key << "\""
+    << ", \"symbol\":\"" << symbol << "\""
+    << ", \"exchange\":\"" << exchange << "\""
+    << ", \"id\":\"" << id << "\""
+    << ", \"price\":" << price
+    << ", \"qty\":" << qty
+    << ", \"side\":" << side
+    << ", \"isIntra\":" << (isIntra == true ? "true" : "false")
+    << "}";
+
+    return oss.str();
+}
+
+
 /**
  * @brief Json L3Update message
  * 
  */
 inline std::string FormatL3Update(const std::string& type,
-                            const std::string& key,
-                            const std::string& symbol,
-                            const std::string& exchange,
-                            const std::string& id,
-                            const double price,
-                            const double qty,
-                            const int side,
-                            const bool isIntra) {
+        const std::string& key,
+        const std::string& symbol,
+        const std::string& exchange,
+        const std::string& id,
+        const double price,
+        const double qty,
+        const int side,
+        const bool isIntra) {
     // DOM document
     Document document; // UTF8<>
     document.SetObject();
@@ -103,8 +131,26 @@ inline void ParseL3Update(const std::string& json) {
 // - need to make sure performance is equal or better than stringstream
 
 int main() {
-    std::string json = FormatL3Update("L2", "039874", "BTCUSDT", "BTFX", "99923", 23123.321, 1231.31, 1, 0);
-    std::cout << "Json: " << json << std::endl;
+    std::string json;
+    auto start = std::chrono::steady_clock::now();
+    for(int i=0; i<1E6; i++)
+    {
+        json = FormatL3UpdateSS("L2", "039874", "BTCUSDT", "BTFX", "99923", 23123.321, 1231.31, 1, 0);
+    }
+    auto end = std::chrono::steady_clock::now();
+
+    std::cout << "Time Span Taken By StringStream: " << std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count() << std::endl << std::endl;
+
+    start = std::chrono::steady_clock::now();
+    for(int i=0; i<1E6; i++)
+    {
+        json = FormatL3Update("L2", "039874", "BTCUSDT", "BTFX", "99923", 23123.321, 1231.31, 1, 0);
+    }
+    end = std::chrono::steady_clock::now();
+
+    std::cout << "Time Span Taken By JsonFormat : " << std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count() << std::endl << std::endl;
+    
+    // std::cout << "Json: " << json << std::endl;
     ParseL3Update(json);
     return 0;
 }
