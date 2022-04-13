@@ -1,4 +1,4 @@
-// JSON simple example
+// ExchangeStatusON simple example
 // This example does not handle errors.
 
 #include "rapidjson/document.h"
@@ -18,7 +18,7 @@ using namespace rapidjson;
 ****/
 
 /**
- * @brief Json SymbolStatus message
+ * @brief Json ExchangeStatus message
  * 
  */
 inline std::string FormatExchangeStatus(const std::string& type, 
@@ -47,7 +47,7 @@ inline std::string FormatExchangeStatus(const std::string& type,
 }
 
 /**
- * @brief Json SymbolStatus decoding
+ * @brief Json ExchangeStatus decoding
  * s
  */
 inline void ParseExchangeStatus(const std::string& json) {
