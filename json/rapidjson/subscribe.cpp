@@ -6,6 +6,8 @@
 #include "rapidjson/stringbuffer.h"
 #include <iostream>
 #include <chrono>
+#include <sstream>
+
 
 using namespace rapidjson;
 
@@ -22,6 +24,31 @@ using namespace rapidjson;
     "one_shot"        : <true|false>
 }
 ****/
+
+inline std::string FormatSubscribeSstream(const std::string& type, 
+    const std::string& exchange, 
+    const std::string& symbol, 
+    const std::string& level, 
+    const int frequency,
+    const int timeWindow,
+    const int maxLevels,
+    const std::string& bookType,
+    const bool oneShot)
+    {
+        std::ostringstream oss;
+        oss << "{"
+        << R"("type":")" << type << R"(")"
+        << R"(,"exchange":")" << exchange << R"(")"
+        << R"(,"symbol":")" << symbol << R"(")"
+        << R"(,"level":")" << level << R"(")"
+        << R"(,"update_frequency":)"<< frequency 
+        << R"(,"time_window_secs":)" << timeWindow
+        << R"(,"max_levels":)" << maxLevels
+        << R"(,"book_type":")" << bookType << R"(")"
+        << R"(,"one_shot":)" << (oneShot == true? "true" : "false")
+        << "}";
+        return oss.str();
+    }
 
 /**
  * @brief Json subscription message
@@ -101,7 +128,8 @@ inline void ParseSubscribe(const std::string& json) {
 // - need to make sure performance is equal or better than stringstream
 
 int main() {
-    std::string json = FormatSubscribe("subscribe", "BTFX", "BTCUSDT", "L1", 10, 10, 10, "T", "true");
+    // std::string json = FormatSubscribe("subscribe", "BTFX", "BTCUSDT", "L1", 10, 10, 10, "T", "true");
+    std::string json = FormatSubscribeSstream("subscribe", "BTFX", "BTCUSDT", "L1", 10, 10, 10, "T", "true");
     std::cout << "Json: " << json << std::endl;
     ParseSubscribe(json);
     return 0;
