@@ -6,6 +6,7 @@
 #include "rapidjson/stringbuffer.h"
 #include <iostream>
 #include <chrono>
+#include <sstream>
 
 using namespace rapidjson;
 
@@ -26,6 +27,33 @@ using namespace rapidjson;
 }
 ****/
 
+inline std::string FormatL2SnapshotSstream(const std::string& type, 
+        const int globalSeq,
+        const std::string& inside,
+        const bool isIntra,
+        const std::string& key,
+        const int live,
+        const int localSeq,
+        const int microsSincEpoch,
+        const std::string& symbol,
+        const std::string& levels) {
+    std::ostringstream oss;
+    oss << "{"
+    << R"("type":")" << type << R"(")"
+    << R"(, "globalSeq":)" << globalSeq
+    << R"(,"inside":")"<< inside << R"(")" 
+    << R"(,"isIntra":)" << (isIntra == true? "true" : "false")
+    << R"(,"key":")" << key << R"(")"
+    << R"(,"live":)" << live
+    << R"(,"localSeq":)" << localSeq
+    << R"(,"microsSincEpoch":)" << microsSincEpoch
+    << R"(,"symbol":")" << symbol << R"(")"
+    << R"(,"quotes":")" << levels << R"(")"
+    << "}";
+
+    return oss.str();
+    }
+
 /**
  * @brief Json L2Snapshot message
  * 
@@ -37,7 +65,7 @@ inline std::string FormatL2Snapshot(const std::string& type,
                             const std::string& key,
                             const int live,
                             const int localSeq,
-                            const int microsSeqEpoch,
+                            const int microsSincEpoch,
                             const std::string& symbol,
                             const std::string& levels
                             )
@@ -61,13 +89,16 @@ inline std::string FormatL2Snapshot(const std::string& type,
     document.AddMember("isIntra", aValue, document.GetAllocator());
 
     aValue.SetString(key.c_str(), static_cast<SizeType>(key.size()), document.GetAllocator());
-    document.AddMember("exchange", aValue, document.GetAllocator());
+    document.AddMember("key", aValue, document.GetAllocator());
 
     aValue.SetInt(live);
     document.AddMember("live", aValue, document.GetAllocator());
 
-    aValue.SetInt(microsSeqEpoch);
-    document.AddMember("microsSeqEpoch", aValue, document.GetAllocator());
+    aValue.SetInt(localSeq);
+    document.AddMember("localSeq", aValue, document.GetAllocator());
+
+    aValue.SetInt(microsSincEpoch);
+    document.AddMember("microsSincEpoch", aValue, document.GetAllocator());
 
     aValue.SetString(symbol.c_str(), static_cast<SizeType>(symbol.size()), document.GetAllocator());
     document.AddMember("symbol", aValue, document.GetAllocator());
@@ -93,7 +124,7 @@ inline void ParseL2Snapshot(const std::string& json) {
 
     // values.
     std::cout << __func__ << ": type: " << document["type"].GetString() << std::endl;
-    std::cout << __func__ << ": golbalSeq: " << document["golbalSeq"].GetInt() << std::endl;
+    std::cout << __func__ << ": globalSeq: " << document["globalSeq"].GetInt() << std::endl;
     std::cout << __func__ << ": inside: " << document["inside"].GetString() << std::endl;
     std::cout << __func__ << ": isIntra: " << document["isIntra"].GetBool() << std::endl;
     std::cout << __func__ << ": key: " << document["key"].GetString() << std::endl;
@@ -111,6 +142,7 @@ inline void ParseL2Snapshot(const std::string& json) {
 
 int main() {
     std::string json = FormatL2Snapshot("snapshot", 2, "{\"\"}", true, "123", 1, 5, 213123, "BTFX:BTCUSDT","[{\"\"}]");
+    // std::string json = FormatL2SnapshotSstream("snapshot", 2, "{\"\"}", true, "123", 1, 5, 213123, "BTFX:BTCUSDT","[{\"\"}]");
     std::cout << "Json: " << json << std::endl;
     ParseL2Snapshot(json);
     return 0;
