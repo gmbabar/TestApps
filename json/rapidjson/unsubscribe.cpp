@@ -6,6 +6,7 @@
 #include "rapidjson/stringbuffer.h"
 #include <iostream>
 #include <chrono>
+#include <sstream>
 
 using namespace rapidjson;
 
@@ -17,6 +18,20 @@ using namespace rapidjson;
   "level"           : "L1|L2|L3|S|T|.*"
 }
 ****/
+inline std::string FormatUnsubscribeSstream(const std::string& type, 
+                            const std::string& exchange, 
+                            const std::string& symbol, 
+                            const std::string& level) {
+                                std::ostringstream oss;
+                                oss << "{"
+                                << R"("type":")" << type << R"(")"
+                                << R"(,"exchange":")" << exchange << R"(")"
+                                << R"(,"symbol":")" << symbol << R"(")"
+                                << R"(,"level":")" << level << R"(")"
+                                << "}";
+
+                                return oss.str();
+                            }
 
 /**
  * @brief Json unsubscribe format message
@@ -71,7 +86,8 @@ inline void ParseUnsubscribe(const std::string& json) {
 // - need to make sure performance is equal or better than stringstream
 
 int main() {
-    std::string json = FormatUnsubscribe("subscribe", "BTFX", "BTCUSDT", "L1");
+    // std::string json = FormatUnsubscribe("subscribe", "BTFX", "BTCUSDT", "L1");
+    std::string json = FormatUnsubscribeSstream("subscribe", "BTFX", "BTCUSDT", "L1");
     std::cout << "Json: " << json << std::endl;
     ParseUnsubscribe(json);
     return 0;
