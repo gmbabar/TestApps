@@ -6,6 +6,7 @@
 #include "rapidjson/stringbuffer.h"
 #include <iostream>
 #include <chrono>
+#include <sstream>
 
 using namespace rapidjson;
 
@@ -23,6 +24,30 @@ using namespace rapidjson;
 }
 
 ****/
+inline std::string FormatL2UpdateSstream(const std::string& type, 
+        const std::string& key,
+        const std::string& symbol,
+        const double price,
+        const double qty,
+        const std::string& exchange,
+        const int qlen,
+        const int side,
+        const bool isIntra) {
+
+    std::ostringstream oss;
+        oss << "{"
+        << R"("type":")" << type << R"(")"
+        << R"(,"key":")"<< key << R"(")" 
+        << R"(,"symbol":")"<< symbol << R"(")" 
+        << R"(,"price":)" << price
+        << R"(,"qty":)" << qty
+        << R"(,"exchange":")" << exchange << R"(")"
+        << R"(,"qlen":)" << qlen
+        << R"(,"side":)" << side
+        << R"(,"isIntra":)" << (isIntra == true? "true":"false")
+        << "}";
+    return oss.str();
+    }
 
 /**
  * @brief Json L2Update message
@@ -104,7 +129,8 @@ inline void ParseL2Update(const std::string& json) {
 // - need to make sure performance is equal or better than stringstream
 
 int main() {
-    std::string json = FormatL2Update("L2", "039874", "BTCUSDT", 23123.321, 1231.31, "BTFX", 15, 1, 0);
+    // std::string json = FormatL2Update("L2", "039874", "BTCUSDT", 23123.321, 1231.31, "BTFX", 15, 1, 0);
+    std::string json = FormatL2UpdateSstream("L2", "039874", "BTCUSDT", 23123.321, 1231.31, "BTFX", 15, 1, 0);
     std::cout << "Json: " << json << std::endl;
     ParseL2Update(json);
     return 0;

@@ -6,6 +6,7 @@
 #include "rapidjson/stringbuffer.h"
 #include <iostream>
 #include <chrono>
+#include <sstream>
 
 using namespace rapidjson;
 
@@ -21,6 +22,29 @@ using namespace rapidjson;
     "isIntra": <bool>
 }
 ****/
+inline std::string FormatL1UpdateSstream(const std::string& type, 
+        const std::string& key,
+        const double bid,
+        const double bidqty,
+        const double offer,
+        const double offerqty,
+        const std::string& exchange,
+        const bool isIntra) {
+
+    std::ostringstream oss;
+        oss << "{"
+        << R"("type":")" << type << R"(")"
+        << R"(,"key":")"<< key << R"(")" 
+        << R"(,"bid":)" << bid
+        << R"(,"bidqty":)" << bidqty
+        << R"(,"offer":)" << offer
+        << R"(,"offerqty":)" << offerqty
+        << R"(,"exchange":")" << exchange << R"(")"
+        << R"(,"isIntra":)" << (isIntra == true? "true":"false")
+        << "}";
+
+    return oss.str();
+    }
 
 /**
  * @brief Json L1Update message
@@ -95,7 +119,8 @@ inline void ParseL1Update(const std::string& json) {
 // - need to make sure performance is equal or better than stringstream
 
 int main() {
-    std::string json = FormatL1Update("inside", "2554324", 25.254, 13.354, 76.312, 28.251, "BTFX", true);
+    // std::string json = FormatL1Update("inside", "2554324", 25.254, 13.354, 76.312, 28.251, "BTFX", true);
+    std::string json = FormatL1UpdateSstream("inside", "2554324", 25.254, 13.354, 76.312, 28.251, "BTFX", true);
     std::cout << "Json: " << json << std::endl;
     ParseL1Update(json);
     return 0;

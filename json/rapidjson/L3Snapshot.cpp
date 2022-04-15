@@ -42,15 +42,15 @@ inline std::string FormatL3SnapshotSstream(const std::string& type,
     std::ostringstream oss;
     oss << "{"
     << R"("type":")" << type << R"(")"
-    << R"(, "globalSeq":)" << globalSeq
-    << R"(, "inside":")"<< inside << R"(")" 
-    << R"(, "isIntra":)" << isIntra
-    << R"(, "key":")" << key << R"(")"
-    << R"(, "live":)" << live
-    << R"(, "localSeq":)" << localSeq
-    << R"(, "microsSincEpoch":)" << microsSincEpoch
-    << R"(, "symbol":")" << symbol << R"(")"
-    << R"(, "quotes":")" << quotes << R"(")"
+    << R"(,"globalSeq":)" << globalSeq
+    << R"(,"inside":")"<< inside << R"(")" 
+    << R"(,"isIntra":)" << isIntra
+    << R"(,"key":")" << key << R"(")"
+    << R"(,"live":)" << live
+    << R"(,"localSeq":)" << localSeq
+    << R"(,"microsSincEpoch":)" << microsSincEpoch
+    << R"(,"symbol":")" << symbol << R"(")"
+    << R"(,"quotes":")" << quotes << R"(")"
     << "}";
 
     return oss.str();
@@ -130,7 +130,7 @@ inline void ParseL3Snapshot(const std::string& json) {
     std::cout << __func__ << ": type: " << document["type"].GetString() << std::endl;
     std::cout << __func__ << ": globalSeq: " << document["globalSeq"].GetInt() << std::endl;
     std::cout << __func__ << ": inside: " << document["inside"].GetString() << std::endl;
-    std::cout << __func__ << ": isIntra: " << document["isIntra"].GetBool() << std::endl;
+    std::cout << __func__ << ": isIntra: "<< std::boolalpha << document["isIntra"].GetBool() << std::endl;
     std::cout << __func__ << ": key: " << document["key"].GetString() << std::endl;
     std::cout << __func__ << ": live: " << document["live"].GetInt() << std::endl;
     std::cout << __func__ << ": localSeq: " << document["localSeq"].GetInt() << std::endl;

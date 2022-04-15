@@ -40,7 +40,7 @@ inline std::string FormatL2SnapshotSstream(const std::string& type,
     std::ostringstream oss;
     oss << "{"
     << R"("type":")" << type << R"(")"
-    << R"(, "globalSeq":)" << globalSeq
+    << R"(,"globalSeq":)" << globalSeq
     << R"(,"inside":")"<< inside << R"(")" 
     << R"(,"isIntra":)" << (isIntra == true? "true" : "false")
     << R"(,"key":")" << key << R"(")"
@@ -126,7 +126,7 @@ inline void ParseL2Snapshot(const std::string& json) {
     std::cout << __func__ << ": type: " << document["type"].GetString() << std::endl;
     std::cout << __func__ << ": globalSeq: " << document["globalSeq"].GetInt() << std::endl;
     std::cout << __func__ << ": inside: " << document["inside"].GetString() << std::endl;
-    std::cout << __func__ << ": isIntra: " << document["isIntra"].GetBool() << std::endl;
+    std::cout << __func__ << ": isIntra: "<< std::boolalpha << document["isIntra"].GetBool() << std::endl;
     std::cout << __func__ << ": key: " << document["key"].GetString() << std::endl;
     std::cout << __func__ << ": live: " << document["live"].GetInt() << std::endl;
     std::cout << __func__ << ": localSeq: " << document["localSeq"].GetInt() << std::endl;
@@ -141,8 +141,8 @@ inline void ParseL2Snapshot(const std::string& json) {
 // - need to make sure performance is equal or better than stringstream
 
 int main() {
-    std::string json = FormatL2Snapshot("snapshot", 2, "{\"\"}", true, "123", 1, 5, 213123, "BTFX:BTCUSDT","[{\"\"}]");
-    // std::string json = FormatL2SnapshotSstream("snapshot", 2, "{\"\"}", true, "123", 1, 5, 213123, "BTFX:BTCUSDT","[{\"\"}]");
+    std::string json = FormatL2SnapshotSstream("snapshot", 2, "{\"\"}", true, "123", 1, 5, 213123, "BTFX:BTCUSDT","[{\"\"}]");
+    // std::string json = FormatL2Snapshot("snapshot", 2, "{\"\"}", true, "123", 1, 5, 213123, "BTFX:BTCUSDT","[{\"\"}]");
     std::cout << "Json: " << json << std::endl;
     ParseL2Snapshot(json);
     return 0;

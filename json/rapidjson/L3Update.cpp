@@ -26,7 +26,7 @@ using namespace rapidjson;
 
 ****/
 
-inline std::string FormatL3UpdateSS(const std::string& type,
+inline std::string FormatL3UpdateSstream(const std::string& type,
         const std::string& key,
         const std::string& symbol,
         const std::string& exchange,
@@ -37,17 +37,17 @@ inline std::string FormatL3UpdateSS(const std::string& type,
         const bool isIntra) {
     std::ostringstream oss;
     // std::string res = (isIntra == true) ? "true" : "false";
-    oss << "{"
-    << "\"type\":\"" << type << "\""
-    << ", \"key\":\"" << key << "\""
-    << ", \"symbol\":\"" << symbol << "\""
-    << ", \"exchange\":\"" << exchange << "\""
-    << ", \"id\":\"" << id << "\""
-    << ", \"price\":" << price
-    << ", \"qty\":" << qty
-    << ", \"side\":" << side
-    << ", \"isIntra\":" << (isIntra == true ? "true" : "false")
-    << "}";
+        oss << "{"
+        << R"("type":")" << type << R"(")"
+        << R"(,"key":")"<< key << R"(")" 
+        << R"(,"symbol":)" << symbol << R"(")"
+        << R"(,"exchange":")" << exchange << R"(")"
+        << R"(,"id":)" << id << R"(")"
+        << R"(,"price":)" << price
+        << R"(,"qty":)" << qty
+        << R"(,"side":)" << side
+        << R"(,"isIntra":)" << (isIntra == true? "true":"false")
+        << "}";
 
     return oss.str();
 }
@@ -135,7 +135,7 @@ int main() {
     auto start = std::chrono::steady_clock::now();
     for(int i=0; i<1E6; i++)
     {
-        json = FormatL3UpdateSS("L2", "039874", "BTCUSDT", "BTFX", "99923", 23123.321, 1231.31, 1, 0);
+        json = FormatL3UpdateSstream("L2", "039874", "BTCUSDT", "BTFX", "99923", 23123.321, 1231.31, 1, 0);
     }
     auto end = std::chrono::steady_clock::now();
 
