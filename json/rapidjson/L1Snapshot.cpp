@@ -36,7 +36,7 @@ inline std::string FormatL1SnapshotSstream(const std::string& type,
         const int live,
         const int localSeq,
         const int microsSincEpoch,
-        const std::string& symbol){
+        const std::string& symbol) {
     std::ostringstream oss;
     oss << "{"
     << R"("type":")" << type << R"(")"
@@ -136,9 +136,9 @@ inline void ParseL1Snapshot(const std::string& json) {
 // - need to make sure performance is equal or better than stringstream
 
 int main() {
-    std::string json = FormatL1SnapshotSstream("snapshot", 2, "{\"\"}", true, "123", 1, 5, 213123, "BTFX:BTCUSDT");
     // std::string json = FormatL1Snapshot("snapshot", 2, "{\"\"}", true, "123", 1, 5, 213123, "BTFX:BTCUSDT");
-    std::cout << "Json: " << json << std::endl;
+    std::string json = FormatL1SnapshotSstream("snapshot", 2, "{}", true, "123", 1, 5, 213123, "BTFX:BTCUSDT");
+    std::cout << "Json: " << json << std::endl << std::endl;
     ParseL1Snapshot(json);
     return 0;
 }

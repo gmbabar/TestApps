@@ -44,7 +44,7 @@ inline std::string FormatL3SnapshotSstream(const std::string& type,
     << R"("type":")" << type << R"(")"
     << R"(,"globalSeq":)" << globalSeq
     << R"(,"inside":")"<< inside << R"(")" 
-    << R"(,"isIntra":)" << isIntra
+    << R"(,"isIntra":)" << (isIntra == true? "true":"false")
     << R"(,"key":")" << key << R"(")"
     << R"(,"live":)" << live
     << R"(,"localSeq":)" << localSeq
@@ -145,7 +145,7 @@ inline void ParseL3Snapshot(const std::string& json) {
 // - need to make sure performance is equal or better than stringstream
 
 int main() {
-    std::string json = FormatL3SnapshotSstream("snapshot", 2, "{\"\"}", true, "123", 1, 5, 213123, "BTFX:BTCUSDT","[{\"\"}]");
+    std::string json = FormatL3SnapshotSstream("snapshot", 2, "{""}", true, "123", 1, 5, 213123, "BTFX:BTCUSDT","[{""}]");
     // std::string json = FormatL3Snapshot("snapshot", 2, "{\"\"}", true, "123", 1, 5, 213123, "BTFX:BTCUSDT","[{\"\"}]");
     std::cout << "Json: " << json << std::endl;
     ParseL3Snapshot(json);

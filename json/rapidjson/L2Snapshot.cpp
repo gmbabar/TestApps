@@ -48,7 +48,7 @@ inline std::string FormatL2SnapshotSstream(const std::string& type,
     << R"(,"localSeq":)" << localSeq
     << R"(,"microsSincEpoch":)" << microsSincEpoch
     << R"(,"symbol":")" << symbol << R"(")"
-    << R"(,"quotes":")" << levels << R"(")"
+    << R"(,"levels":")" << levels << R"(")"
     << "}";
 
     return oss.str();
@@ -141,7 +141,7 @@ inline void ParseL2Snapshot(const std::string& json) {
 // - need to make sure performance is equal or better than stringstream
 
 int main() {
-    std::string json = FormatL2SnapshotSstream("snapshot", 2, "{\"\"}", true, "123", 1, 5, 213123, "BTFX:BTCUSDT","[{\"\"}]");
+    std::string json = FormatL2SnapshotSstream("snapshot", 2, "{""}", true, "123", 1, 5, 213123, "BTFX:BTCUSDT","[{""}]");
     // std::string json = FormatL2Snapshot("snapshot", 2, "{\"\"}", true, "123", 1, 5, 213123, "BTFX:BTCUSDT","[{\"\"}]");
     std::cout << "Json: " << json << std::endl;
     ParseL2Snapshot(json);

@@ -6,6 +6,7 @@
 #include "rapidjson/stringbuffer.h"
 #include <iostream>
 #include <chrono>
+#include <sstream>
 
 using namespace rapidjson;
 
@@ -16,6 +17,17 @@ using namespace rapidjson;
   "connected": <0|1>
 }
 ****/
+inline std::string FormatExchangeStatusSstream(const std::string& type, 
+        const std::string& exchange, 
+        int connected) {
+            std::ostringstream oss;
+            oss << "{"
+            << R"("type":")" << type << R"(")"
+            << R"(,"exchange":")" << exchange << R"(")" 
+            << R"(,"connected":)" << connected
+            << "}";
+        return oss.str();
+    }
 
 /**
  * @brief Json ExchangeStatus message
@@ -65,7 +77,8 @@ inline void ParseExchangeStatus(const std::string& json) {
 // - need to make sure performance is equal or better than stringstream
 
 int main() {
-    std::string json = FormatExchangeStatus("exchange_status", "BTFX", 0);
+    // std::string json = FormatExchangeStatus("exchange_status", "BTFX", 0);
+    std::string json = FormatExchangeStatusSstream("exchange_status", "BTFX", 0);
     std::cout << "Json: " << json << std::endl;
     ParseExchangeStatus(json);
     return 0;

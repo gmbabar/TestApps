@@ -6,6 +6,7 @@
 #include "rapidjson/stringbuffer.h"
 #include <iostream>
 #include <chrono>
+#include <sstream>
 
 using namespace rapidjson;
 
@@ -21,6 +22,25 @@ using namespace rapidjson;
     "isIntra": <bool>
 }
 ****/
+inline std::string FormatTradeUpdateSstream(const std::string& type,
+        const std::string& key,
+        const std::string& symbol,
+        const std::string& exchange,
+        const double price,
+        const double qty,
+        const bool isIntra) {
+            std::ostringstream oss;
+            oss << "{"
+            <<R"("type":")"<< type <<R"(")"
+            <<R"(,"key":")"<< key <<R"(")"
+            <<R"(,"symbol":")"<< symbol <<R"(")"
+            <<R"(,"exchange":")"<< exchange <<R"(")"
+            <<R"(,"price":)"<< price 
+            <<R"(,"qty":)"<< qty
+            <<R"(,"isIntra":)"<< (isIntra == true? "true":"false")
+            <<"}";
+        return oss.str();    
+    }
 
 /**
  * @brief Json TradeUpdate message
@@ -90,7 +110,8 @@ inline void ParseTradeUpdate(const std::string& json) {
 // - need to make sure performance is equal or better than stringstream
 
 int main() {
-    std::string json = FormatTradeUpdate("L2", "039874", "BTCUSDT", "BTFX", 23123.321, 1231.31, 0);
+    // std::string json = FormatTradeUpdate("L2", "039874", "BTCUSDT", "BTFX", 23123.321, 1231.31, 0);
+    std::string json = FormatTradeUpdateSstream("L2", "039874", "BTCUSDT", "BTFX", 23123.321, 1231.31, 0);
     std::cout << "Json: " << json << std::endl;
     ParseTradeUpdate(json);
     return 0;

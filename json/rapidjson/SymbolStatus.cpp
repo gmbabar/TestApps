@@ -6,6 +6,7 @@
 #include "rapidjson/stringbuffer.h"
 #include <iostream>
 #include <chrono>
+#include <sstream>
 
 using namespace rapidjson;
 
@@ -16,6 +17,18 @@ using namespace rapidjson;
   "symbol"   : <exchange>:<string>
 }
 ****/
+inline std::string FormatSymbolStatusSstream(const std::string& type, 
+        const std::string& action, 
+        const std::string& symbol) {
+            std::stringstream oss;
+            oss << "{"
+            << R"("type":")" << type << R"(")"
+            << R"(,"action":")" << action << R"(")"
+            << R"(,"symbol":")" << symbol << R"(")"
+            << "}";
+
+        return oss.str();
+    }
 
 /**
  * @brief Json SymbolStatus message
@@ -65,7 +78,8 @@ inline void ParseSymbolStatus(const std::string& json) {
 // - need to make sure performance is equal or better than stringstream
 
 int main() {
-    std::string json = FormatSymbolStatus("security_list_update", "add", "BTFX:BTCUSDT");
+    // std::string json = FormatSymbolStatus("security_list_update", "add", "BTFX:BTCUSDT");
+    std::string json = FormatSymbolStatusSstream("security_list_update", "add", "BTFX:BTCUSDT");
     std::cout << "Json: " << json << std::endl;
     ParseSymbolStatus(json);
     return 0;
