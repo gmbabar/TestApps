@@ -25,7 +25,7 @@ using namespace rapidjson;
 }
 ****/
 
-inline std::string FormatSubscribeSstream(const std::string& type, 
+inline std::string FormatSubscribeStream(const std::string& type, 
     const std::string& exchange, 
     const std::string& symbol, 
     const std::string& level, 
@@ -129,7 +129,7 @@ inline void ParseSubscribe(const std::string& json) {
 
 int main() {
     // std::string json = FormatSubscribe("subscribe", "BTFX", "BTCUSDT", "L1", 10, 10, 10, "T", "true");
-    std::string json = FormatSubscribeSstream("subscribe", "BTFX", "BTCUSDT", "L1", 10, 10, 10, "T", "true");
+    std::string json = FormatSubscribeStream("subscribe", "BTFX", "BTCUSDT", "L1", 10, 10, 10, "T", "true");
     std::cout << "Json: " << json << std::endl;
     ParseSubscribe(json);
     return 0;

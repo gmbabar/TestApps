@@ -20,7 +20,7 @@ using namespace rapidjson;
     "hasT"            : <bool>
 }
 ****/
-inline std::string FormatExchangeCapabilitiesSstream(const std::string& type, 
+inline std::string FormatExchangeCapabilitiesStream(const std::string& type, 
         const std::string& exchange, 
         const bool hasL1,
         const bool hasL2,
@@ -29,13 +29,13 @@ inline std::string FormatExchangeCapabilitiesSstream(const std::string& type,
         // DOM document
         std::ostringstream oss;
         oss << "{"
-        << R"("type":")" << type << R"(")"
-        << R"(, "exchange":")" << exchange << R"(")"
-        << R"(, "hasL1":)" << (hasL1 ==  true ? "true":"false")
-        << R"(, "hasL2":)" << (hasL2 ==  true ? "true":"false")
-        << R"(, "hasL3":)" << (hasL3 ==  true ? "true":"false")
-        << R"(, "hasT":)" << (hasT ==  true ? "true":"false")
-        << "}";
+            << R"("type":")" << type << R"(")"
+            << R"(, "exchange":")" << exchange << R"(")"
+            << R"(, "hasL1":)" << (hasL1 ? "true" : "false")
+            << R"(, "hasL2":)" << (hasL2 ? "true" : "false")
+            << R"(, "hasL3":)" << (hasL3 ? "true" : "false")
+            << R"(, "hasT":)" << (hasT ? "true" : "false")
+            << "}";
         return oss.str();
     }
 
@@ -104,7 +104,7 @@ inline void ParseExchangeCapabilities(const std::string& json) {
 
 int main() {
     // std::string json = FormatExchangeCapabilities("exchange_capabilities", "BTFX", false, true, false, true);
-    std::string json = FormatExchangeCapabilitiesSstream("exchange_capabilities", "BTFX", false, true, false, true);
+    std::string json = FormatExchangeCapabilitiesStream("exchange_capabilities", "BTFX", false, true, false, true);
     std::cout << "Json: " << json << std::endl;
     ParseExchangeCapabilities(json);
     return 0;
