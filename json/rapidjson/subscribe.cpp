@@ -25,30 +25,29 @@ using namespace rapidjson;
 }
 ****/
 
-inline std::string FormatSubscribeStream(const std::string& type, 
-    const std::string& exchange, 
-    const std::string& symbol, 
-    const std::string& level, 
-    const int frequency,
-    const int timeWindow,
-    const int maxLevels,
-    const std::string& bookType,
-    const bool oneShot)
-    {
-        std::ostringstream oss;
-        oss << "{"
-        << R"("type":")" << type << R"(")"
-        << R"(,"exchange":")" << exchange << R"(")"
-        << R"(,"symbol":")" << symbol << R"(")"
-        << R"(,"level":")" << level << R"(")"
-        << R"(,"update_frequency":)"<< frequency 
-        << R"(,"time_window_secs":)" << timeWindow
-        << R"(,"max_levels":)" << maxLevels
-        << R"(,"book_type":")" << bookType << R"(")"
-        << R"(,"one_shot":)" << (oneShot == true? "true" : "false")
-        << "}";
-        return oss.str();
-    }
+inline std::string FormatSubscribe( 
+        const std::string& exchange, 
+        const std::string& symbol, 
+        const std::string& level, 
+        const int frequency,
+        const int timeWindow,
+        const int maxLevels,
+        const std::string& bookType,
+        const bool oneShot) {
+    std::ostringstream oss;
+    oss << "{"
+    << R"("type":"subscribe")"
+    << R"(,"exchange":")" << exchange << R"(")"
+    << R"(,"symbol":")" << symbol << R"(")"
+    << R"(,"level":")" << level << R"(")"
+    << R"(,"update_frequency":)"<< frequency 
+    << R"(,"time_window_secs":)" << timeWindow
+    << R"(,"max_levels":)" << maxLevels
+    << R"(,"book_type":")" << bookType << R"(")"
+    << R"(,"one_shot":)" << (oneShot ? "true" : "false")
+    << "}";
+    return oss.str();
+}
 
 /**
  * @brief Json subscription message
@@ -101,6 +100,23 @@ inline std::string FormatSubscribe(const std::string& type,
     document.Accept(writer);
     // std::cout << buffer.GetString() << std::endl;
     return buffer.GetString();
+}
+
+struct Subscribe {
+    Subscribe(
+        const std::string& exchange,
+        const std::string& symbol,
+        const std::string& level) 
+        : m_exchange(exchange), 
+        m_symbol(symbol), 
+        m_level(level) {        
+    }
+
+private:
+    const std::string m_type = "subscribe";
+    const std::string m_exchange;
+    const std::string m_symbol;
+    const std::string m_level;
 }
 
 /**

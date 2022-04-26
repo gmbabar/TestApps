@@ -10,7 +10,7 @@
 
 using namespace rapidjson;
 
-/**** L1Update Msg Format
+/*** L1Update Msg Format
 {
     "type": "inside",
     "key":[<int64>, <int>],
@@ -21,7 +21,7 @@ using namespace rapidjson;
     "exchange":<string>,
     "isIntra": <bool>
 }
-****/
+***/
 inline std::string FormatL1UpdateSstream(const std::string& type, 
         const std::string& key,
         const double bid,

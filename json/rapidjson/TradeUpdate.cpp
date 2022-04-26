@@ -11,7 +11,6 @@
 using namespace rapidjson;
 
 /**** TradeUpdate Msg Format
-
 {
     "type": "trade",
     "key":[<int64>, <int>],

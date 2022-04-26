@@ -20,7 +20,7 @@ using namespace rapidjson;
     "hasT"            : <bool>
 }
 ****/
-inline std::string FormatExchangeCapabilitiesStream(const std::string& type, 
+inline std::string FormatExchangeCapabilities(const std::string& type, 
         const std::string& exchange, 
         const bool hasL1,
         const bool hasL2,

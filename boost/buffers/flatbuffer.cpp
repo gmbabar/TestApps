@@ -26,6 +26,9 @@ void TestFlatBuffer(boost::beast::flat_buffer &flatbuff, const std::string &msg,
 	    for( int i=0; i<flatbuff.size(); ++i)
 		printf("%c", static_cast<const char*>(cbuf.data())[i]);
 	    printf("\n");
+ 	   // Other options:
+ 	   // - boost::beast::buffers(buffer.data()) 
+	   // - boost::beast::buffers_to_string(buffer.data());
 	}
 	// flatbuff.consume(msg.size());	// in theory, remove bytes from front (make it available)
 	flatbuff.clear();
