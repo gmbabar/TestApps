@@ -6,6 +6,7 @@ websocket_client
 websocket_client_ssl 
 websocket_server 
 websocket_server_ssl
+websockets/websocket_md2client
 *.swp
 *.dSYM
 json/boost/deribit/auth
@@ -16,4 +17,15 @@ json/boost/deribit/neworder
 json/boost/deribit/open
 json/boost/deribit/subscribe
 json/boost/deribit/trade
+json/rapidjson/ExchangeCapabilities
+json/rapidjson/ExchangeStatus
+json/rapidjson/L1Snapshot
+json/rapidjson/L1Update
+json/rapidjson/L2Snapshot
+json/rapidjson/L2Update
+json/rapidjson/L3Snapshot
+json/rapidjson/L3Update
+json/rapidjson/SymbolStatus
+json/rapidjson/TradeUpdate
+json/rapidjson/unsubscribe
 
