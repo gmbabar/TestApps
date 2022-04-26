@@ -71,6 +71,7 @@ public:
         char const* port,
         char const* text)
     {
+std::cout << "Listener:" << __func__ << std::endl;
         // Save these for later
         host_ = host;
         text_ = text;
@@ -89,6 +90,7 @@ public:
         beast::error_code ec,
         tcp::resolver::results_type results)
     {
+std::cout << "Listener:" << __func__ << std::endl;
         if(ec)
             return fail(ec, "resolve");
 
@@ -106,6 +108,7 @@ public:
     void
     on_connect(beast::error_code ec, tcp::resolver::results_type::endpoint_type ep)
     {
+std::cout << "Listener:" << __func__ << std::endl;
         if(ec)
             return fail(ec, "connect");
 
@@ -138,6 +141,7 @@ public:
     void
     on_ssl_handshake(beast::error_code ec)
     {
+std::cout << "Listener:" << __func__ << std::endl;
         if(ec)
             return fail(ec, "ssl_handshake");
 
@@ -169,8 +173,16 @@ public:
     void
     on_handshake(beast::error_code ec)
     {
+std::cout << "Listener:" << __func__ << std::endl;
         if(ec)
             return fail(ec, "handshake");
+
+        //// Read a message into our buffer
+        //ws_.async_read(
+        //    buffer_,
+        //    beast::bind_front_handler(
+        //        &session::on_read,
+        //        shared_from_this()));
 
         // Send the message
         ws_.async_write(
@@ -185,6 +197,7 @@ public:
         beast::error_code ec,
         std::size_t bytes_transferred)
     {
+std::cout << "Listener:" << __func__ << std::endl;
         boost::ignore_unused(bytes_transferred);
 
         if(ec)
@@ -198,11 +211,23 @@ public:
                 shared_from_this()));
     }
 
+    std::string unsubscribe(std::string exchange, std::string symbol, std::string level) {
+        std::ostringstream oss;
+        oss << "{"
+            << R"("type":"unsubscribe")"
+            << R"(,"exchange":")" << exchange << R"(")"
+            << R"(,"symbol":")" << symbol << R"(")"
+            << R"(,"level":")" << level << R"(")"
+            << "}";
+	return oss.str();
+    }
+
     void
     on_read(
         beast::error_code ec,
         std::size_t bytes_transferred)
     {
+        //std::cout << __func__ << ": bytes: " << bytes_transferred << std::endl;
         boost::ignore_unused(bytes_transferred);
 
         if(ec)
@@ -213,6 +238,28 @@ public:
         // Clear the buffer
         buffer_.consume(buffer_.size());
 
+        if (++msg_count_ == 50) {
+            // Send the message
+            ws_.async_write(
+                net::buffer(this->unsubscribe("NBINE", "BTCUSDT", "L2|L1")),
+                beast::bind_front_handler(
+                    &session::on_write,
+                    shared_from_this()));
+	} else if (msg_count_ == 80) {
+            ws_.async_write(
+                net::buffer(text_),
+                beast::bind_front_handler(
+                    &session::on_write,
+                    shared_from_this()));
+	} else {
+            // Read a message into our buffer
+            ws_.async_read(
+                buffer_,
+                beast::bind_front_handler(
+                    &session::on_read,
+                    shared_from_this()));
+	}
+	/*
         if (++msg_count_ == 15) {
             // Close the WebSocket connection
             ws_.async_close(websocket::close_code::normal,
@@ -229,11 +276,13 @@ public:
                     &session::on_write,
                     shared_from_this()));
         }
+	*/
     }
 
     void
     on_close(beast::error_code ec)
     {
+std::cout << "Listener:" << __func__ << std::endl;
         if(ec)
             return fail(ec, "close");
 

@@ -1,6 +1,6 @@
 
 CC = g++
-FLAGS = -g -std=c++11
+FLAGS = -g -std=c++11 -I
 LIBS = -lboost_system -lpthread -lcrypto -lssl
 
 objects = websocket_client websocket_server websocket_client_ssl websocket_server_ssl
