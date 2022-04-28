@@ -8,6 +8,8 @@
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ssl/stream.hpp>
 #include <boost/asio/strand.hpp>
+#include <boost/asio/io_service.hpp>
+#include <boost/bind/bind.hpp>
 #include <cstdlib>
 #include <functional>
 #include <iostream>
@@ -67,45 +69,48 @@ inline std::string unsubscribe(std::string exchange,
 }
 
 // Sends a WebSocket message and prints the response
-class Session : public std::enable_shared_from_this<Session> {
+class Session {
     tcp::resolver resolver_;
-    websocket::stream<ssl::stream<tcp::socket>> ws_;
+    websocket::stream<ssl::stream<tcp::socket>> m_ws;
     boost::beast::flat_buffer buffer_;
     std::string m_host;
+    std::string m_port;
     std::string m_exchange;
     std::string m_symbol;
-    unsigned msg_count_ = 0;
+    std::string m_level;
+    unsigned m_msgCount = 0;
 
 public:
-    // Resolver and socket require an io_context
+    // Resolver and socket require an io_service
     explicit
-    Session(boost::asio::io_context& ioc, ssl::context& ctx)
-        : resolver_(ioc)
-        , ws_(ioc, ctx) {
+    Session(boost::asio::io_service& ioc, ssl::context& ctx,
+            char const* host,
+            char const* port,
+            char const* exchange,
+            char const* symbol,
+            char const* level)
+            : resolver_(ioc)
+            , m_ws(ioc, ctx) {
+        m_host = host;
+        m_port = port;
+        m_exchange = exchange;
+        m_symbol = symbol;
+        m_level = level;
     }
 
     // Start the asynchronous operation
     void
-    start(
-        char const* host,
-        char const* port,
-        char const* exchange,
-        char const* symbol,
-        char const* level) {
+    start() {
         std::cout << "Listener:" << __func__ << std::endl;
         // Save these for later
-        m_host = host;
-        m_exchange = exchange;
-        m_symbol = symbol;
-        m_level = level;
 
         // Look up the domain name
         resolver_.async_resolve(
-            host,
-            port,
+            m_host,
+            m_port.c_str(),
             std::bind(
                 &Session::onResolve,
-                shared_from_this(),
+                this,
                 std::placeholders::_1,
                 std::placeholders::_2));
     }
@@ -121,12 +126,12 @@ public:
 
         // Make the connection on the IP address we get from a lookup
         boost::asio::async_connect(
-            ws_.next_layer().next_layer(),
+            m_ws.next_layer().next_layer(),
             results.begin(),
             results.end(),
             std::bind(
                 &Session::onConnect,
-                shared_from_this(),
+                this,
                 std::placeholders::_1));
     }
 
@@ -138,11 +143,11 @@ public:
             return fail(ec, "connect");
 
         // Perform the SSL handshake
-        ws_.next_layer().async_handshake(
+        m_ws.next_layer().async_handshake(
             ssl::stream_base::client,
             std::bind(
                 &Session::onSslHandshake,
-                shared_from_this(),
+                this,
                 std::placeholders::_1));
     }
 
@@ -154,10 +159,10 @@ public:
             return fail(ec, "ssl_handshake");
 
         // Perform the websocket handshake
-        ws_.async_handshake(m_host, "/",
+        m_ws.async_handshake(m_host, "/",
             std::bind(
                 &Session::onHandshake,
-                shared_from_this(),
+                this,
                 std::placeholders::_1));
     }
 
@@ -169,11 +174,11 @@ public:
             return fail(ec, "handshake");
         
         // Send the message
-        ws_.async_write(
-            boost::asio::buffer(subscribe(m_exchange, m_symbol, m_level)),
+        m_ws.async_write(
+            net::buffer(subscribe(m_exchange, m_symbol, m_level)),
             std::bind(
                 &Session::onWrite,
-                shared_from_this(),
+                this,
                 std::placeholders::_1,
                 std::placeholders::_2));
     }
@@ -190,11 +195,11 @@ public:
             return fail(ec, "write");
         
         // Read a message into our buffer
-        ws_.async_read(
+        m_ws.async_read(
             buffer_,
             std::bind(
                 &Session::onRead,
-                shared_from_this(),
+                this,
                 std::placeholders::_1,
                 std::placeholders::_2));
     }
@@ -209,37 +214,37 @@ public:
         if(ec)
             return fail(ec, "read");
 
-        std::cout << __func__ << "-" << ++msg_count_ << ": " << boost::beast::buffers_to_string(buffer_.data()) << std::endl;
+        std::cout << __func__ << "-" << ++m_msgCount << ": " << boost::beast::buffers_to_string(buffer_.data()) << std::endl;
 
         buffer_.consume(buffer_.size());
 
 
-        if (msg_count_ == 50) {
+        if (m_msgCount == 50) {
             // Send the message
-            ws_.async_write(
-                net::buffer(this->unsubscribe("NBINE", "BTCUSDT", "L2|L1")),
+            m_ws.async_write(
+                net::buffer(unsubscribe(m_exchange, m_symbol, "L2|L1")),
                 std::bind(
                     &Session::onWrite,
-                    shared_from_this(),
+                    this,
                     std::placeholders::_1,
                     std::placeholders::_2));
         } 
-        else if (msg_count_ == 70) {
-                ws_.async_write(
-                    net::buffer(text_),
+        else if (m_msgCount == 70) {
+                m_ws.async_write(
+                    net::buffer(subscribe(m_exchange, m_symbol, m_level)),
                     std::bind(
                         &Session::onWrite,
-                        shared_from_this(),
+                        this,
                         std::placeholders::_1,
                         std::placeholders::_2));
         } 
         else {
                 // Read a message into our buffer
-                ws_.async_read(
+                m_ws.async_read(
                     buffer_,
                     std::bind(
                         &Session::onRead,
-                        shared_from_this(),
+                        this,
                         std::placeholders::_1,
                         std::placeholders::_2));
         }
@@ -279,8 +284,9 @@ int main(int argc, char** argv)
     auto const symbol = argv[4];
     auto const level = argv[5];
 
-    // The io_context is required for all I/O
-    boost::asio::io_context ioc;
+    // The io_service is required for all I/O
+    // boost::asio::io_context ioc;
+    boost::asio::io_service ioc;
 
     // The SSL context is required, and holds certificates
     ssl::context ctx{ssl::context::sslv23_client};
@@ -289,7 +295,8 @@ int main(int argc, char** argv)
     // load_root_certificates(ctx);
 
     // Launch the asynchronous operation
-    std::make_shared<Session>(ioc, ctx)->start(host, port, exchange, symbol, level);
+    auto aSessionPtr = std::make_shared<Session>(ioc, ctx, host, port, exchange, symbol, level);
+    ioc.post(boost::bind(&Session::start, aSessionPtr));
 
     // Run the I/O service. The call will return when
     // the socket is closed.
