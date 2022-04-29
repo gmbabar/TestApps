@@ -193,12 +193,16 @@ int main(int argc, char** argv) {
 
     po::options_description desc("Options");
     bool run_mode = false;
+    std::string host;
+    std::string port;
+    std::string msg;
+    std::string fileName;
     desc.add_options()
         ("help, help", "produce help me")
-        ("host,h", po::value<std::string>(), "host to connect")
-        ("port,p", po::value<std::string>(), "port to listen for clients")
-        ("msg,m", po::value<std::string>(), "message to send")
-        ("file,f", po::value<std::string>(), "filename from where to pick messages")
+        ("host,h", po::value<std::string>(&host), "host to connect")
+        ("port,p", po::value<std::string>(&port), "port to listen for clients")
+        ("msg,m", po::value<std::string>(&msg), "message to send")
+        ("file,f", po::value<std::string>(&fileName), "filename from where to pick messages")
         ;
 
 
@@ -206,16 +210,34 @@ int main(int argc, char** argv) {
     po::store(po::command_line_parser(argc, argv).options(desc).run(), vm);
     po::notify(vm);
 
-    if(vm.count("help"))
-    {
-        std::cout << "Usage:\n\t./websocket_md2passthrough_d -h <host> -p <port> -m <msg>\n\t./websocket_md2passthrough_d -h <host> -p <port> -f <file>\n\t./websocket_md2passthrough_d -hlocalhost -p9443 -m\"{\\\"type\\\":\\\"security_list_request\\\"}\n\t./websocket_md2passthrough_d -hlocalhost -p9443 -fmsg.txt\n";
+    if(vm.count("help") || 
+        (host=="" && port=="" && msg=="") ||
+        (host=="" && port=="" && fileName=="")){
+            
+        std::cout << "Usage:\n\t" <<
+        "./websocket_md2passthrough_d --host <host> --port <port> --msg <msg>\n\t"<<
+        "./websocket_md2passthrough_d --host <host> --port <port> --file <file>\n\t"<<
+        "./websocket_md2passthrough_d --host localhost --port 9443 --msg \"{\\\"type\\\":\\\"security_list_request\\\"}\"\n\t"<<
+        "./websocket_md2passthrough_d --host localhost --port 9443 --file msg.txt\n";
         return 1;
     }
 
-    auto const host = vm["host"].as<std::string>();
-    auto const port = vm["port"].as<std::string>();
-    auto const msg = vm["msg"].as<std::string>();
+    if(msg != "" && fileName !="")
+    {
+        std::cout << "Usage:\n\t" <<
+        "./websocket_md2passthrough_d --host <host> --port <port> --msg <msg>\n\t" <<
+        "./websocket_md2passthrough_d --host <host> --port <port> --file <file>\n\t" <<
+        "./websocket_md2passthrough_d --host localhost --port 9443 --msg \"{\\\"type\\\":\\\"security_list_request\\\"}\"\n\t" <<
+        "./websocket_md2passthrough_d --host localhost --port 9443 --file msg.txt\n";
+        std::cout << "\tToo Many Arguements\n";
+        return 1;
+    }
+
     // auto const filename = vm["file"].as<const char *>();
+
+    if(host!="" && port != "" && msg != "") std::cout << "Host : " << host << ", Port : " << port << ", msg : " << msg << std::endl;
+    if(host!="" && port != "" && fileName != "") std::cout << "Host : " << host << ", Port : " << port << ", fileName : " << fileName << std::endl;
+
 
 
     // The io_service is required for all I/O
@@ -229,8 +251,8 @@ int main(int argc, char** argv) {
     //load_root_certificates(ctx);
 
     // Launch the asynchronous operation
-    auto aSessionPtr = std::make_shared<Session>(ioc, ctx, host, port, msg);
-    ioc.post(boost::bind(&Session::start, aSessionPtr));
+    // auto aSessionPtr = std::make_shared<Session>(ioc, ctx, host, port, msg);
+    // ioc.post(boost::bind(&Session::start, aSessionPtr));
 
     // Run the I/O service. The call will return when
     // the socket is closed.
