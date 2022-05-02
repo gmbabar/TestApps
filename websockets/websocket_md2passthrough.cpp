@@ -19,7 +19,7 @@
 
 using tcp = boost::asio::ip::tcp;                 // from <boost/asio/ip/tcp.hpp>
 namespace po = boost::program_options;            // from <boost/program_options.hpp>
-namespace beast = boost::beast;                   // from <boost/beast.hpp>
+namespace beast = boost::beast;                   // from <boost/beast.hpp>namespace po = boost::program_options;            // from <boost/program_options.hpp>
 namespace http = beast::http;                     // from <boost/beast/http.hpp>
 namespace net = boost::asio;                      // from <boost/asio.hpp>
 namespace ssl = boost::asio::ssl;                 // from <boost/asio/ssl.hpp>
@@ -211,8 +211,8 @@ int main(int argc, char** argv) {
     po::notify(vm);
 
     if(vm.count("help") || 
-        (host=="" && port=="" && msg=="") ||
-        (host=="" && port=="" && fileName=="")){
+        (host=="" || port=="" && msg=="") ||
+        (host=="" || port=="" && fileName=="")){
             
         std::cout << "Usage:\n\t" <<
         "./websocket_md2passthrough_d --host <host> --port <port> --msg <msg>\n\t"<<
@@ -235,8 +235,10 @@ int main(int argc, char** argv) {
 
     // auto const filename = vm["file"].as<const char *>();
 
-    if(host!="" && port != "" && msg != "") std::cout << "Host : " << host << ", Port : " << port << ", msg : " << msg << std::endl;
-    if(host!="" && port != "" && fileName != "") std::cout << "Host : " << host << ", Port : " << port << ", fileName : " << fileName << std::endl;
+    if(host!="" && port != "" && msg != "")
+     std::cout << "Host : " << host << ", Port : " << port << ", msg : " << msg << std::endl;
+    if(host!="" && port != "" && fileName != "") 
+    std::cout << "Host : " << host << ", Port : " << port << ", fileName : " << fileName << std::endl;
 
 
 
