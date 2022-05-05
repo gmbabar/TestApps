@@ -25,7 +25,7 @@ using namespace rapidjson;
 }
 ****/
 
-inline std::string FormatSubscribe( 
+inline std::string FormatSubscribe(std::ostringstream &oss,
         const std::string& exchange, 
         const std::string& symbol, 
         const std::string& level, 
@@ -34,7 +34,7 @@ inline std::string FormatSubscribe(
         const int maxLevels,
         const std::string& bookType,
         const bool oneShot) {
-    std::ostringstream oss;
+    // std::ostringstream oss;
     oss << "{"
     << R"("type":"subscribe")"
     << R"(,"exchange":")" << exchange << R"(")"
@@ -117,7 +117,7 @@ private:
     const std::string m_exchange;
     const std::string m_symbol;
     const std::string m_level;
-}
+};
 
 /**
  * @brief Json subscription parsing
@@ -145,7 +145,8 @@ inline void ParseSubscribe(const std::string& json) {
 
 int main() {
     // std::string json = FormatSubscribe("subscribe", "BTFX", "BTCUSDT", "L1", 10, 10, 10, "T", "true");
-    std::string json = FormatSubscribeStream("subscribe", "BTFX", "BTCUSDT", "L1", 10, 10, 10, "T", "true");
+    std::ostringstream oss;
+    std::string json = FormatSubscribe(oss, "BTFX", "BTCUSDT", "L1", 10, 10, 10, "T", "true");
     std::cout << "Json: " << json << std::endl;
     ParseSubscribe(json);
     return 0;

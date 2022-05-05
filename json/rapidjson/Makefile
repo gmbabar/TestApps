@@ -3,7 +3,7 @@ CC = g++
 FLAGS = -g -std=c++11 -I./include
 LIBS = -lboost_system -lpthread -lcrypto -lssl
 
-objects = loop keyVal neworder subscribe unsubscribe SymbolStatus ExchangeStatus L1Update L2Update L3Update TradeUpdate ExchangeCapabilities L1Snapshot L2Snapshot L3Snapshot
+objects = Md2ConfigParser error loop neworder keyVal subscribe unsubscribe SymbolStatus ExchangeStatus L1Update L2Update L3Update TradeUpdate ExchangeCapabilities L1Snapshot L2Snapshot L3Snapshot
 
 all: $(objects)
 
