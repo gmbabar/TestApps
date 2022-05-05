@@ -1,5 +1,5 @@
 
-// #include "root_certificates.hpp"
+//#include "root_certificates.hpp"
 
 #include <boost/beast/core.hpp>
 #include <boost/beast/websocket.hpp>
@@ -10,6 +10,7 @@
 #include <boost/asio/strand.hpp>
 #include <boost/asio/io_service.hpp>
 #include <boost/bind/bind.hpp>
+#include <boost/program_options.hpp>
 #include <cstdlib>
 #include <functional>
 #include <iostream>
@@ -17,7 +18,8 @@
 #include <string>
 
 using tcp = boost::asio::ip::tcp;                 // from <boost/asio/ip/tcp.hpp>
-namespace beast = boost::beast;                   // from <boost/beast.hpp>
+namespace po = boost::program_options;            // from <boost/program_options.hpp>
+namespace beast = boost::beast;                   // from <boost/beast.hpp>namespace po = boost::program_options;            // from <boost/program_options.hpp>
 namespace http = beast::http;                     // from <boost/beast/http.hpp>
 namespace net = boost::asio;                      // from <boost/asio.hpp>
 namespace ssl = boost::asio::ssl;                 // from <boost/asio/ssl.hpp>
@@ -26,46 +28,8 @@ namespace websocket = boost::beast::websocket;    // from <boost/beast/websocket
 //------------------------------------------------------------------------------
 
 // Report a failure
-void
-fail(boost::system::error_code ec, char const* what)
-{
+void fail(boost::system::error_code ec, char const* what) {
     std::cerr << what << ": " << ec.message() << "\n";
-}
-
-inline std::string subscribe(const std::string& exchange, 
-        const std::string& symbol, 
-        const std::string& level, 
-        const int frequency = 10,
-        const int timeWindow = 10,
-        const int maxLevels = 10,
-        const std::string& bookType = "R",
-        const bool oneShot = true) {
-    std::ostringstream oss;
-    oss << "{"
-    << R"("type":"subscribe")"
-    << R"(,"exchange":")" << exchange << R"(")"
-    << R"(,"symbol":")" << symbol << R"(")"
-    << R"(,"level":")" << level << R"(")"
-    << R"(,"update_frequency":)"<< frequency 
-    << R"(,"time_window_secs":)" << timeWindow
-    << R"(,"max_levels":)" << maxLevels
-    << R"(,"book_type":")" << bookType << R"(")"
-    << R"(,"one_shot":)" << (oneShot ? "true" : "false")
-    << "}";
-    return oss.str();
-}
-
-inline std::string unsubscribe(std::string exchange, 
-        std::string symbol, 
-        std::string level) {
-    std::ostringstream oss;
-    oss << "{"
-        << R"("type":"unsubscribe")"
-        << R"(,"exchange":")" << exchange << R"(")"
-        << R"(,"symbol":")" << symbol << R"(")"
-        << R"(,"level":")" << level << R"(")"
-        << "}";
-    return oss.str();
 }
 
 // Sends a WebSocket message and prints the response
@@ -75,9 +39,7 @@ class Session {
     boost::beast::flat_buffer buffer_;
     std::string m_host;
     std::string m_port;
-    std::string m_exchange;
-    std::string m_symbol;
-    std::string m_level;
+    std::string m_msg;
     unsigned m_msgCount = 0;
 
 public:
@@ -86,21 +48,16 @@ public:
     Session(boost::asio::io_service& ioc, ssl::context& ctx,
             char const* host,
             char const* port,
-            char const* exchange,
-            char const* symbol,
-            char const* level)
+            char const* msg)
             : resolver_(ioc)
             , m_ws(ioc, ctx) {
         m_host = host;
         m_port = port;
-        m_exchange = exchange;
-        m_symbol = symbol;
-        m_level = level;
+        m_msg = msg;
     }
 
     // Start the asynchronous operation
-    void
-    start() {
+    void start() {
         std::cout << "Listener:" << __func__ << std::endl;
         // Save these for later
 
@@ -115,11 +72,9 @@ public:
                 std::placeholders::_2));
     }
 
-    void
-    onResolve(
+    void onResolve(
         boost::system::error_code ec,
-        tcp::resolver::results_type results)
-    {
+        tcp::resolver::results_type results) {
         std::cout << "Listener:" << __func__ << std::endl;
         if(ec)
             return fail(ec, "resolve");
@@ -135,9 +90,7 @@ public:
                 std::placeholders::_1));
     }
 
-    void
-    onConnect(boost::system::error_code ec)
-    {
+    void onConnect(boost::system::error_code ec) {
         std::cout << "Listener:" << __func__ << std::endl;
         if(ec)
             return fail(ec, "connect");
@@ -151,9 +104,7 @@ public:
                 std::placeholders::_1));
     }
 
-    void
-    onSslHandshake(boost::system::error_code ec)
-    {
+    void onSslHandshake(boost::system::error_code ec) {
         std::cout << "Listener:" << __func__ << std::endl;
         if(ec)
             return fail(ec, "ssl_handshake");
@@ -166,16 +117,14 @@ public:
                 std::placeholders::_1));
     }
 
-    void
-    onHandshake(boost::system::error_code ec)
-    {
+    void onHandshake(boost::system::error_code ec) {
         std::cout << "Listener:" << __func__ << std::endl;
         if(ec)
             return fail(ec, "handshake");
         
         // Send the message
         m_ws.async_write(
-            net::buffer(subscribe(m_exchange, m_symbol, m_level)),
+            net::buffer(m_msg),
             std::bind(
                 &Session::onWrite,
                 this,
@@ -183,11 +132,8 @@ public:
                 std::placeholders::_2));
     }
 
-    void
-    onWrite(
-        boost::system::error_code ec,
-        std::size_t bytes_transferred)
-    {
+    void onWrite(boost::system::error_code ec,
+            std::size_t bytes_transferred) {
         std::cout << "Listener:" << __func__ << std::endl;
         boost::ignore_unused(bytes_transferred);
 
@@ -204,11 +150,9 @@ public:
                 std::placeholders::_2));
     }
 
-    void
-    onRead(
+    void onRead(
         boost::system::error_code ec,
-        std::size_t bytes_transferred)
-    {
+        std::size_t bytes_transferred) {
         boost::ignore_unused(bytes_transferred);
 
         if(ec)
@@ -219,40 +163,17 @@ public:
         buffer_.consume(buffer_.size());
 
 
-        if (m_msgCount == 50) {
-            // Send the message
-            m_ws.async_write(
-                net::buffer(unsubscribe(m_exchange, m_symbol, "L2|L1")),
-                std::bind(
-                    &Session::onWrite,
-                    this,
-                    std::placeholders::_1,
-                    std::placeholders::_2));
-        } 
-        else if (m_msgCount == 70) {
-                m_ws.async_write(
-                    net::buffer(subscribe(m_exchange, m_symbol, m_level)),
-                    std::bind(
-                        &Session::onWrite,
-                        this,
-                        std::placeholders::_1,
-                        std::placeholders::_2));
-        } 
-        else {
-                // Read a message into our buffer
-                m_ws.async_read(
-                    buffer_,
-                    std::bind(
-                        &Session::onRead,
-                        this,
-                        std::placeholders::_1,
-                        std::placeholders::_2));
-        }
+        // Read a message into our buffer
+        m_ws.async_read(
+            buffer_,
+            std::bind(
+                &Session::onRead,
+                this,
+                std::placeholders::_1,
+                std::placeholders::_2));
     }
 
-    void
-    onClose(boost::system::error_code ec)
-    {
+    void onClose(boost::system::error_code ec) {
         std::cout << "Listener:" << __func__ << std::endl;
         if(ec)
             return fail(ec, "close");
@@ -267,22 +188,59 @@ public:
 
 //------------------------------------------------------------------------------
 
-int main(int argc, char** argv)
-{
-    // Check command line arguments.
-    if(argc != 6)
-    {
-        std::cerr <<
-            "Usage: " << argv[0] << " <host> <port> <exchange> <symbol> <quote_level>\n" <<
-            "Example:\n" <<
-            "    " << argv[0] << " localhost 9443 NBINE BTCUSDT \"L1|L2|T|S\" \n";
-        return EXIT_FAILURE;
+int main(int argc, char** argv) {
+
+
+    po::options_description desc("Options");
+    bool run_mode = false;
+    std::string host;
+    std::string port;
+    std::string msg;
+    std::string fileName;
+    desc.add_options()
+        ("help, help", "produce help me")
+        ("host,h", po::value<std::string>(&host), "host to connect")
+        ("port,p", po::value<std::string>(&port), "port to listen for clients")
+        ("msg,m", po::value<std::string>(&msg), "message to send")
+        ("file,f", po::value<std::string>(&fileName), "filename from where to pick messages")
+        ;
+
+
+    po::variables_map vm;
+    po::store(po::command_line_parser(argc, argv).options(desc).run(), vm);
+    po::notify(vm);
+
+    if(vm.count("help") || 
+        (host=="" || port=="" && msg=="") ||
+        (host=="" || port=="" && fileName=="")){
+            
+        std::cout << "Usage:\n\t" <<
+        "./websocket_md2passthrough_d --host <host> --port <port> --msg <msg>\n\t"<<
+        "./websocket_md2passthrough_d --host <host> --port <port> --file <file>\n\t"<<
+        "./websocket_md2passthrough_d --host localhost --port 9443 --msg \"{\\\"type\\\":\\\"security_list_request\\\"}\"\n\t"<<
+        "./websocket_md2passthrough_d --host localhost --port 9443 --file msg.txt\n";
+        return 1;
     }
-    auto const host = argv[1];
-    auto const port = argv[2];
-    auto const exchange = argv[3];
-    auto const symbol = argv[4];
-    auto const level = argv[5];
+
+    if(msg != "" && fileName !="")
+    {
+        std::cout << "Usage:\n\t" <<
+        "./websocket_md2passthrough_d --host <host> --port <port> --msg <msg>\n\t" <<
+        "./websocket_md2passthrough_d --host <host> --port <port> --file <file>\n\t" <<
+        "./websocket_md2passthrough_d --host localhost --port 9443 --msg \"{\\\"type\\\":\\\"security_list_request\\\"}\"\n\t" <<
+        "./websocket_md2passthrough_d --host localhost --port 9443 --file msg.txt\n";
+        std::cout << "\tToo Many Arguements\n";
+        return 1;
+    }
+
+    // auto const filename = vm["file"].as<const char *>();
+
+    if(host!="" && port != "" && msg != "")
+     std::cout << "Host : " << host << ", Port : " << port << ", msg : " << msg << std::endl;
+    if(host!="" && port != "" && fileName != "") 
+    std::cout << "Host : " << host << ", Port : " << port << ", fileName : " << fileName << std::endl;
+
+
 
     // The io_service is required for all I/O
     // boost::asio::io_context ioc;
@@ -292,11 +250,11 @@ int main(int argc, char** argv)
     ssl::context ctx{ssl::context::sslv23_client};
 
     // This holds the root certificate used for verification
-    // load_root_certificates(ctx);
+    //load_root_certificates(ctx);
 
     // Launch the asynchronous operation
-    auto aSessionPtr = std::make_shared<Session>(ioc, ctx, host, port, exchange, symbol, level);
-    ioc.post(boost::bind(&Session::start, aSessionPtr));
+    // auto aSessionPtr = std::make_shared<Session>(ioc, ctx, host, port, msg);
+    // ioc.post(boost::bind(&Session::start, aSessionPtr));
 
     // Run the I/O service. The call will return when
     // the socket is closed.
@@ -304,3 +262,5 @@ int main(int argc, char** argv)
 
     return EXIT_SUCCESS;
 }
+
+

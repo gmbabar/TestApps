@@ -28,4 +28,7 @@ json/rapidjson/L3Update
 json/rapidjson/SymbolStatus
 json/rapidjson/TradeUpdate
 json/rapidjson/unsubscribe
+json/rapidjson/Md2ConfigParser
+json/rapidjson/error
+json/rapidjson/loop
 

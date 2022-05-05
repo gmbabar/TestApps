@@ -16,7 +16,7 @@ const string JsonParser(const std::string& jsStr, const std::string& keyToFind)
 
     if(document.HasMember(keyToFind.c_str()))
     {    
-        if(document[keyToFind.c_str()].IsString())
+        if(3)
         {
             return document[keyToFind.c_str()].GetString();
         }

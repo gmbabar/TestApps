@@ -27,8 +27,8 @@ void CheckLatency() {
     d["id"].GetInt();
 
     const Value& res = d["result"];
-    // std::cout << "res:= object? " << std::boolalpha << res.IsObject() << std::endl;
-    // std::cout << "res:= array? " << std::boolalpha << res.IsArray() << std::endl;
+    std::cout << "result:= object? " << std::boolalpha << res.IsObject() << std::endl;
+    std::cout << "result:= array? " << std::boolalpha << res.IsArray() << std::endl;
     // std::cout << std::endl;
     res.IsObject();
     res.IsArray();
@@ -37,17 +37,17 @@ void CheckLatency() {
     // NOTE: only way to parse through all members is either write a Handler class
     //       and implement all types  -or- handler + Reader::IterativeParseNext 
     const Value& trds = res["trades"];
-    // std::cout << "trd:= object? " << std::boolalpha << trds.IsObject() << std::endl;
-    // std::cout << "trd:= array? " << std::boolalpha << trds.IsArray() << std::endl;
+    std::cout << "trades:= object? " << std::boolalpha << trds.IsObject() << std::endl;
+    std::cout << "trades:= array? " << std::boolalpha << trds.IsArray() << std::endl;
     for (SizeType i = 0; i < trds.Size(); i++)  { // rapidjson uses SizeType instead of size_t.
-        // printf("trds[%d] trade_seq := %d\n", i, trds[i]["trade_seq"].GetInt());
-        // printf("trds[%d] state := %s\n", i, trds[i]["state"].GetString());
-        // printf("trds[%d] price := %f\n", i, trds[i]["price"].GetDouble());
-        // printf("trds[%d] order_id := %s\n", i, trds[i]["order_id"].GetString());
-        // printf("trds[%d] label := %s\n", i, trds[i]["label"].GetString());
-        // printf("trds[%d] liquidity := %s\n", i, trds[i]["liquidity"].GetString());
-        // printf("trds[%d] instrument_name := %s\n", i, trds[i]["instrument_name"].GetString());
-        // printf("trds[%d] amount := %f\n", i, trds[i]["amount"].GetDouble());
+        printf("trds[%d] trade_seq := %d\n", i, trds[i]["trade_seq"].GetInt());
+        printf("trds[%d] state := %s\n", i, trds[i]["state"].GetString());
+        printf("trds[%d] price := %f\n", i, trds[i]["price"].GetDouble());
+        printf("trds[%d] order_id := %s\n", i, trds[i]["order_id"].GetString());
+        printf("trds[%d] label := %s\n", i, trds[i]["label"].GetString());
+        printf("trds[%d] liquidity := %s\n", i, trds[i]["liquidity"].GetString());
+        printf("trds[%d] instrument_name := %s\n", i, trds[i]["instrument_name"].GetString());
+        printf("trds[%d] amount := %f\n", i, trds[i]["amount"].GetDouble());
 
         trds[i]["trade_seq"].GetInt();
         trds[i]["state"].GetString();
@@ -82,7 +82,7 @@ void CheckLatency() {
 
 int main() {
     std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
-    for(int i = 0; i<1E4; i++) CheckLatency();
+    for(int i = 0; i<1; i++) CheckLatency();
     std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
     std::chrono::milliseconds timeSpan = std::chrono::duration_cast<std::chrono::milliseconds>(t2.time_since_epoch() - t1.time_since_epoch());
     std::cout << "The time To Parse Was : " << timeSpan.count() << " ms" << std::endl;
