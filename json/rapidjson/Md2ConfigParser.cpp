@@ -12,43 +12,34 @@
 // using namespace rapidjson;
 
 struct Md2ConfigParser {
-    explicit Md2ConfigParser(const char *json) {     // should be testing only.
-        m_doc.Parse(json);
-        if (!m_doc.IsObject()) {
-            std::cout << "Error: failed to parse json: \n" << json << std::endl;
-            throw std::runtime_error("Invalid json");
-        }
-    }
 
-    // explicit Md2ConfigParser(const std::string &fileName) {
-    //     std::ifstream fileStream(fileName);
-    //     std::stringstream buffer;
-    //     if (!fileStream.is_open()) {
-    //         buffer << "Couldn't open configuration file: " << fileName;
-    //         std::cout << "Error: " << buffer.str() << std::endl;
-    //         throw std::runtime_error(buffer.str());
-    //     } 
-    //     buffer << fileStream.rdbuf();
-    //     m_jsonStr = buffer.str();
-    //     m_doc.Parse(m_jsonStr.c_str());
-    // }
+    explicit Md2ConfigParser(const std::string &fileName) {
+        std::ifstream fileStream(fileName);
+        std::stringstream buffer;
+        if (!fileStream.is_open()) {
+            buffer << "Couldn't open configuration file: " << fileName;
+            std::cout << "Error: " << buffer.str() << std::endl;
+            throw std::runtime_error(buffer.str());
+        } 
+        buffer << fileStream.rdbuf();
+        m_jsonStr = buffer.str();
+        m_doc.Parse(m_jsonStr.c_str());
+    }
 
     const rapidjson::Value* getObject(const std::string &aKey, const rapidjson::Value *aValuePtr = nullptr) {
         if (aKey.find(".") != std::string::npos) {
-            const rapidjson::Value *levelVal = aValuePtr != nullptr ? aValuePtr : &m_doc;
+            const rapidjson::Value *levelVal = (aValuePtr != nullptr ? aValuePtr : &m_doc);
             std::vector<std::string> configKeys;
             boost::split(configKeys, aKey, boost::is_any_of("."));
             for (const auto &aConfigKey : configKeys) {
-std::cout << __func__ << ": " << aConfigKey << std::endl;
+                // std::cout << __func__ << ": " << aConfigKey << std::endl;
                 const rapidjson::Value &val = (*levelVal);
                 if (!val.IsObject() || !val.HasMember(aConfigKey.c_str()))
                     return nullptr;
                 levelVal = &val[aConfigKey.c_str()];
             }
-            const rapidjson::Value &val = (*levelVal)[configKeys.back().c_str()];
-            if ((*levelVal)[configKeys.back().c_str()].IsObject())
-                return &(*levelVal)[configKeys.back().c_str()];
-                // return &(*levelVal)[configKeys.back().c_str()].GetObject();
+            if (levelVal->IsObject())
+                return levelVal;
             return nullptr;
         }
 
@@ -61,19 +52,18 @@ std::cout << __func__ << ": " << aConfigKey << std::endl;
 
     const rapidjson::Value* getArray(const std::string &aKey, const rapidjson::Value *aValuePtr = nullptr) {
         if (aKey.find(".") != std::string::npos) {
-            const rapidjson::Value *levelVal = aValuePtr != nullptr ? aValuePtr : &m_doc;
+            const rapidjson::Value *levelVal = (aValuePtr != nullptr ? aValuePtr : &m_doc);
             std::vector<std::string> configKeys;
             boost::split(configKeys, aKey, boost::is_any_of("."));
             for (const auto &aConfigKey : configKeys) {
-std::cout << __func__ << ": " << aConfigKey << std::endl;
+                // std::cout << __func__ << ": " << aConfigKey << std::endl;
                 const rapidjson::Value &val = (*levelVal);
                 if (!val.IsObject() || !val.HasMember(aConfigKey.c_str()))
                     return nullptr;
                 levelVal = &val[aConfigKey.c_str()];
             }
-            const rapidjson::Value &val = (*levelVal)[configKeys.back().c_str()];
-            if ((*levelVal)[configKeys.back().c_str()].IsArray())
-                return &(*levelVal)[configKeys.back().c_str()];
+            if (levelVal->IsArray())
+                return levelVal;
             return nullptr;
         }
 
@@ -84,66 +74,127 @@ std::cout << __func__ << ": " << aConfigKey << std::endl;
         return nullptr;
     }
 
-    const std::string asStr(const std::string &aKey, const std::string &aDefaultValue = "", const rapidjson::Value *aValuePtr = nullptr) {
+    const std::string asStr(const std::string &aKey, const rapidjson::Value *aValuePtr = nullptr, const std::string &aDefaultValue = "") {
         if (aKey.find(".") != std::string::npos) {
-            const rapidjson::Value *levelVal = &m_doc;
+            const rapidjson::Value *levelVal = (aValuePtr != nullptr ? aValuePtr : &m_doc);
             std::vector<std::string> configKeys;
             boost::split(configKeys, aKey, boost::is_any_of("."));
             for (const auto &aConfigKey : configKeys) {
-
-std::cout << __func__ << ": " << aConfigKey << std::endl;
+                // std::cout << __func__ << ": " << aConfigKey << std::endl;
                 const rapidjson::Value &val = (*levelVal);
-if (!val.IsObject()) {
-std::cout << __func__ << ": Not an object: " << std::endl;
-} 
-if (!val.HasMember(aConfigKey.c_str())) {
-std::cout << __func__ << ": key not found: " << aConfigKey << std::endl;
-}
-
                 if (!val.IsObject() || !val.HasMember(aConfigKey.c_str()))
                     return aDefaultValue;
                 levelVal = &val[aConfigKey.c_str()];
             }
-            const rapidjson::Value &val = (*levelVal)[configKeys.back().c_str()];
-            if ((*levelVal)[configKeys.back().c_str()].IsString())
-                return (*levelVal)[configKeys.back().c_str()].GetString();
+            if (levelVal->IsString())
+                return levelVal->GetString();
             return aDefaultValue;
         }
 
-        if ( m_doc.HasMember(aKey.c_str()) && m_doc[aKey.c_str()].IsString() ) {
-            return m_doc[aKey.c_str()].GetString();
+        const rapidjson::Value &jsonVal = (aValuePtr != nullptr ? *aValuePtr : m_doc);
+        if ( jsonVal.HasMember(aKey.c_str()) && jsonVal[aKey.c_str()].IsString() ) {
+            return jsonVal[aKey.c_str()].GetString();
         }
         return aDefaultValue;
     }
 
-    int asInt(const std::string &aKey, int aDefaultValue = 0) {
-        if ( m_doc.HasMember(aKey.c_str()) && m_doc[aKey.c_str()].IsInt() ) {
-            return m_doc[aKey.c_str()].GetInt();
+    int asInt(const std::string &aKey, const rapidjson::Value *aValuePtr = nullptr, int aDefaultValue = 0) {
+        if (aKey.find(".") != std::string::npos) {
+            const rapidjson::Value *levelVal = (aValuePtr != nullptr ? aValuePtr : &m_doc);
+            std::vector<std::string> configKeys;
+            boost::split(configKeys, aKey, boost::is_any_of("."));
+            for (const auto &aConfigKey : configKeys) {
+                // std::cout << __func__ << ": " << aConfigKey << std::endl;
+                const rapidjson::Value &val = (*levelVal);
+                if (!val.IsObject() || !val.HasMember(aConfigKey.c_str()))
+                    return aDefaultValue;
+                levelVal = &val[aConfigKey.c_str()];
+            }
+            if (levelVal->IsInt())
+                return levelVal->GetInt();
+            return aDefaultValue;
+        }
+
+        const rapidjson::Value &jsonVal = (aValuePtr != nullptr ? *aValuePtr : m_doc);
+        if ( jsonVal.HasMember(aKey.c_str()) && jsonVal[aKey.c_str()].IsInt() ) {
+            return jsonVal[aKey.c_str()].GetInt();
         }
         return aDefaultValue;
     }
 
-    long asLong(const std::string &aKey, long aDefaultValue = 0) {
-        if ( m_doc.HasMember(aKey.c_str()) && m_doc[aKey.c_str()].IsInt64() ) {
-            return m_doc[aKey.c_str()].GetInt64();
+    long asLong(const std::string &aKey, const rapidjson::Value *aValuePtr = nullptr, long aDefaultValue = 0) {
+        if (aKey.find(".") != std::string::npos) {
+            const rapidjson::Value *levelVal = (aValuePtr != nullptr ? aValuePtr : &m_doc);
+            std::vector<std::string> configKeys;
+            boost::split(configKeys, aKey, boost::is_any_of("."));
+            for (const auto &aConfigKey : configKeys) {
+                // std::cout << __func__ << ": " << aConfigKey << std::endl;
+                const rapidjson::Value &val = (*levelVal);
+                if (!val.IsObject() || !val.HasMember(aConfigKey.c_str()))
+                    return aDefaultValue;
+                levelVal = &val[aConfigKey.c_str()];
+            }
+            if (levelVal->IsInt64())
+                return levelVal->GetInt64();
+            return aDefaultValue;
+        }
+
+        const rapidjson::Value &jsonVal = (aValuePtr != nullptr ? *aValuePtr : m_doc);
+        if ( jsonVal.HasMember(aKey.c_str()) && jsonVal[aKey.c_str()].IsInt64() ) {
+            return jsonVal[aKey.c_str()].GetInt64();
         }
         return aDefaultValue;
     }
 
-    double asDouble(const std::string &aKey, double aDefaultValue = 0) {
-        if ( m_doc.HasMember(aKey.c_str()) && m_doc[aKey.c_str()].IsDouble() ) {
-            return m_doc[aKey.c_str()].GetDouble();
+    double asDouble(const std::string &aKey, const rapidjson::Value *aValuePtr = nullptr, double aDefaultValue = 0) {
+        if (aKey.find(".") != std::string::npos) {
+            const rapidjson::Value *levelVal = (aValuePtr != nullptr ? aValuePtr : &m_doc);
+            std::vector<std::string> configKeys;
+            boost::split(configKeys, aKey, boost::is_any_of("."));
+            for (const auto &aConfigKey : configKeys) {
+                // std::cout << __func__ << ": " << aConfigKey << std::endl;
+                const rapidjson::Value &val = (*levelVal);
+                if (!val.IsObject() || !val.HasMember(aConfigKey.c_str()))
+                    return aDefaultValue;
+                levelVal = &val[aConfigKey.c_str()];
+            }
+            if (levelVal->IsDouble())
+                return levelVal->GetDouble();
+            return aDefaultValue;
+        }
+
+        const rapidjson::Value &jsonVal = (aValuePtr != nullptr ? *aValuePtr : m_doc);
+        if ( jsonVal.HasMember(aKey.c_str()) && jsonVal[aKey.c_str()].IsDouble() ) {
+            return jsonVal[aKey.c_str()].GetDouble();
         }
         return aDefaultValue;
     }
 
-    bool asBool(const std::string &aKey, bool aDefaultValue = false) {
-        if ( m_doc.HasMember(aKey.c_str()) && m_doc[aKey.c_str()].IsBool() ) {
-            return m_doc[aKey.c_str()].GetBool();
+    bool asBool(const std::string &aKey, const rapidjson::Value *aValuePtr = nullptr, bool aDefaultValue = false) {
+        if (aKey.find(".") != std::string::npos) {
+            const rapidjson::Value *levelVal = (aValuePtr != nullptr ? aValuePtr : &m_doc);
+            std::vector<std::string> configKeys;
+            boost::split(configKeys, aKey, boost::is_any_of("."));
+            for (const auto &aConfigKey : configKeys) {
+                // std::cout << __func__ << ": " << aConfigKey << std::endl;
+                const rapidjson::Value &val = (*levelVal);
+                if (!val.IsObject() || !val.HasMember(aConfigKey.c_str()))
+                    return aDefaultValue;
+                levelVal = &val[aConfigKey.c_str()];
+            }
+            if (levelVal->IsBool())
+                return levelVal->GetBool();
+            return aDefaultValue;
+        }
+
+        const rapidjson::Value &jsonVal = (aValuePtr != nullptr ? *aValuePtr : m_doc);
+        if ( jsonVal.HasMember(aKey.c_str()) && jsonVal[aKey.c_str()].IsBool() ) {
+            return jsonVal[aKey.c_str()].GetBool();
         }
         return aDefaultValue;
     }
 
+    // TODO: future implementation
     // bool asTimeDuration(const std::string &aKey, bool aDefaultValue = false) {
     //     if ( m_doc.HasMember(aKey.c_str()) && m_doc[aKey.c_str()].IsString() ) {
     //         return m_doc[aKey.c_str()].GetString();
@@ -153,12 +204,153 @@ std::cout << __func__ << ": key not found: " << aConfigKey << std::endl;
 
 
 private:
-    // static const char* kTypeNames[] = { "Null", "False", "True", "Object", "Array", "String", "Number" };
     rapidjson::Document m_doc;
-    std::string m_jonStr;
+    std::string m_jsonStr;
 };
 
-// Test.
+enum Md2ConfigType {
+    TypeArray,
+    TypeObject,
+    TypeString,
+    TypeInt,
+    TypeLong,
+    TypeDouble,
+    TypeBool,
+    TypeConstant,
+    TypeDefault
+};
+
+struct Md2ConfigRule {
+    Md2ConfigRule(std::string name, Md2ConfigType type) :
+        m_configName(name), m_configType(type) {}
+    
+    Md2ConfigRule(const Md2ConfigRule& rule) :
+        m_configName(rule.m_configName), m_configType(rule.m_configType) {}
+
+    const std::string& configName() const {
+        return m_configName;
+    }
+    
+    const Md2ConfigType& configType() const {
+        return m_configType;
+    }
+    
+private:
+    std::string m_configName;
+    Md2ConfigType m_configType;
+};
+
+struct Md2ConfigMapper {
+    explicit Md2ConfigMapper (const std::string &aFileName) : m_parser(aFileName) {
+        /**
+         *  "Pf.AppID" -> "APP_CODE"
+         *  "Pf.SubAppID" -> "APP_CODE"
+         *  "Pf.FakeAppID" -> "APP_CODE"
+         *  "LogDir" -> "LOGGING.log_path"
+         *  "Pf.PricefeedName" -> "APP_ID"
+         */
+        m_configMappingRules["LogDir"].emplace_back("LOGGING.log_path", Md2ConfigType::TypeString);
+        m_configMappingRules["Pf.AppID"].emplace_back("APP_CODE", Md2ConfigType::TypeLong);
+        m_configMappingRules["Pf.SubAppID"].emplace_back("APP_CODE", Md2ConfigType::TypeLong);
+        m_configMappingRules["Pf.FakeAppID"].emplace_back("APP_CODE", Md2ConfigType::TypeLong);
+        m_configMappingRules["Pf.PricefeedName"].emplace_back("APP_ID", Md2ConfigType::TypeLong);
+
+        /**
+         * Pf.BfcEndpoint -> { CONNECTORS  { configs [ {exchange_mnemonic} ] } }
+         */
+        m_configMappingRules["Pf.BfcEndpoint"].emplace_back("CONNECTORS.configs", Md2ConfigType::TypeArray);
+        m_configMappingRules["Pf.BfcEndpoint"].emplace_back("exchange_mnemonic", Md2ConfigType::TypeString);
+
+        /**
+         * <Exchange>.Mcast.Endpoint -> MD_SERVICE.[listen_ip : listen_port]
+         */
+        m_configMappingRules[".Mcast.Endpoint"].emplace_back("MD_SERVICE.listen_ip", Md2ConfigType::TypeString);
+        m_configMappingRules[".Mcast.Endpoint"].emplace_back(":", Md2ConfigType::TypeConstant);
+        m_configMappingRules[".Mcast.Endpoint"].emplace_back("MD_SERVICE.listen_port", Md2ConfigType::TypeString);
+
+        /** 
+         * <Exchange>.WebSocket.NumConcurrentSessions = 10  ->  ---
+         * <Exchange>.WebSocket.Target -> { CONNECTORS  { configs [ {endpoint} ] } }
+         * <Exchange>.WebSocket.ReconnectDelay ->  { CONNECTORS  { configs [ {retry_interval_secs} ] } }
+         */
+        m_configMappingRules[".WebSocket.NumConcurrentSessions"].emplace_back("10", Md2ConfigType::TypeDefault);
+        m_configMappingRules[".WebSocket.Target"].emplace_back("CONNECTORS.configs", Md2ConfigType::TypeArray);
+        m_configMappingRules[".WebSocket.Target"].emplace_back("endpoint", Md2ConfigType::TypeString);
+        m_configMappingRules[".WebSocket.ReconnectDelay"].emplace_back("CONNECTORS.configs", Md2ConfigType::TypeArray);
+        m_configMappingRules[".WebSocket.ReconnectDelay"].emplace_back("retry_interval_secs", Md2ConfigType::TypeInt);
+
+        /**
+         * <Exchange>.WebSocket.Endpoint -> { CONNECTORS  { configs [ {host : port} ] } }
+         */
+        m_configMappingRules[".WebSocket.Endpoint"].emplace_back("CONNECTORS.configs", Md2ConfigType::TypeArray);
+        m_configMappingRules[".WebSocket.Endpoint"].emplace_back("host", Md2ConfigType::TypeString);
+        m_configMappingRules[".WebSocket.Endpoint"].emplace_back(":", Md2ConfigType::TypeConstant);
+        // m_configMappingRules[".WebSocket.Endpoint"].emplace_back("CONNECTORS.configs", Md2ConfigType::TypeArray);
+        m_configMappingRules[".WebSocket.Endpoint"].emplace_back("port", Md2ConfigType::TypeString);
+    }
+
+    std::string asStr(const std::string &aConfigKey, const std::string &aDefaultValue = "") {
+        // remove exchange name if any
+        std::string configKey = aConfigKey;
+        size_t bItr = aConfigKey.find(".");
+        size_t eItr = aConfigKey.find_last_of(".");
+        if (bItr != std::string::npos && 
+            eItr != std::string::npos &&
+            bItr != eItr && bItr != 0) {
+            configKey = aConfigKey.substr(bItr);
+        }
+        const auto crItr = m_configMappingRules.find(configKey);
+        if (crItr == m_configMappingRules.end())
+            return aDefaultValue;
+
+        const rapidjson::Value *lastValuePtr = nullptr;   // composite value
+        Md2ConfigType lastValueType = Md2ConfigType::TypeDefault;
+        std::string result;
+        for (const auto& rule : crItr->second) {
+            switch (rule.configType()) {
+            case Md2ConfigType::TypeArray:
+                lastValuePtr = m_parser.getArray(rule.configName());
+                lastValueType = rule.configType();
+                break;
+            case Md2ConfigType::TypeObject:
+                lastValuePtr = m_parser.getObject(rule.configName());
+                lastValueType = rule.configType();
+                break;
+            case Md2ConfigType::TypeString:
+                if (lastValuePtr != nullptr && lastValueType == Md2ConfigType::TypeArray) {
+                    if (lastValuePtr->Size() > 0)
+                        result += m_parser.asStr(rule.configName(), &(*lastValuePtr)[0]);
+                    else
+                        return aDefaultValue;    // unexpected
+                }
+                else
+                    result += m_parser.asStr(rule.configName(), lastValuePtr);
+                break;
+            case Md2ConfigType::TypeInt:
+                break;
+            case Md2ConfigType::TypeLong:
+                break;
+            case Md2ConfigType::TypeDouble:
+                break;
+            case Md2ConfigType::TypeBool:
+                break;
+            case Md2ConfigType::TypeConstant:
+                result += rule.configName();
+                break;
+            default:        // TypeDefault as well.
+                return aDefaultValue;
+            }
+        }
+        return result.empty() ? aDefaultValue : result;
+    }
+
+private:
+    Md2ConfigParser m_parser;
+    std::map<std::string, std::vector<Md2ConfigRule>> m_configMappingRules;
+
+};
+
+// Test Code.
 int main() {
     const char* json = R"(
 {
@@ -212,13 +404,29 @@ int main() {
 }
 )";
 
-    Md2ConfigParser parser(json);
+    std::string fileName("/tmp/md2_config_parser.cfg");
+    std::ofstream ofs(fileName);
+    ofs << json;
+    ofs.close();
+
+    // Test-1: Generic Parser
+    Md2ConfigParser parser(fileName);
     std::cout << __func__ << ": ROLE: " << parser.asStr("ROLE") << std::endl;
     const auto * array = parser.getArray("CONNECTORS.configs");
     if (array != nullptr) {
         std::cout << __func__ << "received array of size: " << array->Size() << std::endl;
-        std::cout << __func__ << ": exchange_mnemonic: " << parser.asStr("exchange_mnemonic", "", &(*array)[0]) << std::endl;
+        std::cout << __func__ << ": exchange_mnemonic: " << parser.asStr("exchange_mnemonic", &(*array)[0]) << std::endl;
+        std::cout << __func__ << ": host: " << parser.asStr("host", &(*array)[0]) << std::endl;
+        std::cout << __func__ << ": port: " << parser.asInt("port", &(*array)[0]) << std::endl;
+        std::cout << __func__ << ": use_sni_hostname_for_ssl: " << std::boolalpha << parser.asBool("use_sni_hostname_for_ssl", &(*array)[0]) << std::endl;
     }
-    // std::cout << __func__ << ": ROLE: " << parser.asStr("CONNECTORS.configs.exchange_mnemonic") << std::endl;
+    std::cout << "----------------------------------------\n";
+
+    // Test-2: MD2 Mapper
+    Md2ConfigMapper mapper(fileName);
+    auto endpoint = mapper.asStr("Bitfinex.Mcast.Endpoint");
+    std::cout << __func__ << ": Mcast Endpoint: " << endpoint << std::endl;
+    endpoint = mapper.asStr("Bitfinex.WebSocket.Endpoint");
+    std::cout << __func__ << ": WebSocket Endpoint: " << endpoint << std::endl;
     return 0;
 }
