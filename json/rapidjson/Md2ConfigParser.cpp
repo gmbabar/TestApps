@@ -8,6 +8,9 @@
 #include <iostream>
 #include <fstream>
 #include <chrono>
+#include <sstream>
+#include <vector>
+#include <map>
 
 // using namespace rapidjson;
 
