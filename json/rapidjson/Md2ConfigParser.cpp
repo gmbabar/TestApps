@@ -1,6 +1,3 @@
-// JSON simple example
-// This example does not handle errors.
-
 #include "rapidjson/document.h"
 #include "rapidjson/writer.h"
 #include "rapidjson/stringbuffer.h"
@@ -11,8 +8,7 @@
 #include <sstream>
 #include <vector>
 #include <map>
-
-// using namespace rapidjson;
+#include "boost/date_time/posix_time/posix_time.hpp" 
 
 struct Md2ConfigParser {
 
@@ -223,11 +219,11 @@ enum Md2ConfigType {
     TypeDefault
 };
 
-struct Md2ConfigRule {
-    Md2ConfigRule(std::string name, Md2ConfigType type) :
+struct Md2ConfigRuleItem {
+    Md2ConfigRuleItem(std::string name, Md2ConfigType type) :
         m_configName(name), m_configType(type) {}
     
-    Md2ConfigRule(const Md2ConfigRule& rule) :
+    Md2ConfigRuleItem(const Md2ConfigRuleItem& rule) :
         m_configName(rule.m_configName), m_configType(rule.m_configType) {}
 
     const std::string& configName() const {
@@ -251,12 +247,14 @@ struct Md2ConfigMapper {
          *  "Pf.FakeAppID" -> "APP_CODE"
          *  "LogDir" -> "LOGGING.log_path"
          *  "Pf.PricefeedName" -> "APP_ID"
+         *  "Pf.IsProd" -> ---
          */
         m_configMappingRules["LogDir"].emplace_back("LOGGING.log_path", Md2ConfigType::TypeString);
         m_configMappingRules["Pf.AppID"].emplace_back("APP_CODE", Md2ConfigType::TypeLong);
         m_configMappingRules["Pf.SubAppID"].emplace_back("APP_CODE", Md2ConfigType::TypeLong);
         m_configMappingRules["Pf.FakeAppID"].emplace_back("APP_CODE", Md2ConfigType::TypeLong);
         m_configMappingRules["Pf.PricefeedName"].emplace_back("APP_ID", Md2ConfigType::TypeLong);
+        m_configMappingRules["Pf.IsProd"].emplace_back("false", Md2ConfigType::TypeConstant);
 
         /**
          * Pf.BfcEndpoint -> { CONNECTORS  { configs [ {exchange_mnemonic} ] } }
@@ -276,7 +274,7 @@ struct Md2ConfigMapper {
          * <Exchange>.WebSocket.Target -> { CONNECTORS  { configs [ {endpoint} ] } }
          * <Exchange>.WebSocket.ReconnectDelay ->  { CONNECTORS  { configs [ {retry_interval_secs} ] } }
          */
-        m_configMappingRules[".WebSocket.NumConcurrentSessions"].emplace_back("10", Md2ConfigType::TypeDefault);
+        m_configMappingRules[".WebSocket.NumConcurrentSessions"].emplace_back("10", Md2ConfigType::TypeConstant);
         m_configMappingRules[".WebSocket.Target"].emplace_back("CONNECTORS.configs", Md2ConfigType::TypeArray);
         m_configMappingRules[".WebSocket.Target"].emplace_back("endpoint", Md2ConfigType::TypeString);
         m_configMappingRules[".WebSocket.ReconnectDelay"].emplace_back("CONNECTORS.configs", Md2ConfigType::TypeArray);
@@ -289,7 +287,7 @@ struct Md2ConfigMapper {
         m_configMappingRules[".WebSocket.Endpoint"].emplace_back("host", Md2ConfigType::TypeString);
         m_configMappingRules[".WebSocket.Endpoint"].emplace_back(":", Md2ConfigType::TypeConstant);
         // m_configMappingRules[".WebSocket.Endpoint"].emplace_back("CONNECTORS.configs", Md2ConfigType::TypeArray);
-        m_configMappingRules[".WebSocket.Endpoint"].emplace_back("port", Md2ConfigType::TypeString);
+        m_configMappingRules[".WebSocket.Endpoint"].emplace_back("port", Md2ConfigType::TypeInt);
     }
 
     std::string asStr(const std::string &aConfigKey, const std::string &aDefaultValue = "") {
@@ -330,12 +328,44 @@ struct Md2ConfigMapper {
                     result += m_parser.asStr(rule.configName(), lastValuePtr);
                 break;
             case Md2ConfigType::TypeInt:
+                if (lastValuePtr != nullptr && lastValueType == Md2ConfigType::TypeArray) {
+                    if (lastValuePtr->Size() > 0)
+                        result += std::to_string(m_parser.asInt(rule.configName(), &(*lastValuePtr)[0]));
+                    else
+                        return aDefaultValue;    // unexpected
+                }
+                else
+                    result += std::to_string(m_parser.asInt(rule.configName(), lastValuePtr));
                 break;
             case Md2ConfigType::TypeLong:
+                if (lastValuePtr != nullptr && lastValueType == Md2ConfigType::TypeArray) {
+                    if (lastValuePtr->Size() > 0)
+                        result += std::to_string(m_parser.asLong(rule.configName(), &(*lastValuePtr)[0]));
+                    else
+                        return aDefaultValue;    // unexpected
+                }
+                else
+                    result += std::to_string(m_parser.asLong(rule.configName(), lastValuePtr));
                 break;
             case Md2ConfigType::TypeDouble:
+                if (lastValuePtr != nullptr && lastValueType == Md2ConfigType::TypeArray) {
+                    if (lastValuePtr->Size() > 0)
+                        result += std::to_string(m_parser.asDouble(rule.configName(), &(*lastValuePtr)[0]));
+                    else
+                        return aDefaultValue;    // unexpected
+                }
+                else
+                    result += std::to_string(m_parser.asDouble(rule.configName(), lastValuePtr));
                 break;
             case Md2ConfigType::TypeBool:
+                if (lastValuePtr != nullptr && lastValueType == Md2ConfigType::TypeArray) {
+                    if (lastValuePtr->Size() > 0) 
+                        result += std::to_string(m_parser.asBool(rule.configName(), &(*lastValuePtr)[0]));
+                    else
+                        return aDefaultValue;    // unexpected
+                }
+                else 
+                    result += std::to_string(m_parser.asBool(rule.configName(), lastValuePtr));
                 break;
             case Md2ConfigType::TypeConstant:
                 result += rule.configName();
@@ -347,9 +377,252 @@ struct Md2ConfigMapper {
         return result.empty() ? aDefaultValue : result;
     }
 
+    int asInt(const std::string &aConfigKey, const int aDefaultValue = 0) {
+        // remove exchange name if any
+        std::string configKey = aConfigKey;
+        size_t bItr = aConfigKey.find(".");
+        size_t eItr = aConfigKey.find_last_of(".");
+        if (bItr != std::string::npos && 
+            eItr != std::string::npos &&
+            bItr != eItr && bItr != 0) {
+            configKey = aConfigKey.substr(bItr);
+        }
+        const auto crItr = m_configMappingRules.find(configKey);
+        if (crItr == m_configMappingRules.end())
+            return aDefaultValue;
+
+        const rapidjson::Value *lastValuePtr = nullptr;   // composite value
+        Md2ConfigType lastValueType = Md2ConfigType::TypeDefault;
+        // std::string result;
+        for (const auto& rule : crItr->second) {
+            switch (rule.configType()) {
+            case Md2ConfigType::TypeArray:
+                lastValuePtr = m_parser.getArray(rule.configName());
+                lastValueType = rule.configType();
+                break;
+            case Md2ConfigType::TypeObject:
+                lastValuePtr = m_parser.getObject(rule.configName());
+                lastValueType = rule.configType();
+                break;
+            case Md2ConfigType::TypeString:
+                if (lastValuePtr != nullptr && lastValueType == Md2ConfigType::TypeArray) {
+                    if (lastValuePtr->Size() > 0)
+                        return std::stoi(m_parser.asStr(rule.configName(), &(*lastValuePtr)[0]));
+                    else
+                        return aDefaultValue;    // unexpected
+                }
+                else
+                    return std::stoi(m_parser.asStr(rule.configName(), lastValuePtr));
+                break;
+            case Md2ConfigType::TypeInt:
+                if (lastValuePtr != nullptr && lastValueType == Md2ConfigType::TypeArray) {
+                    if (lastValuePtr->Size() > 0)
+                        return m_parser.asInt(rule.configName(), &(*lastValuePtr)[0]);
+                    else
+                        return aDefaultValue;    // unexpected
+                }
+                else
+                    return m_parser.asInt(rule.configName(), lastValuePtr);
+                break;
+            case Md2ConfigType::TypeLong:
+                if (lastValuePtr != nullptr && lastValueType == Md2ConfigType::TypeArray) {
+                    if (lastValuePtr->Size() > 0)
+                        return static_cast<int>(m_parser.asLong(rule.configName(), &(*lastValuePtr)[0]));
+                    else
+                        return aDefaultValue;    // unexpected
+                }
+                else
+                    return static_cast<int>(m_parser.asLong(rule.configName(), lastValuePtr));
+                break;
+            case Md2ConfigType::TypeDouble:
+                if (lastValuePtr != nullptr && lastValueType == Md2ConfigType::TypeArray) {
+                    if (lastValuePtr->Size() > 0)
+                        return static_cast<int>(m_parser.asDouble(rule.configName(), &(*lastValuePtr)[0]));
+                    else
+                        return aDefaultValue;    // unexpected
+                }
+                else
+                    return static_cast<int>(m_parser.asDouble(rule.configName(), lastValuePtr));
+                break;
+            case Md2ConfigType::TypeConstant:
+                // user can override hardcoded values.
+                if (aDefaultValue == 0 && rule.configName().find_first_not_of("-0123456789") == std::string::npos)
+                    return std::stoi(rule.configName());
+                return aDefaultValue;
+            default:        // TypeDefault as well.
+                return aDefaultValue;
+            }
+        }
+        return aDefaultValue;
+    }
+
+    long asLong(const std::string &aConfigKey, const long aDefaultValue = 0) {
+        // remove exchange name if any
+        std::string configKey = aConfigKey;
+        size_t bItr = aConfigKey.find(".");
+        size_t eItr = aConfigKey.find_last_of(".");
+        if (bItr != std::string::npos && 
+            eItr != std::string::npos &&
+            bItr != eItr && bItr != 0) {
+            configKey = aConfigKey.substr(bItr);
+        }
+        const auto crItr = m_configMappingRules.find(configKey);
+        if (crItr == m_configMappingRules.end())
+            return aDefaultValue;
+
+        const rapidjson::Value *lastValuePtr = nullptr;   // composite value
+        Md2ConfigType lastValueType = Md2ConfigType::TypeDefault;
+        for (const auto& rule : crItr->second) {
+            switch (rule.configType()) {
+            case Md2ConfigType::TypeArray:
+                lastValuePtr = m_parser.getArray(rule.configName());
+                lastValueType = rule.configType();
+                break;
+            case Md2ConfigType::TypeObject:
+                lastValuePtr = m_parser.getObject(rule.configName());
+                lastValueType = rule.configType();
+                break;
+            case Md2ConfigType::TypeString:
+                if (lastValuePtr != nullptr && lastValueType == Md2ConfigType::TypeArray) {
+                    if (lastValuePtr->Size() > 0)
+                        return std::stol(m_parser.asStr(rule.configName(), &(*lastValuePtr)[0]));
+                    else
+                        return aDefaultValue;    // unexpected
+                }
+                else
+                    return std::stol(m_parser.asStr(rule.configName(), lastValuePtr));
+                break;
+            case Md2ConfigType::TypeInt:
+                if (lastValuePtr != nullptr && lastValueType == Md2ConfigType::TypeArray) {
+                    if (lastValuePtr->Size() > 0)
+                        return m_parser.asInt(rule.configName(), &(*lastValuePtr)[0]);
+                    else
+                        return aDefaultValue;    // unexpected
+                }
+                else
+                    return m_parser.asInt(rule.configName(), lastValuePtr);
+                break;
+            case Md2ConfigType::TypeLong:
+                if (lastValuePtr != nullptr && lastValueType == Md2ConfigType::TypeArray) {
+                    if (lastValuePtr->Size() > 0)
+                        return m_parser.asLong(rule.configName(), &(*lastValuePtr)[0]);
+                    else
+                        return aDefaultValue;    // unexpected
+                }
+                else
+                    return m_parser.asLong(rule.configName(), lastValuePtr);
+                break;
+            case Md2ConfigType::TypeDouble:
+                if (lastValuePtr != nullptr && lastValueType == Md2ConfigType::TypeArray) {
+                    if (lastValuePtr->Size() > 0)
+                        return static_cast<int>(m_parser.asDouble(rule.configName(), &(*lastValuePtr)[0]));
+                    else
+                        return aDefaultValue;    // unexpected
+                }
+                else
+                    return static_cast<int>(m_parser.asDouble(rule.configName(), lastValuePtr));
+                break;
+            case Md2ConfigType::TypeConstant:
+                // user can override hardcoded values.
+                if (aDefaultValue == 0 && rule.configName().find_first_not_of("-0123456789") == std::string::npos)
+                    return std::stol(rule.configName());
+                return aDefaultValue;
+            default:        // TypeDefault as well.
+                return aDefaultValue;
+            }
+        }
+        return aDefaultValue;
+    }
+
+    bool asBool(const std::string &aConfigKey, const bool aDefaultValue = false) {
+        // remove exchange name if any
+        std::string configKey = aConfigKey;
+        size_t bItr = aConfigKey.find(".");
+        size_t eItr = aConfigKey.find_last_of(".");
+        if (bItr != std::string::npos && 
+            eItr != std::string::npos &&
+            bItr != eItr && bItr != 0) {
+            configKey = aConfigKey.substr(bItr);
+        }
+        const auto crItr = m_configMappingRules.find(configKey);
+        if (crItr == m_configMappingRules.end())
+            return aDefaultValue;
+
+        const rapidjson::Value *lastValuePtr = nullptr;   // composite value
+        Md2ConfigType lastValueType = Md2ConfigType::TypeDefault;
+        for (const auto& rule : crItr->second) {
+            switch (rule.configType()) {
+            case Md2ConfigType::TypeArray:
+                lastValuePtr = m_parser.getArray(rule.configName());
+                lastValueType = rule.configType();
+                break;
+            case Md2ConfigType::TypeObject:
+                lastValuePtr = m_parser.getObject(rule.configName());
+                lastValueType = rule.configType();
+                break;
+            case Md2ConfigType::TypeString:
+                if (lastValuePtr != nullptr && lastValueType == Md2ConfigType::TypeArray) {
+                    if (lastValuePtr->Size() > 0)
+                        return m_parser.asStr(rule.configName(), &(*lastValuePtr)[0]) == "true";
+                    else
+                        return aDefaultValue;    // unexpected
+                }
+                else
+                    return m_parser.asStr(rule.configName(), lastValuePtr) == "true";
+                break;
+            case Md2ConfigType::TypeInt:
+                if (lastValuePtr != nullptr && lastValueType == Md2ConfigType::TypeArray) {
+                    if (lastValuePtr->Size() > 0)
+                        return static_cast<bool>(m_parser.asInt(rule.configName(), &(*lastValuePtr)[0]));
+                    else
+                        return aDefaultValue;    // unexpected
+                }
+                else
+                    return static_cast<bool>(m_parser.asInt(rule.configName(), lastValuePtr));
+                break;
+            case Md2ConfigType::TypeLong:
+                if (lastValuePtr != nullptr && lastValueType == Md2ConfigType::TypeArray) {
+                    if (lastValuePtr->Size() > 0)
+                        return static_cast<bool>(m_parser.asLong(rule.configName(), &(*lastValuePtr)[0]));
+                    else
+                        return aDefaultValue;    // unexpected
+                }
+                else
+                    return static_cast<bool>(m_parser.asLong(rule.configName(), lastValuePtr));
+                break;
+            case Md2ConfigType::TypeDouble:
+                if (lastValuePtr != nullptr && lastValueType == Md2ConfigType::TypeArray) {
+                    if (lastValuePtr->Size() > 0)
+                        return static_cast<bool>(m_parser.asDouble(rule.configName(), &(*lastValuePtr)[0]));
+                    else
+                        return aDefaultValue;    // unexpected
+                }
+                else
+                    return static_cast<bool>(m_parser.asDouble(rule.configName(), lastValuePtr));
+                break;
+            case Md2ConfigType::TypeConstant:
+                // user can override hardcoded values.
+                if (aDefaultValue != 0)
+                    return aDefaultValue;
+                return rule.configName() == "true";
+            default:        // TypeDefault as well.
+                return aDefaultValue;
+            }
+        }
+        return aDefaultValue;
+    }
+
+    boost::posix_time::time_duration asTimeDuration(const std::string &aConfigKey, 
+            const boost::posix_time::time_duration aDefaultValue = boost::posix_time::seconds(0)) {
+        auto value = this->asInt(aConfigKey, 0);
+        if (value != 0)
+            return boost::posix_time::seconds(value);
+        return aDefaultValue;
+    }
+
 private:
     Md2ConfigParser m_parser;
-    std::map<std::string, std::vector<Md2ConfigRule>> m_configMappingRules;
+    std::map<std::string, std::vector<Md2ConfigRuleItem>> m_configMappingRules;
 
 };
 
@@ -359,6 +632,7 @@ int main() {
 {
     "ROLE"   : "app",
     "APP_ID" : "MD2-HUOBI",
+    "APP_CODE" : 12345,
     "LOGGING": {
         "log_level"             : "INFO",
         "log_path"              : "/home/ubuntu/Crypto/Logs/md2",
@@ -431,5 +705,13 @@ int main() {
     std::cout << __func__ << ": Mcast Endpoint: " << endpoint << std::endl;
     endpoint = mapper.asStr("Bitfinex.WebSocket.Endpoint");
     std::cout << __func__ << ": WebSocket Endpoint: " << endpoint << std::endl;
+    std::cout << __func__ << ": WebSocket ReconnectDelay: " << mapper.asInt("Bitfinex.WebSocket.ReconnectDelay") << std::endl;
+    std::cout << __func__ << ": WebSocket NumConcurrentSessions: " << mapper.asInt("Bitfinex.WebSocket.NumConcurrentSessions") << std::endl;
+    std::cout << __func__ << ": Pf.AppID: " << mapper.asLong("Pf.AppID") << std::endl;
+    std::cout << __func__ << ": Pf.IsProd: " << mapper.asLong("Pf.IsProd") << std::endl;
+    std::cout << __func__ << ": Pf.IsProd: " << mapper.asBool("Pf.IsProd") << std::endl;
+    using namespace boost::gregorian;
+    using namespace boost::posix_time;
+    std::cout << __func__ << ": WebSocket ReconnectDelay: " << to_simple_string(mapper.asTimeDuration("Bitfinex.WebSocket.ReconnectDelay")) << std::endl;
     return 0;
 }
