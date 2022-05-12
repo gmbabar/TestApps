@@ -22,9 +22,13 @@ void CheckLatency() {
     Document doc;
     doc.Parse(json);
 
-    for (auto& m : doc.GetObject())
-    printf("Type of member %s is %s\n",
-        m.name.GetString(), kTypeNames[m.value.GetType()]);
+    if (doc.IsObject()) {
+        for (auto& m : doc.GetObject())
+            printf("Type of member %s is %s\n",
+                m.name.GetString(), kTypeNames[m.value.GetType()]);
+    }
+    // else if (doc.IsArray()) ...
+    // else : parsing failure.
 }
 
 int main() {

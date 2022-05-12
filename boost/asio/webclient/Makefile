@@ -1,9 +1,9 @@
 
 CC = g++
-FLAGS = -g -std=c++11 -I.
+FLAGS = -g -std=c++11 -I. -I../../../json/rapidjson/include/
 LIBS = -lboost_system -lpthread -lcrypto -lssl
 
-objects = web_client 
+objects = symbology web_client simple 
 
 all: $(objects)
 

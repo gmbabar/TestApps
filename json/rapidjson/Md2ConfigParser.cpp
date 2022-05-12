@@ -43,7 +43,7 @@ struct Md2ConfigParser {
         }
 
         const rapidjson::Value &jsonVal = (aValuePtr != nullptr ? (*aValuePtr) : m_doc);
-        if ( jsonVal.HasMember(aKey.c_str()) && jsonVal[aKey.c_str()].IsObject() ) {
+        if ( jsonVal.IsObject() && jsonVal.HasMember(aKey.c_str()) && jsonVal[aKey.c_str()].IsObject() ) {
             return &jsonVal[aKey.c_str()];
         }
         return nullptr;
@@ -67,7 +67,7 @@ struct Md2ConfigParser {
         }
 
         const rapidjson::Value &jsonVal = (aValuePtr != nullptr ? (*aValuePtr) : m_doc);
-        if ( jsonVal.HasMember(aKey.c_str()) && jsonVal[aKey.c_str()].IsArray() ) {
+        if ( jsonVal.IsObject() && jsonVal.HasMember(aKey.c_str()) && jsonVal[aKey.c_str()].IsArray() ) {
             return &jsonVal[aKey.c_str()];
         }
         return nullptr;
@@ -91,7 +91,7 @@ struct Md2ConfigParser {
         }
 
         const rapidjson::Value &jsonVal = (aValuePtr != nullptr ? *aValuePtr : m_doc);
-        if ( jsonVal.HasMember(aKey.c_str()) && jsonVal[aKey.c_str()].IsString() ) {
+        if ( jsonVal.IsObject() && jsonVal.HasMember(aKey.c_str()) && jsonVal[aKey.c_str()].IsString() ) {
             return jsonVal[aKey.c_str()].GetString();
         }
         return aDefaultValue;
@@ -115,7 +115,7 @@ struct Md2ConfigParser {
         }
 
         const rapidjson::Value &jsonVal = (aValuePtr != nullptr ? *aValuePtr : m_doc);
-        if ( jsonVal.HasMember(aKey.c_str()) && jsonVal[aKey.c_str()].IsInt() ) {
+        if ( jsonVal.IsObject() && jsonVal.HasMember(aKey.c_str()) && jsonVal[aKey.c_str()].IsInt() ) {
             return jsonVal[aKey.c_str()].GetInt();
         }
         return aDefaultValue;
@@ -139,7 +139,7 @@ struct Md2ConfigParser {
         }
 
         const rapidjson::Value &jsonVal = (aValuePtr != nullptr ? *aValuePtr : m_doc);
-        if ( jsonVal.HasMember(aKey.c_str()) && jsonVal[aKey.c_str()].IsInt64() ) {
+        if ( jsonVal.IsObject() && jsonVal.HasMember(aKey.c_str()) && jsonVal[aKey.c_str()].IsInt64() ) {
             return jsonVal[aKey.c_str()].GetInt64();
         }
         return aDefaultValue;
@@ -163,7 +163,7 @@ struct Md2ConfigParser {
         }
 
         const rapidjson::Value &jsonVal = (aValuePtr != nullptr ? *aValuePtr : m_doc);
-        if ( jsonVal.HasMember(aKey.c_str()) && jsonVal[aKey.c_str()].IsDouble() ) {
+        if ( jsonVal.IsObject() && jsonVal.HasMember(aKey.c_str()) && jsonVal[aKey.c_str()].IsDouble() ) {
             return jsonVal[aKey.c_str()].GetDouble();
         }
         return aDefaultValue;
@@ -187,7 +187,7 @@ struct Md2ConfigParser {
         }
 
         const rapidjson::Value &jsonVal = (aValuePtr != nullptr ? *aValuePtr : m_doc);
-        if ( jsonVal.HasMember(aKey.c_str()) && jsonVal[aKey.c_str()].IsBool() ) {
+        if ( jsonVal.IsObject() && jsonVal.HasMember(aKey.c_str()) && jsonVal[aKey.c_str()].IsBool() ) {
             return jsonVal[aKey.c_str()].GetBool();
         }
         return aDefaultValue;
