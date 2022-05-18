@@ -1,3 +1,6 @@
+boost/asio/webclient/simple
+boost/asio/webclient/symbology
+boost/asio/webclient/web_client
 boost/buffers/buffers
 boost/buffers/flatbuffer
 boost/buffers/flatstaticbuffer
@@ -31,4 +34,3 @@ json/rapidjson/unsubscribe
 json/rapidjson/Md2ConfigParser
 json/rapidjson/error
 json/rapidjson/loop
-

@@ -2,6 +2,7 @@
 #include "rapidjson/writer.h"
 #include "rapidjson/stringbuffer.h"
 #include <boost/algorithm/string.hpp>
+#include "Md2ExchContract.hpp"
 #include <iostream>
 #include <fstream>
 #include <chrono>
@@ -261,6 +262,30 @@ struct Md2ConfigMapper {
          */
         m_configMappingRules["Pf.BfcEndpoint"].emplace_back("CONNECTORS.configs", Md2ConfigType::TypeArray);
         m_configMappingRules["Pf.BfcEndpoint"].emplace_back("exchange_mnemonic", Md2ConfigType::TypeString);
+
+        /**
+         * Pf.RefDataHost -> { SYMBOLS  { secmaster_refdata_host } }
+         * Pf.RefDataPort -> { SYMBOLS  { secmaster_refdata_port } }
+         * Pf.RefDataPort -> { SYMBOLS  { secmaster_refdata_path } }
+         * Pf.ExchDataHost -> { SYMBOLS  { secmaster_symbols_host } }
+         * Pf.ExchDataPort -> { SYMBOLS  { secmaster_symbols_port } }
+         * Pf.ExchDataPath -> { SYMBOLS  { secmaster_symbols_path } }
+         * Pf.ExchSymbolPrefix -> { SYMBOLS  { exchange_symbol_prefix } }
+         */
+        m_configMappingRules["Pf.RefDataHost"].emplace_back("SYMBOLS", Md2ConfigType::TypeObject);
+        m_configMappingRules["Pf.RefDataHost"].emplace_back("secmaster_refdata_host", Md2ConfigType::TypeString);
+        m_configMappingRules["Pf.RefDataPort"].emplace_back("SYMBOLS", Md2ConfigType::TypeObject);
+        m_configMappingRules["Pf.RefDataPort"].emplace_back("secmaster_refdata_port", Md2ConfigType::TypeString);
+        m_configMappingRules["Pf.RefDataPath"].emplace_back("SYMBOLS", Md2ConfigType::TypeObject);
+        m_configMappingRules["Pf.RefDataPath"].emplace_back("secmaster_refdata_path", Md2ConfigType::TypeString);
+        m_configMappingRules["Pf.ExchDataHost"].emplace_back("SYMBOLS", Md2ConfigType::TypeObject);
+        m_configMappingRules["Pf.ExchDataHost"].emplace_back("secmaster_symbols_host", Md2ConfigType::TypeString);
+        m_configMappingRules["Pf.ExchDataPort"].emplace_back("SYMBOLS", Md2ConfigType::TypeObject);
+        m_configMappingRules["Pf.ExchDataPort"].emplace_back("secmaster_symbols_port", Md2ConfigType::TypeString);
+        m_configMappingRules["Pf.ExchDataPath"].emplace_back("SYMBOLS", Md2ConfigType::TypeObject);
+        m_configMappingRules["Pf.ExchDataPath"].emplace_back("secmaster_symbols_path", Md2ConfigType::TypeString);
+        m_configMappingRules["Pf.ExchSymbolPrefix"].emplace_back("SYMBOLS", Md2ConfigType::TypeObject);
+        m_configMappingRules["Pf.ExchSymbolPrefix"].emplace_back("exchange_symbol_prefix", Md2ConfigType::TypeString);
 
         /**
          * <Exchange>.Mcast.Endpoint -> MD_SERVICE.[listen_ip : listen_port]
@@ -645,7 +670,14 @@ int main() {
         ]
     },
     "SYMBOLS": {
-    "symbol_mapping"    : "/home/ubuntu/Crypto/MD2/StaticData/symbology.csv"
+        "symbol_mapping"    : "/home/ubuntu/Crypto/MD2/StaticData/symbology.csv",
+        "secmaster_refdata_host" : "172.21.5.151",
+        "secmaster_refdata_port" : "8001",
+        "secmaster_refdata_path" : "/api/assetStores",
+        "secmaster_symbols_host" : "172.21.2.170",
+        "secmaster_symbols_port" : "9004",
+        "secmaster_symbols_path" : "/api/v1/aliases/",
+        "exchange_symbol_prefix" : "t"
     },
     "MD_SERVICE" : {
         "listen_ip"   : "0.0.0.0",
@@ -713,5 +745,36 @@ int main() {
     using namespace boost::gregorian;
     using namespace boost::posix_time;
     std::cout << __func__ << ": WebSocket ReconnectDelay: " << to_simple_string(mapper.asTimeDuration("Bitfinex.WebSocket.ReconnectDelay")) << std::endl;
+
+    std::cout << "----------------------------------------\n\n";
+
+    // Load config values.
+    const std::string refDataHost = mapper.asStr("Pf.RefDataHost");
+    const std::string refDataPort = mapper.asStr("Pf.RefDataPort");
+    const std::string refDataPath = mapper.asStr("Pf.RefDataPath");
+    const std::string exchDataHost = mapper.asStr("Pf.ExchDataHost");
+    const std::string exchDataPort = mapper.asStr("Pf.ExchDataPort");
+    const std::string exchDataPath = mapper.asStr("Pf.ExchDataPath");
+    
+    const std::string bfcEndpointStr = mapper.asStr("Pf.BfcEndpoint");
+    const std::string exchSymPrefix = mapper.asStr("Pf.ExchSymbolPrefix");
+
+    ExchContracts exchContracts;
+    // Load symbol mappings (exchange contracts) 
+    loadExchContractsFromSecMaster(bfcEndpointStr,
+            refDataHost,
+            refDataPort,
+            refDataPath,
+            exchDataHost,
+            exchDataPort,
+            exchDataPath,
+            exchContracts
+        );
+    std::cout << "Loaded " << exchContracts.size() << " contracts." << std::endl;
+
+    for (int i=0; i < 10 && i < exchContracts.size(); ++i) {
+        std::cout << i << ": local: " << exchContracts[i].bfcSym << ", exch: " << exchContracts[i].exchSym 
+                  << ", final: " << (exchSymPrefix + exchContracts[i].exchSym) << std::endl;
+    }
     return 0;
 }
