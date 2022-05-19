@@ -12,6 +12,6 @@ $(objects): %: %.cpp
 
 clean:
 	rm -rf *.dSYM
-	rm -f `find . -maxdepth 1 -type f | egrep -v "Makefile|\.cpp|\.hpp|\.h|include" | xargs`
+	rm -f `find . -maxdepth 1 -type f | egrep -v "Makefile|\.cpp|\.hpp|\.h|include|git" | xargs`
 
 
