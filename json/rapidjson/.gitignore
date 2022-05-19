@@ -1,2 +1,15 @@
 keyVal
 neworder
+MD2Config/Md2ConfigParser
+MD2Msgs/ExchangeCapabilities
+MD2Msgs/ExchangeStatus
+MD2Msgs/L1Snapshot
+MD2Msgs/L1Update
+MD2Msgs/L2Snapshot
+MD2Msgs/L2Update
+MD2Msgs/L3Snapshot
+MD2Msgs/L3Update
+MD2Msgs/SymbolStatus
+MD2Msgs/TradeUpdate
+MD2Msgs/subscribe
+MD2Msgs/unsubscribe
