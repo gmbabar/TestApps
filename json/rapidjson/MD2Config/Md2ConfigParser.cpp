@@ -271,6 +271,7 @@ struct Md2ConfigMapper {
          * Pf.ExchDataPort -> { SYMBOLS  { secmaster_symbols_port } }
          * Pf.ExchDataPath -> { SYMBOLS  { secmaster_symbols_path } }
          * Pf.ExchSymbolPrefix -> { SYMBOLS  { exchange_symbol_prefix } }
+         * Pf.DepthLimit -> { CONNECTORS { configs { orderbook_max_levels } } }
          */
         m_configMappingRules["Pf.RefDataHost"].emplace_back("SYMBOLS", Md2ConfigType::TypeObject);
         m_configMappingRules["Pf.RefDataHost"].emplace_back("secmaster_refdata_host", Md2ConfigType::TypeString);
@@ -286,6 +287,8 @@ struct Md2ConfigMapper {
         m_configMappingRules["Pf.ExchDataPath"].emplace_back("secmaster_symbols_path", Md2ConfigType::TypeString);
         m_configMappingRules["Pf.ExchSymbolPrefix"].emplace_back("SYMBOLS", Md2ConfigType::TypeObject);
         m_configMappingRules["Pf.ExchSymbolPrefix"].emplace_back("exchange_symbol_prefix", Md2ConfigType::TypeString);
+        m_configMappingRules["Pf.DepthLimit"].emplace_back("CONNECTORS.configs", Md2ConfigType::TypeArray);
+        m_configMappingRules["Pf.DepthLimit"].emplace_back("orderbook_max_levels", Md2ConfigType::TypeInt);
 
         /**
          * <Exchange>.Mcast.Endpoint -> MD_SERVICE.[listen_ip : listen_port]
@@ -702,6 +705,7 @@ int main() {
             "https_endpoint_prefix":"/v1",
             "enable_traffic_log": false,
             "market_depth": ".depth.step0",
+            "orderbook_max_levels": 10,
             "log_rotation_size_mb" : 100,
             "traffic_log": "HUOBI.log.bz2",
             "retry_interval_secs" : 5,
@@ -745,6 +749,7 @@ int main() {
     using namespace boost::gregorian;
     using namespace boost::posix_time;
     std::cout << __func__ << ": WebSocket ReconnectDelay: " << to_simple_string(mapper.asTimeDuration("Bitfinex.WebSocket.ReconnectDelay")) << std::endl;
+    std::cout << __func__ << ": Pf.DepthLimit: " << mapper.asInt("Pf.DepthLimit") << std::endl;
 
     std::cout << "----------------------------------------\n\n";
 
