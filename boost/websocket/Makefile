@@ -5,7 +5,7 @@ CC = g++
 FLAGS = -g -std=c++11 -I./ -I/usr/local/opt/openssl/include
 LIBS = -lboost_system -lpthread -lcrypto -lssl
 
-objects = websocket_client websocket_server websocket_client_ssl websocket_server_ssl
+objects = server server_ssl
 
 all: $(objects)
 
