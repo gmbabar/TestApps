@@ -1,3 +1,6 @@
+boost/asio/webclient/simple
+boost/asio/webclient/symbology
+boost/asio/webclient/web_client
 boost/buffers/buffers
 boost/buffers/flatbuffer
 boost/buffers/flatstaticbuffer
@@ -7,6 +10,7 @@ websocket_client_ssl
 websocket_server 
 websocket_server_ssl
 websockets/websocket_md2client
+websockets/.vscode/
 *.swp
 *.dSYM
 json/boost/deribit/auth
@@ -31,4 +35,5 @@ json/rapidjson/unsubscribe
 json/rapidjson/Md2ConfigParser
 json/rapidjson/error
 json/rapidjson/loop
+json/rapidjson/subscribe
 

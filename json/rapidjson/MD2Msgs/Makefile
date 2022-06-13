@@ -1,9 +1,9 @@
 
 CC = g++
-FLAGS = -g -std=c++11 -I./include
+FLAGS = -g -std=c++11 -I../include
 LIBS = -lboost_system -lpthread -lcrypto -lssl
 
-objects = error loop neworder keyVal 
+objects = subscribe unsubscribe SymbolStatus ExchangeStatus L1Update L2Update L3Update TradeUpdate ExchangeCapabilities L1Snapshot L2Snapshot L3Snapshot
 
 all: $(objects)
 

@@ -86,8 +86,8 @@ inline void ParseUnsubscribe(const std::string& json) {
 // - need to make sure performance is equal or better than stringstream
 
 int main() {
-    // std::string json = FormatUnsubscribe("subscribe", "BTFX", "BTCUSDT", "L1");
-    std::string json = FormatUnsubscribeSstream("subscribe", "BTFX", "BTCUSDT", "L1");
+    // std::string json = FormatUnsubscribe("unsubscribe", "BTFX", "BTCUSDT", "L1");
+    std::string json = FormatUnsubscribeSstream("unsubscribe", "BTFX", "BTCUSDT", "L1");
     std::cout << "Json: " << json << std::endl;
     ParseUnsubscribe(json);
     return 0;
