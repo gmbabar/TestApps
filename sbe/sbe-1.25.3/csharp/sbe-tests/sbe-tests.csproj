@@ -1,0 +1,27 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>net45;netcoreapp3.1</TargetFrameworks>
+    <RootNamespace>Org.SbeTool.Sbe.Tests</RootNamespace>
+    <AssemblyName>Org.SbeTool.Sbe.UnitTests</AssemblyName>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <Copyright>Copyright (C) Bill Segall 2018, MarketFactory Inc 2017, Adaptive 2014. All rights reserved.</Copyright>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="..\..\sbe-tool\src\test\resources\issue435.xml" Link="issue435.xml" />
+    <Content Include="..\..\sbe-tool\src\test\resources\since-deprecated-test-schema.xml" Link="since-deprecated-test-schema.xml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\sbe-dll\sbe-dll.csproj" />
+    <ProjectReference Include="..\sbe-generated\sbe-generated.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.0-preview.2" PrivateAssets="All" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.2.0" />
+    <PackageReference Include="MSTest.TestAdapter" Version="1.4.0" />
+    <PackageReference Include="MSTest.TestFramework" Version="1.4.0" />
+  </ItemGroup>
+
+</Project>
