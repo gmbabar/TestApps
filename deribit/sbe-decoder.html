@@ -1,0 +1,839 @@
+<html>
+
+<head>
+  <style type="text/css">
+    body {
+      margin: 2em;
+    }
+
+    .hexdump {
+      position: fixed;
+      right: 0px;
+      width: 30em;
+      font-family: monospace;
+      border: 1px solid gray;
+      padding: 8px;
+    }
+
+    .highlight {
+      background-color: lightgray;
+      font-weight: bold;
+    }
+
+    .messagePart {
+      display: flex;
+    }
+
+    .msg {
+      margin-bottom: 16px;
+    }
+
+    .sideHeader {
+      writing-mode: sideways-lr;
+      text-align: center;
+      padding: 5px;
+      border: 1px solid black;
+      width: 20px;
+    }
+
+    @supports not (writing-mode: sideways-lr) {
+      .sideHeader {
+        writing-mode: vertical-rl;
+      }
+
+      /* chromium does not support sideways for now */
+    }
+
+    .sideHeader {
+      background-color: #EEEEEE;
+    }
+
+    .message {
+      background-color: #6FB2D2;
+    }
+
+    .block {
+      background-color: #85C88A;
+    }
+
+    .summary {
+      margin-left: 132px;
+      width: 780px;
+      display: block;
+      padding: 8px;
+      border: 1px solid gray;
+      background-color: lightblue;
+      font-family: monospace;
+      font-weight: bold;
+      line-height: 150%;
+    }
+
+    .group,
+    .element {
+      background-color: #EBD671;
+    }
+
+    table {
+      border-collapse: collapse;
+      margin-left: 10px;
+      margin-bottom: 4px;
+    }
+
+    thead th {
+      padding: 4px;
+      border: 1px solid white;
+      background-color: black;
+      color: white;
+    }
+
+    thead th:nth-child(1) {
+      border-left: 1px solid black;
+    }
+
+    thead th:nth-last-child(1) {
+      border-right: 1px solid black;
+    }
+
+    td {
+      padding: 4px;
+      border: 1px solid black;
+      min-width: 6em;
+    }
+
+    tr:hover {
+      background-color: lightgray;
+    }
+
+    td.wire {
+      width: 180px;
+      white-space: nowrap;
+      font-family: monospace;
+      color: grey;
+    }
+
+    td.wide {
+      width: 790px;
+    }
+
+    td.name {
+      width: 160px;
+      padding-left: 1em;
+    }
+
+    td.offset,
+    td.length {
+      width: 100px;
+      text-align: right;
+    }
+
+    td.value {
+      width: 200px;
+    }
+
+    td.value .info {
+      color: gray;
+      font-size: small;
+    }
+  </style>
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <!-- Don't use this in production: -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/redux/5.0.0-alpha.0/redux.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@reduxjs/toolkit@1.8.1/dist/redux-toolkit.umd.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-redux/8.0.0-beta.4/react-redux.js"></script>
+  <script type='text/javascript'>
+    let instrumentIdMap = {};
+
+    fetch("https://www.deribit.com/api/v2/multicast/get_instrument_dictionary")
+      .then(response => response.json())
+      .then(data => {
+         if (data.result) {
+	   Object.entries(data.result).forEach(([name, id]) => instrumentIdMap[id] = name)
+         }
+      })
+
+    function hexdump(dataview, offset, length) {
+      if (offset === undefined) {
+        offset = 0;
+      }
+      if (length === undefined) {
+        length = dataview.byteLength;
+      }
+      var hex = "";
+      for (let i = 0; i < length; ++i) {
+        if (i > 0) {
+          hex += " ";
+        }
+        hex += dataview.getUint8(offset + i).toString(16).padStart(2, "0");
+      }
+      return hex;
+    }
+
+    class SBEReader {
+      constructor(buffer, byteOffset, byteLength) {
+        this.dataview = new DataView(buffer, byteOffset, byteLength);
+        this.offset = 0;
+      }
+
+      static fromBase64(b64packet) {
+        let bpacket = Uint8Array.from(atob(b64packet), c => c.charCodeAt(0));
+        return new SBEReader(bpacket.buffer)
+      }
+
+      reset() {
+        this.offset = 0;
+      }
+
+      eod() {
+        return this.offset >= this.dataview.byteLength;
+      }
+
+      prepare(value, length) {
+        let offset = this.offset - length;
+        let hex = hexdump(this.dataview, offset, length);
+        return { offset: this.dataview.byteOffset + offset, length, value, hex };
+
+      }
+
+      readUint8() {
+        let value = this.dataview.getUint8(this.offset, true);
+        this.offset += 1;
+        return this.prepare(value, 1);
+      }
+
+      readUint16() {
+        let value = this.dataview.getUint16(this.offset, true);
+        this.offset += 2;
+        return this.prepare(value, 2);
+      }
+      readUint32() {
+        let value = this.dataview.getUint32(this.offset, true);
+        this.offset += 4;
+        return this.prepare(value, 4);
+      }
+      readUint64() {
+        let value = Number(this.dataview.getBigUint64(this.offset, true));
+        this.offset += 8;
+        return this.prepare(value, 8);
+      }
+      readFloat64() {
+        let value = this.dataview.getFloat64(this.offset, true);
+        this.offset += 8;
+        return this.prepare(value, 8);
+      }
+      readBytes(length) {
+        let subreader = new SBEReader(this.dataview.buffer, this.dataview.byteOffset + this.offset, length)
+        this.offset += length;
+        return this.prepare(subreader, length);
+      }
+
+      readString(length) {
+	let content = this.readBytes(length);
+        let dv = content.value.dataview;
+        content.value = new TextDecoder().decode(new Uint8Array(dv.buffer, dv.byteOffset, dv.byteLength));
+	return content;
+      }
+
+
+      readPackets() {
+        let packets = [];
+        while (!this.eod()) {
+          let packet = this.readPacket();
+          packets.push(packet);
+        }
+        return packets;
+      }
+
+      readPacket() {
+        let startOffset = this.offset;
+        let header = {
+          blockLength: this.readUint16(),
+          templateId: this.readUint16(),
+          schemaId: this.readUint16(),
+          version: this.readUint16(),
+          numGroups: this.readUint16(),
+          numVars: this.readUint16(),
+        }
+        let { block, groups, vars } = this.readContent(header.blockLength.value, header.numGroups.value, header.numVars.value);
+        let endOffset = this.offset;
+        let packet = { offset: this.dataview.byteOffset + startOffset, length: endOffset - startOffset + 1, header, block, groups, vars };
+        try { SBEReader.interpretTemplate(packet); } catch (ignore) { console.log(ignore); };
+        return packet;
+      }
+
+      readContent(blockLength, numGroups, numVars) {
+        let block = this.readBytes(blockLength)
+        let groups = [];
+        for (let i = 0; i < numGroups; ++i) {
+          let group = this.readGroup();
+          groups.push(group);
+        }
+        let vars = [];
+        for (let i = 0; i < numVars; ++i) {
+          let size = this.readUint8().value;
+          let content = this.readBytes(size);
+          let dv = content.value.dataview;
+          content.value = new TextDecoder().decode(new Uint8Array(dv.buffer, dv.byteOffset, dv.byteLength));
+          vars.push(content);
+        }
+        return { block, groups, vars }
+      }
+
+      readGroup() {
+        let header = {
+          blockLength: this.readUint16(),
+          numInGroup: this.readUint16(),
+          numGroups: this.readUint16(),
+          numVars: this.readUint16(),
+        }
+        let elements = [];
+        for (let i = 0; i < header.numInGroup.value; ++i) {
+          let element = this.readContent(header.blockLength.value, header.numGroups.value, header.numVars.value);
+          elements.push(element)
+        }
+        return { header, elements }
+      }
+
+      static interpretTemplate(packet) {
+        switch (packet.header.templateId.value) {
+          case 1000:
+            packet.header.templateId.info = "state";
+            {
+              let reader = packet.block.value;
+              let data = addInfo({
+                instrumentId: reader.readUint32(),
+                state: reader.readUint8(),
+	  	kind: reader.readUint8(),
+	  	futureType: reader.readUint8(),
+	  	optionType: reader.readUint8(),
+	  	rfq: reader.readUint8(),
+	  	settlementPeriod: reader.readUint8(),
+	  	settlementPeriodCount: reader.readUint16(),
+	  	baseCurrency: reader.readString(8),
+	  	quoteCurrency: reader.readString(8),
+	  	counterCurrency: reader.readString(8),
+	  	settlementCurrency: reader.readString(8),
+	  	sizeCurrency: reader.readString(8),
+	  	creationTimestamp: reader.readUint64(),
+	  	expirationTimestamp: reader.readUint64(),
+	  	strikePrice: reader.readFloat64(),
+	  	contractSize: reader.readFloat64(),
+	  	minTradeAmount: reader.readFloat64(),
+	  	tickSize: reader.readFloat64(),
+	  	makerCommission: reader.readFloat64(),
+	  	takerCommission: reader.readFloat64(),
+	  	blockTradeCommission: reader.readFloat64(),
+	  	maxLiquidationCommission: reader.readFloat64(),
+	  	maxLeverage: reader.readFloat64(),
+              });
+              packet.block.data = data;
+            }
+            break;
+          case 1001:
+            packet.header.templateId.info = "book";
+            {
+              let reader = packet.block.value;
+              let data = addInfo({
+                instrumentId: reader.readUint32(),
+                timestamp: reader.readUint64(),
+                prevChangeId: reader.readUint64(),
+                changeId: reader.readUint64(),
+                isLast: reader.readUint8()
+              });
+              packet.block.data = data;
+
+              let group = packet.groups[0];
+              group.info = "changes";
+              let e = group.elements;
+              for (let i = 0; i < e.length; ++i) {
+                let reader = e[i].block.value;
+                let data = addInfo({
+                  side: reader.readUint8(),
+                  changeType: reader.readUint8(),
+                  price: reader.readFloat64(),
+                  amount: reader.readFloat64()
+                });
+                e[i].block.data = data;
+              }
+            }
+            break;
+          case 1002:
+            packet.header.templateId.info = "trades";
+            {
+              let reader = packet.block.value;
+              let data = addInfo({
+                instrumentId: reader.readUint32(),
+              });
+              packet.block.data = data;
+              let group = packet.groups[0];
+              group.info = "trades";
+              let e = group.elements;
+              for (let i = 0; i < e.length; ++i) {
+                let reader = e[i].block.value;
+                let data = addInfo({
+                  direction: reader.readUint8(),
+                  price: reader.readFloat64(),
+                  amount: reader.readFloat64(),
+                  timestamp: reader.readUint64(),
+                  markPrice: reader.readFloat64(),
+                  indexPrice: reader.readFloat64(),
+                  tradeSeq: reader.readUint64(),
+                  tradeId: reader.readUint64(),
+                  tickDirection: reader.readUint8(),
+                  liquidation: reader.readUint8(),
+                  iv: reader.readFloat64(),
+                  blockTradeId: reader.readUint64(),
+                  comboTradeId: reader.readUint64()
+                })
+                e[i].block.data = data;
+              }
+            }
+            break;
+          case 1003:
+            packet.header.templateId.info = "quote";
+            {
+              let reader = packet.block.value;
+              let data = addInfo({
+                instrumentId: reader.readUint32(),
+                instrumentState: reader.readUint8(),
+                timestamp: reader.readUint64(),
+                openInterest: reader.readFloat64(),
+                minSellPrice: reader.readFloat64(),
+                maxBuyPrice: reader.readFloat64(),
+                lastPrice: reader.readFloat64(),
+                indexPrice: reader.readFloat64(),
+                markPrice: reader.readFloat64(),
+                bestBidPrice: reader.readFloat64(),
+                bestBidAmount: reader.readFloat64(),
+                bestAskPrice: reader.readFloat64(),
+                bestAskAmount: reader.readFloat64(),
+                currentFunding: reader.readFloat64(),
+                funding8h: reader.readFloat64(),
+                estimatedDeliveryPrice: reader.readFloat64(),
+                deliveryPrice: reader.readFloat64(),
+                settlementPrice: reader.readFloat64(),
+              });
+              packet.block.data = data;
+            }
+            break;
+          case 1004:
+            packet.header.templateId.info = "snapshot";
+            {
+              let reader = packet.block.value;
+              let data = addInfo({
+                instrumentId: reader.readUint32(),
+                timestamp: reader.readUint64(),
+                changeId: reader.readUint64(),
+                isComplete: reader.readUint8(),
+                isLast: reader.readUint8()
+              });
+              packet.block.data = data;
+
+              let group = packet.groups[0];
+              group.info = "levels";
+              let e = group.elements;
+              for (let i = 0; i < e.length; ++i) {
+                let reader = e[i].block.value;
+                let data = addInfo({
+                  side: reader.readUint8(),
+                  price: reader.readFloat64(),
+                  amount: reader.readFloat64()
+                });
+                e[i].block.data = data;
+              }
+            }
+            break;
+        }
+
+        if (packet.header.templateId.info) {
+          var summary = packet.header.templateId.info.toUpperCase();
+          summary += " {"
+          if (packet.block && packet.block.data) {
+            summary += blockSummary(packet.block.data)
+          }
+          if (packet.groups.length > 0) {
+            if (packet.block && packet.block.data)
+              summary += ", ";
+            packet.groups.forEach(group => {
+              summary += (group.info ? group.info : "group") + ": [";
+              for (let i = 0; i < group.elements.length; ++i) {
+                if (i > 0) { summary += ", "; }
+                summary += "{" + blockSummary(group.elements[i].block.data) + "}"
+              }
+              summary += "]"
+            });
+          }
+          summary += "}"
+          packet.summary = summary;
+        }
+
+        function blockSummary(data) {
+          var summary = ""
+          var first = true;
+          for (let key in data) {
+            let value = data[key];
+            if (first) { first = false; } else { summary += ", "; }
+            summary += "" + key + ": " + value.value;
+          }
+          return summary
+        }
+
+        function addInfo(data) {
+          const fields = {
+            templateId: {
+              "1000": "state",
+              "1001": "book",
+              "1002": "trades",
+              "1003": "quote",
+              "1004": "snapshot"
+            },
+            liquidation: {
+              "0": "none",
+              "1": "maker",
+              "2": "taker",
+              "3": "both"
+            },
+            tickDirection: {
+              "0": "plus",
+              "1": "zeroplus",
+              "2": "minus",
+              "3": "zerominus"
+            },
+            changeType: {
+              "0": "new",
+              "1": "change",
+              "2": "delete"
+            },
+            direction: {
+              "0": "buy",
+              "1": "sell"
+            },
+            side: {
+              "0": "ask",
+              "1": "bid"
+            },
+	    instrumentState: {
+              "0": "created",
+	      "1": "open",
+              "2": "closed",
+              "3": "settled"
+	    },
+            kind: {
+              "0": "future",
+              "1": "option"
+            },
+            futureType: {
+              "0": "undefined",
+              "1": "reversed",
+              "2": "linear"
+            },
+	    optionType: {
+              "0": "undefined",
+              "1": "call",
+              "2": "put"
+	    },
+	    rfq: {
+              "0": "false",
+              "1": "true"
+            },
+            instrumentId: instrumentIdMap,
+            timestamp: (value) => (new Date(value)).toISOString(),
+            creationTimestamp: (value) => (new Date(value)).toISOString(),
+            expirationTimestamp: (value) => (new Date(value)).toISOString(),
+          }
+          for (let key in data) {
+            const info = fields[key];
+            if (!info)
+              continue;
+            try {
+              const value = data[key].value;
+              if (info instanceof Function) {
+                data[key].info = info(value);
+              } else if (info[value]) {
+                data[key].info = info[value];
+              }
+            } catch (ignore) {
+            }
+          }
+          return data;
+        }
+      }
+    }
+  </script>
+</head>
+
+<body>
+  <div id='root'>
+  </div>
+  <script type="text/babel">
+    // Redux
+    const highlightSlice = RTK.createSlice({
+      name: 'highlight',
+      initialState: { offset: 0, length: 0 },
+      reducers: {
+        set: (state, action) => {
+          state.offset = action.payload.offset;
+          state.length = action.payload.length;
+        },
+        unset: (state) => {
+          state.offset = 0;
+          state.length = 0;
+        }
+      }
+    })
+    const headersSlice = RTK.createSlice({
+      name: 'headers',
+      initialState: { show: true },
+      reducers: {
+        show: (state, action) => {
+          state.show = action.payload;
+        }
+      }
+    })
+
+    const store = RTK.configureStore({
+      reducer: {
+        highlight: highlightSlice.reducer,
+        headers: headersSlice.reducer
+      }
+    })
+
+    const [setHighlight, unsetHighlight] = [highlightSlice.actions.set, highlightSlice.actions.unset];
+    const showHeaders = headersSlice.actions.show;
+    // End of Redux
+
+    function PropsTable(props) {
+      const dispatch = ReactRedux.useDispatch()
+      let p = Object.entries(props.data);
+      const startOffset = p[0][1].offset;
+      const totalLength = p[p.length - 1][1].offset + p[p.length - 1][1].length - startOffset;
+      var offset = 0;
+      return (
+        <table style={{ marginLeft: (100 - props.indent * 32) }}>
+          <thead>
+            <tr onMouseEnter={() => dispatch(setHighlight({ offset: startOffset, length: totalLength }))}
+              onMouseLeave={() => dispatch(unsetHighlight())}>
+              <th>Wire</th>
+              <th>Name</th>
+              <th>Offset</th>
+              <th>Length</th>
+              <th>Value</th></tr>
+          </thead>
+          <tbody>
+            {
+              p.map(([k, v]) => {
+                let result = (
+                  <tr key={k}
+                    onMouseEnter={() => dispatch(setHighlight(v))}
+                    onMouseLeave={() => dispatch(unsetHighlight())}>
+                    <td className="wire">{v.hex}</td>
+                    <td className="name">{k}</td>
+                    <td className="offset">{offset}</td>
+                    <td className="length">{v.length}</td>
+                    <td className="value">{v.value}{v.info ? <span className="info"> ({v.info})</span> : ""}</td>
+                  </tr>
+                );
+                offset += v.length;
+                return result;
+              })
+            }
+          </tbody>
+        </table>
+      );
+    }
+
+    function HexDump(props) {
+      let highlight = ReactRedux.useSelector(store => store.highlight);
+      var dump = hexdump(props.dataview);
+      if (!highlight || highlight.length == 0) {
+        return (
+          <div className='hexdump'>
+            {dump}
+          </div>
+        )
+      }
+      let s1 = dump.slice(0, (highlight.offset * 3));
+      let s2 = dump.slice(highlight.offset * 3, (highlight.offset + highlight.length) * 3 - 1);
+      let s3 = dump.slice((highlight.offset + highlight.length) * 3 - 1);
+      return (
+        <div className='hexdump'>
+          <span>{s1}</span>
+          <span className='highlight'>{s2}</span>
+          <span>{s3}</span>
+        </div>
+      )
+    }
+
+    function SbeBlock(props) {
+      const dispatch = ReactRedux.useDispatch()
+      let block = props.block;
+
+      if (block.length == 0)
+        return <div />;
+
+      return (
+        <div className='messagePart'>
+          <div className="sideHeader block">Block</div>
+          {block.data ?
+            <PropsTable data={block.data} indent={props.indent} />
+            :
+            <table>
+              <thead>
+                <tr><th>Wire</th></tr>
+              </thead>
+              <tbody>
+                <tr onMouseEnter={() => dispatch(setHighlight(block))}
+                  onMouseLeave={() => dispatch(unsetHighlight())}>
+                  <td className="wire wide">{block.hex}</td>
+                </tr>
+              </tbody>
+            </table>
+          }
+        </div>
+      );
+    }
+
+    function SbeGroup(props) {
+      let { group, idx } = props;
+      return (
+        <div className="messagePart">
+          <div className="sideHeader group">Group {idx + 1}</div>
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <SbeHeader header={group.header} indent={props.indent + 1} />
+            {
+              group.elements.length == 0 ? <div>hmmm</div> :
+                group.elements.map((element, peidx) =>
+                  <div className='messagePart' key={peidx.toString()}>
+                    <div className="sideHeader element">{peidx + 1}</div>
+                    <SbeContent packet={element} indent={props.indent + 2} />
+                  </div>
+                )
+            }
+          </div>
+        </div>
+      );
+    }
+
+    function SbeContent(props) {
+      let packet = props.packet;
+      return (
+        <div>
+          <SbeBlock block={packet.block} indent={props.indent} />
+          {packet.groups.map((group, gidx) => <SbeGroup group={group} idx={gidx} key={gidx} indent={props.indent} />)}
+          {packet.vars.map((avar, i) => <div key={i}>{avar.value.toString()}</div>)}
+        </div>
+      )
+    }
+
+    function SbeHeader(props) {
+      let showHeaders = ReactRedux.useSelector(store => store.headers.show)
+      if (!showHeaders) {
+        return <></>;
+      }
+      return (
+        <div className='messagePart'>
+          <div className="sideHeader groupHeader">Header</div>
+          <PropsTable data={props.header} indent={props.indent} />
+        </div>
+      )
+
+    }
+    function SbeMessage(props) {
+      const dispatch = ReactRedux.useDispatch();
+      const packet = props.packet;
+      return (
+        <div className='messagePart msg'>
+          <div className='sideHeader message'>SBE Message</div>
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            {packet.summary ?
+              <div className="summary" onMouseEnter={() => dispatch(setHighlight({ offset: packet.offset, length: packet.length }))} onMouseLeave={() => dispatch(unsetHighlight())}>
+                {packet.summary}
+              </div>
+              : <></>
+            }
+            <SbeHeader header={packet.header} indent={0} />
+            <SbeContent packet={packet} indent={0} />
+          </div>
+
+        </div>
+      )
+    }
+
+    function App() {
+      let [b64packet, setPacket] = React.useState("");
+
+      let reader, packets, error;
+      try {
+        reader = SBEReader.fromBase64(b64packet);
+        packets = reader.readPackets();
+        error = null;
+      } catch (ex) {
+        reader = SBEReader.fromBase64("");
+        packets = [];
+        error = ex.toString()
+      }
+
+      let textareaRef = React.createRef();
+      return (
+        <div>
+          <h1>Deribit SBE Online Decoder</h1>
+          <h2>Base64 packet</h2>
+          <textarea style={{ width: "100%", height: "5em" }} ref={textareaRef}>
+          </textarea>
+          <button onClick={decode}>Decode</button>
+          <button style={{ marginLeft: "20px" }} onClick={loadExample}>Load example</button>
+          <button style={{ marginLeft: "20px" }} onClick={loadLiveExample}>Live example</button>
+          {(b64packet.length == 0) ? <div /> : (
+            <div>
+              <h2>Result</h2>
+              {error ?
+                <div><h3>Error during decoding</h3><code>{error}</code></div>
+                :
+                <div>
+                  <HexDump dataview={reader.dataview} />
+                  {packets.map((packet, idx) => <SbeMessage key={idx} packet={packet} />)}
+                </div>
+              }
+            </div>
+          )}
+        </div>
+      );
+
+      function decode() {
+        setPacket(textareaRef.current.value)
+      }
+
+      function loadExample() {
+        const example =
+	  "hQDrAwEAAQAAAAAALOgBAAE34DTMgAEAAAAAAGV7ReZBSOF6FO5s3EAAAAAAkErdQAAAAADA3dxAuB6F6zHb3" +
+	  "ECF61G47tvcQAAAAABg29xAAAAAAAAANEAAAAAAgNzcQAAAAAAALKpAAAAAAAAAAADTBSdotNHgvrgehesx29" +
+	  "xA//////////8K16Nw7d/cQB0A6QMBAAEAAQAAACzoAQA34DTMgAEAAMW85rMCAAAA0LzmswIAAAABEgABAAA" +
+	  "AAAAAAQAAAACA3NxAAAAAAAAsqkA=";
+        textareaRef.current.value = example;
+        setPacket(example)
+      }
+
+      function loadLiveExample() {
+      	let channelId = Math.round(Math.random()-0.3) * 100 + Math.ceil(Math.random()*6);
+	console.log(channelId)
+      	fetch("https://www.deribit.com/api/v2/multicast/get_last_packet?channel_id=" + channelId)
+	.then(response => response.json())
+        .then(data => {
+          if (data.result) {
+	    let packet = data.result.packet;
+            textareaRef.current.value = packet;
+            setPacket(packet); 
+          }
+        })
+      }
+    }
+
+    let root = ReactDOM.createRoot(document.getElementById("root"));
+    root.render(
+      <ReactRedux.Provider store={store}>
+        <App />
+      </ReactRedux.Provider>
+    );
+  </script>
+</body>
