@@ -40,16 +40,19 @@ fail(boost::system::error_code ec, char const* what)
 }
 
 // Echoes back all received WebSocket messages
-class Session : public std::enable_shared_from_this<Session>
+class Session //: public std::enable_shared_from_this<Session>
 {
     websocket::stream<tcp::socket> ws_;
     boost::beast::flat_buffer buffer_;
+    // boost::asio::strand<
+    //     boost::asio::io_context::executor_type> strand_;
 
 public:
     // Take ownership of the socket
     explicit
     Session(tcp::socket socket)
         : ws_(std::move(socket))
+        // , strand_(ws_.get_executor())
     {
     }
 
@@ -57,7 +60,17 @@ public:
     void
     run()
     {
-        // Accept the websocket handshake
+        // boost::asio::strand<
+        //     boost::asio::io_context::executor_type> strand_(ws_.get_executor());
+        // // Accept the websocket handshake
+        // ws_.async_accept(
+        //     boost::asio::bind_executor(
+        //         strand_,
+        //         std::bind(
+        //             &Session::onAccept,
+        //             // shared_from_this(),
+        //             this,
+        //             std::placeholders::_1)));
         ws_.async_accept(
             std::bind(
                 &Session::onAccept, this,
@@ -72,11 +85,11 @@ public:
             return fail(ec, "accept");
 
         // Read a message
-        doRead();
+        do_read();
     }
 
     void
-    doRead()
+    do_read()
     {
         // Read a message into our buffer
         ws_.async_read(
@@ -126,17 +139,18 @@ public:
         buffer_.consume(buffer_.size());
 
         // Do another read
-        doRead();
+        do_read();
     }
 };
 
 //------------------------------------------------------------------------------
 
-// Accepts incoming connections and launches the Sessions
-class Listener : public std::enable_shared_from_this<Listener>
+// Accepts incoming connections and launches the sessions
+class Listener //: public std::enable_shared_from_this<Listener>
 {
     tcp::acceptor acceptor_;
     tcp::socket socket_;
+    std::vector<std::shared_ptr<Session>> sessions_;
 
 public:
     Listener(
@@ -187,22 +201,23 @@ public:
     {
         if(! acceptor_.is_open())
             return;
-        doAccept();
+        do_accept();
     }
 
     void
-    doAccept()
+    do_accept()
     {
         acceptor_.async_accept(
             socket_,
             std::bind(
-                &Listener::onAccept,
-                shared_from_this(),
+                &Listener::on_accept,
+                // shared_from_this(),
+                this,
                 std::placeholders::_1));
     }
 
     void
-    onAccept(boost::system::error_code ec)
+    on_accept(boost::system::error_code ec)
     {
         if(ec)
         {
@@ -210,12 +225,14 @@ public:
         }
         else
         {
-            // Create the Session and run it
-            std::make_shared<Session>(std::move(socket_))->run();
+            // Create the session and run it
+            auto session = std::make_shared<Session>(std::move(socket_));
+            session->run();
+            sessions_.emplace_back(session);
         }
 
         // Accept another connection
-        doAccept();
+        do_accept();
     }
 };
 
@@ -224,22 +241,24 @@ public:
 int main(int argc, char* argv[])
 {
     // Check command line arguments.
-    if (argc != 3) {
+    if (argc != 4)
+    {
         std::cerr <<
-            "Usage: " << argv[0] << " <address> <port> <threads>\n" <<
+            "Usage: websocket-server-async <address> <port> <threads>\n" <<
             "Example:\n" <<
-            "    " << argv[0] << " 0.0.0.0 8080\n";
+            "    websocket-server-async 0.0.0.0 8080 1\n";
         return EXIT_FAILURE;
     }
     auto const address = boost::asio::ip::make_address(argv[1]);
     auto const port = static_cast<unsigned short>(std::atoi(argv[2]));
-    auto const threads = 1;
+    auto const threads = std::max<int>(1, std::atoi(argv[3]));
 
     // The io_context is required for all I/O
     boost::asio::io_context ioc{threads};
 
     // Create and launch a listening port
-    std::make_shared<Listener>(ioc, tcp::endpoint{address, port})->run();
+    auto listener = std::make_shared<Listener>(ioc, tcp::endpoint{address, port});
+    listener->run();
 
     // Run the I/O service on the requested number of threads
     std::vector<std::thread> v;

@@ -46,9 +46,9 @@ struct Md2ClientSession {
     // typedef nebula::func::FastDelegate<void (const std::string&)> DgtClientSocketSend;
 
     // Take ownership of the socket
-    Md2ClientSession(tcp::socket socket, ssl::context& ctx, nebula::asio::io_service& aIoc)
-        : m_socket(std::move(socket))
-        , m_ws(m_socket, ctx)
+    Md2ClientSession(tcp::socket socket, nebula::asio::io_service& aIoc)
+        : m_ws(std::move(socket))
+        , m_socket(m_ws.next_layer())
         , m_connected(false) {
     }
 
@@ -71,18 +71,13 @@ struct Md2ClientSession {
             ss << m_socket.remote_endpoint();
             std::cout << __func__ << ": connection from " << ss.str() << std::endl;
         }
-        // Perform the SSL handshake
-        m_ws.next_layer().async_handshake(
-            ssl::stream_base::server,
-            std::bind(
-                &Md2ClientSession::onHandshake, this,
-                std::placeholders::_1)
-            );
-    }
-
-    void onHandshake(boost::system::error_code ec) {
-        if(ec)
-            return error(ec, "handshake");
+        // // Perform the SSL handshake
+        // m_ws.next_layer().async_handshake(
+        //     ssl::stream_base::server,
+        //     std::bind(
+        //         &Md2ClientSession::onHandshake, this,
+        //         std::placeholders::_1)
+        //     );
 
         // Accept the websocket handshake
         m_ws.async_accept(
@@ -90,7 +85,30 @@ struct Md2ClientSession {
                 &Md2ClientSession::onAccept, this,
                 std::placeholders::_1)
             );
+
+        // boost::asio::strand<
+        //     boost::asio::io_context::executor_type> strand_(m_ws.get_executor());
+        // // Accept the websocket handshake
+        // m_ws.async_accept(
+        //     boost::asio::bind_executor(
+        //         strand_,
+        //         std::bind(
+        //             &Md2ClientSession::onAccept,
+        //             this,
+        //             std::placeholders::_1)));
     }
+
+    // void onHandshake(boost::system::error_code ec) {
+    //     if(ec)
+    //         return error(ec, "handshake");
+
+    //     // Accept the websocket handshake
+    //     m_ws.async_accept(
+    //         std::bind(
+    //             &Md2ClientSession::onAccept, this,
+    //             std::placeholders::_1)
+    //         );
+    // }
 
     void onAccept(boost::system::error_code ec) {
         if(ec)
@@ -224,8 +242,8 @@ private:
     }
 
 private:
-    tcp::socket m_socket;
-    websocket::stream<ssl::stream<tcp::socket&>> m_ws;   // m_ws
+    websocket::stream<tcp::socket> m_ws;
+    tcp::socket &m_socket;
     boost::beast::flat_buffer m_recvBuffer;
     std::string m_sendingBuffer;
     bool m_connected;
@@ -238,15 +256,13 @@ private:
 struct Md2ClientAcceptor {
     typedef Md2ClientSession session_type;
     typedef std::shared_ptr<session_type>   session_pointer;
-    // typedef nebula::func::FastDelegate<void (session_type*)> DgtNewSession;
-    // typedef nebula::func::FastDelegate<void (session_type*)> DgtDoneSession;
 
     Md2ClientAcceptor(
         boost::asio::io_service& aIoc,
-        ssl::context& aCtx,
+        // ssl::context& aCtx,
         tcp::endpoint aEndpoint)
         : m_ioc(aIoc)
-        , m_ctx(aCtx)
+        // , m_ctx(aCtx)
         , m_acceptor(aIoc)
         , m_socket(aIoc) {
         boost::system::error_code ec;
@@ -280,15 +296,6 @@ struct Md2ClientAcceptor {
         }
     }
 
-    // void publishData(std::string aMsg) {
-    //     for (auto it = m_sessions.begin(); it != m_sessions.end(); ++it) {
-    //         if ((*it)->connected() && (*it)->sending() == false ) {
-    //             (*it)->socketSend(aMsg);
-    //         }
-    //         // TODO: remove dead sessions.
-    //     }
-    // }
-
     // Start accepting incoming connections
     void start() {
         if(! m_acceptor.is_open()) {
@@ -299,10 +306,7 @@ struct Md2ClientAcceptor {
     }
 
     void doAccept() {
-            // std::stringstream ss;
-            // ss << m_socket.remote_endpoint();
-            // std::cout << __func__ << ": connection from " << ss.str() << std::endl;
-        std::cout << __func__ << ": listening " << m_acceptor.local_endpoint() << std::endl;
+        std::cout << "accept: listening " << m_acceptor.local_endpoint() << std::endl;
         m_acceptor.async_accept(
             m_socket,
             std::bind(
@@ -316,18 +320,9 @@ struct Md2ClientAcceptor {
         }
         else {
             // Create the Md2ClientSession and run it
-            auto aSessPtr = std::make_shared<Md2ClientSession>(std::move(m_socket), m_ctx, m_ioc);
+            auto aSessPtr = std::make_shared<Md2ClientSession>(std::move(m_socket), m_ioc);
             aSessPtr->start();
             m_sessions.push_back(aSessPtr);
-
-            // // Hook in session completion
-            // for(auto dgtDoneSession : m_dgtsDoneSession) {
-            //     auto connStatusSinkPtr = std::make_shared<ConnStatusSink>(aSessPtr, dgtDoneSession);
-            //     m_connStatusSinks.push_back(connStatusSinkPtr);
-            // }
-
-            // // Broadcast the new session
-            // m_dgtsNewSession.broadcast(aSessPtr.get());
         }
 
         // Accept another connection
@@ -342,13 +337,10 @@ private:
 
 private:
     net::io_service& m_ioc;
-    ssl::context& m_ctx;
+    // ssl::context& m_ctx;
     tcp::acceptor m_acceptor;
     tcp::socket m_socket;
     std::vector< std::shared_ptr<Md2ClientSession> > m_sessions;
-    // std::vector<std::shared_ptr<ConnStatusSink>> m_connStatusSinks;
-    // nebula::tr::ds::Delegates<DgtNewSession> m_dgtsNewSession;
-    // nebula::tr::ds::Delegates<DgtDoneSession> m_dgtsDoneSession;
 };
 
 int main(int argc, char* argv[])
@@ -369,21 +361,14 @@ int main(int argc, char* argv[])
     boost::asio::io_context ioc{threads};
 
     // The SSL context is required, and holds certificates
-    ssl::context ctx{ssl::context::tlsv12};
+    // ssl::context ctx{ssl::context::tlsv12};
 
     // This holds the self-signed certificate used by the server
-    //load_server_certificate(ctx);
-    ctx.set_options(
-        boost::asio::ssl::context::default_workarounds |
-        boost::asio::ssl::context::no_sslv2 |
-        boost::asio::ssl::context::single_dh_use);
-    ctx.use_certificate_file("newcert.pem", ssl::context::pem);
-    ctx.use_private_key_file("privkey.pem", ssl::context::pem);
-    ctx.use_tmp_dh_file("dh512.pem");
+    // load_server_certificate(ctx);
 
     // Create and launch a listening port
     tcp::endpoint localEp{address, port};
-    auto acceptor = std::make_shared<Md2ClientAcceptor>(ioc, ctx, localEp);
+    auto acceptor = std::make_shared<Md2ClientAcceptor>(ioc, localEp);
     acceptor->start();
 
     // Run the I/O service on the requested number of threads
