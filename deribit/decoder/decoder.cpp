@@ -8,7 +8,7 @@
 int main () {
     std::string baseMsg = "hQDrAwEAAQAAAAAALOgBAAE34DTMgAEAAAAAAGV7ReZBSOF6FO5s3EAAAAAAkErdQAAAAADA3dxAuB6F6zHb3ECF61G47tvcQAAAAABg29xAAAAAAAAANEAAAAAAgNzcQAAAAAAALKpAAAAAAAAAAADTBSdotNHgvrgehesx29xA//////////8K16Nw7d/cQB0A6QMBAAEAAQAAACzoAQA34DTMgAEAAMW85rMCAAAA0LzmswIAAAABEgABAAAAAAAAAQAAAACA3NxAAAAAAAAsqkA=";
 
-   har buffer[1024];
+   char buffer[1024];
    auto res = boost::beast::detail::base64::decode(buffer, baseMsg.c_str(), baseMsg.size());
    std::cout << "Input size: " << baseMsg.size() << std::endl;
    std::cout << "Input read: " << res.second << std::endl;
