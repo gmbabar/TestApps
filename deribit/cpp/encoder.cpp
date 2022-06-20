@@ -25,10 +25,5 @@ int main()
     .changeId(11608177872)
     .isLast(deribit_multicast::YesNo::yes);
 
-    std::ostringstream oss;
-    oss << b1;
-
-    std::cout << oss.str() << std::endl;
-
-
+    std::cout << b1 << std::endl;
 }
