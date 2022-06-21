@@ -2,12 +2,12 @@
 #include <chrono>
 #include <iostream>
 #include <boost/beast/core/detail/base64.hpp>
-#include "deribit_multicast/MessageHeader.h"
-#include "deribit_multicast/Book.h"
-#include "deribit_multicast/Instrument.h"
-#include "deribit_multicast/Snapshot.h"
-#include "deribit_multicast/Ticker.h"
-#include "deribit_multicast/Trades.h"
+#include "./deribit_multicast/MessageHeader.h"
+#include "./deribit_multicast/Book.h"
+#include "./deribit_multicast/Instrument.h"
+#include "./deribit_multicast/Snapshot.h"
+#include "./deribit_multicast/Ticker.h"
+#include "./deribit_multicast/Trades.h"
 
 void decode(int msgType, char *buffer, size_t offset, size_t buffLen, size_t blockLen, int version) {
    // check template-id
