@@ -30,12 +30,13 @@ size_t decode(int msgType, char *buffer, size_t offset, size_t buffLen, size_t b
        std::cout << "instrumentId: " << book.instrumentId() << std::endl;
        std::cout << "timestampMs: " << book.timestampMs() << std::endl;
        std::cout << "changeId: " << book.changeId() << std::endl;
-       std::cout << "groups: " << book.header().numGroups() << std::endl;
+       std::cout << "numGroups: " << book.header().numGroups() << std::endl;
+       std::cout << "numVars: " << book.header().numVarDataFields() << std::endl;
 
        deribit_multicast::Book::ChangesList changesList;
        offset += book.sbeBlockLength();
        changesList.wrapForDecode(buffer, &offset, version, buffLen);
-       for (int idx=0; idx<book.header().numGroups(); ++idx) {
+       while (changesList.hasNext()) {
            std::cout << "changeList: " << changesList.next() << std::endl;
        }
        std::cout << std::endl;
@@ -63,22 +64,20 @@ size_t decode(int msgType, char *buffer, size_t offset, size_t buffLen, size_t b
    {
        std::cout << "msg type: Snapshot" << std::endl;
        deribit_multicast::Snapshot snapshot(buffer, offset, buffLen, blockLen, version);
-       //std::cout << snapshot << std::endl;
        std::cout << "instrumentId: " << snapshot.instrumentId() << std::endl;
        std::cout << "timestampMs: " << snapshot.timestampMs() << std::endl;
        std::cout << "changeId: " << snapshot.changeId() << std::endl;
-       std::cout << "groups: " << snapshot.header().numGroups() << std::endl;
-       //offset += snapshot.sbeBlockLength();
+       std::cout << "numGroups: " << snapshot.header().numGroups() << std::endl;
+       std::cout << "numVars: " << snapshot.header().numVarDataFields() << std::endl;
 
        deribit_multicast::Snapshot::LevelsList levelsList;
        offset += snapshot.sbeBlockLength();
        levelsList.wrapForDecode(buffer, &offset, version, buffLen);
-       for (int idx=0; idx<snapshot.header().numGroups(); ++idx) {
+       while (levelsList.hasNext()) {
            std::cout << "levelsList: " << levelsList.next() << std::endl;
        }
        std::cout << std::endl;
-       return buffLen;
-       //break;
+       break;
    }
    default:
        std::cout << "Unknown message type." << std::endl;
