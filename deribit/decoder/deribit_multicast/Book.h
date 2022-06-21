@@ -1,0 +1,1302 @@
+/* Generated SBE (Simple Binary Encoding) message codec */
+#ifndef _DERIBIT_MULTICAST_BOOK_H_
+#define _DERIBIT_MULTICAST_BOOK_H_
+
+#if defined(SBE_HAVE_CMATH)
+/* cmath needed for std::numeric_limits<double>::quiet_NaN() */
+#  include <cmath>
+#  define SBE_FLOAT_NAN std::numeric_limits<float>::quiet_NaN()
+#  define SBE_DOUBLE_NAN std::numeric_limits<double>::quiet_NaN()
+#else
+/* math.h needed for NAN */
+#  include <math.h>
+#  define SBE_FLOAT_NAN NAN
+#  define SBE_DOUBLE_NAN NAN
+#endif
+
+#if __cplusplus >= 201103L
+#  define SBE_CONSTEXPR constexpr
+#  define SBE_NOEXCEPT noexcept
+#else
+#  define SBE_CONSTEXPR
+#  define SBE_NOEXCEPT
+#endif
+
+#if __cplusplus >= 201703L
+#  include <string_view>
+#  define SBE_NODISCARD [[nodiscard]]
+#else
+#  define SBE_NODISCARD
+#endif
+
+#if !defined(__STDC_LIMIT_MACROS)
+#  define __STDC_LIMIT_MACROS 1
+#endif
+
+#include <cstdint>
+#include <cstring>
+#include <iomanip>
+#include <limits>
+#include <ostream>
+#include <stdexcept>
+#include <sstream>
+#include <string>
+#include <vector>
+#include <tuple>
+
+#if defined(WIN32) || defined(_WIN32)
+#  define SBE_BIG_ENDIAN_ENCODE_16(v) _byteswap_ushort(v)
+#  define SBE_BIG_ENDIAN_ENCODE_32(v) _byteswap_ulong(v)
+#  define SBE_BIG_ENDIAN_ENCODE_64(v) _byteswap_uint64(v)
+#  define SBE_LITTLE_ENDIAN_ENCODE_16(v) (v)
+#  define SBE_LITTLE_ENDIAN_ENCODE_32(v) (v)
+#  define SBE_LITTLE_ENDIAN_ENCODE_64(v) (v)
+#elif __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+#  define SBE_BIG_ENDIAN_ENCODE_16(v) __builtin_bswap16(v)
+#  define SBE_BIG_ENDIAN_ENCODE_32(v) __builtin_bswap32(v)
+#  define SBE_BIG_ENDIAN_ENCODE_64(v) __builtin_bswap64(v)
+#  define SBE_LITTLE_ENDIAN_ENCODE_16(v) (v)
+#  define SBE_LITTLE_ENDIAN_ENCODE_32(v) (v)
+#  define SBE_LITTLE_ENDIAN_ENCODE_64(v) (v)
+#elif __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+#  define SBE_LITTLE_ENDIAN_ENCODE_16(v) __builtin_bswap16(v)
+#  define SBE_LITTLE_ENDIAN_ENCODE_32(v) __builtin_bswap32(v)
+#  define SBE_LITTLE_ENDIAN_ENCODE_64(v) __builtin_bswap64(v)
+#  define SBE_BIG_ENDIAN_ENCODE_16(v) (v)
+#  define SBE_BIG_ENDIAN_ENCODE_32(v) (v)
+#  define SBE_BIG_ENDIAN_ENCODE_64(v) (v)
+#else
+#  error "Byte Ordering of platform not determined. Set __BYTE_ORDER__ manually before including this file."
+#endif
+
+#if defined(SBE_NO_BOUNDS_CHECK)
+#  define SBE_BOUNDS_CHECK_EXPECT(exp, c) (false)
+#elif defined(_MSC_VER)
+#  define SBE_BOUNDS_CHECK_EXPECT(exp, c) (exp)
+#else
+#  define SBE_BOUNDS_CHECK_EXPECT(exp, c) (__builtin_expect(exp, c))
+#endif
+
+#define SBE_NULLVALUE_INT8 (std::numeric_limits<std::int8_t>::min)()
+#define SBE_NULLVALUE_INT16 (std::numeric_limits<std::int16_t>::min)()
+#define SBE_NULLVALUE_INT32 (std::numeric_limits<std::int32_t>::min)()
+#define SBE_NULLVALUE_INT64 (std::numeric_limits<std::int64_t>::min)()
+#define SBE_NULLVALUE_UINT8 (std::numeric_limits<std::uint8_t>::max)()
+#define SBE_NULLVALUE_UINT16 (std::numeric_limits<std::uint16_t>::max)()
+#define SBE_NULLVALUE_UINT32 (std::numeric_limits<std::uint32_t>::max)()
+#define SBE_NULLVALUE_UINT64 (std::numeric_limits<std::uint64_t>::max)()
+
+
+#include "Liquidation.h"
+#include "Period.h"
+#include "MessageHeader.h"
+#include "InstrumentState.h"
+#include "InstrumentKind.h"
+#include "VarString.h"
+#include "GroupSizeEncoding.h"
+#include "OptionType.h"
+#include "YesNo.h"
+#include "TickDirection.h"
+#include "FutureType.h"
+#include "BookSide.h"
+#include "BookChange.h"
+#include "Direction.h"
+
+namespace deribit_multicast {
+
+class Book
+{
+private:
+    char *m_buffer = nullptr;
+    std::uint64_t m_bufferLength = 0;
+    std::uint64_t m_offset = 0;
+    std::uint64_t m_position = 0;
+    std::uint64_t m_actingBlockLength = 0;
+    std::uint64_t m_actingVersion = 0;
+
+    inline std::uint64_t *sbePositionPtr() SBE_NOEXCEPT
+    {
+        return &m_position;
+    }
+
+public:
+    static const std::uint16_t SBE_BLOCK_LENGTH = static_cast<std::uint16_t>(41);
+    static const std::uint16_t SBE_TEMPLATE_ID = static_cast<std::uint16_t>(1001);
+    static const std::uint16_t SBE_SCHEMA_ID = static_cast<std::uint16_t>(1);
+    static const std::uint16_t SBE_SCHEMA_VERSION = static_cast<std::uint16_t>(1);
+
+    enum MetaAttribute
+    {
+        EPOCH, TIME_UNIT, SEMANTIC_TYPE, PRESENCE
+    };
+
+    union sbe_float_as_uint_u
+    {
+        float fp_value;
+        std::uint32_t uint_value;
+    };
+
+    union sbe_double_as_uint_u
+    {
+        double fp_value;
+        std::uint64_t uint_value;
+    };
+
+    using messageHeader = MessageHeader;
+
+    Book() = default;
+
+    Book(
+        char *buffer,
+        const std::uint64_t offset,
+        const std::uint64_t bufferLength,
+        const std::uint64_t actingBlockLength,
+        const std::uint64_t actingVersion) :
+        m_buffer(buffer),
+        m_bufferLength(bufferLength),
+        m_offset(offset),
+        m_position(sbeCheckPosition(offset + actingBlockLength)),
+        m_actingBlockLength(actingBlockLength),
+        m_actingVersion(actingVersion)
+    {
+    }
+
+    Book(char *buffer, const std::uint64_t bufferLength) :
+        Book(buffer, 0, bufferLength, sbeBlockLength(), sbeSchemaVersion())
+    {
+    }
+
+    Book(
+        char *buffer,
+        const std::uint64_t bufferLength,
+        const std::uint64_t actingBlockLength,
+        const std::uint64_t actingVersion) :
+        Book(buffer, 0, bufferLength, actingBlockLength, actingVersion)
+    {
+    }
+
+    SBE_NODISCARD static SBE_CONSTEXPR std::uint16_t sbeBlockLength() SBE_NOEXCEPT
+    {
+        return static_cast<std::uint16_t>(41);
+    }
+
+    SBE_NODISCARD static SBE_CONSTEXPR std::uint64_t sbeBlockAndHeaderLength() SBE_NOEXCEPT
+    {
+        return messageHeader::encodedLength() + sbeBlockLength();
+    }
+
+    SBE_NODISCARD static SBE_CONSTEXPR std::uint16_t sbeTemplateId() SBE_NOEXCEPT
+    {
+        return static_cast<std::uint16_t>(1001);
+    }
+
+    SBE_NODISCARD static SBE_CONSTEXPR std::uint16_t sbeSchemaId() SBE_NOEXCEPT
+    {
+        return static_cast<std::uint16_t>(1);
+    }
+
+    SBE_NODISCARD static SBE_CONSTEXPR std::uint16_t sbeSchemaVersion() SBE_NOEXCEPT
+    {
+        return static_cast<std::uint16_t>(1);
+    }
+
+    SBE_NODISCARD static SBE_CONSTEXPR const char *sbeSemanticType() SBE_NOEXCEPT
+    {
+        return "";
+    }
+
+    SBE_NODISCARD std::uint64_t offset() const SBE_NOEXCEPT
+    {
+        return m_offset;
+    }
+
+    Book &wrapForEncode(char *buffer, const std::uint64_t offset, const std::uint64_t bufferLength)
+    {
+        return *this = Book(buffer, offset, bufferLength, sbeBlockLength(), sbeSchemaVersion());
+    }
+
+    Book &wrapAndApplyHeader(char *buffer, const std::uint64_t offset, const std::uint64_t bufferLength)
+    {
+        messageHeader hdr(buffer, offset, bufferLength, sbeSchemaVersion());
+
+        hdr
+            .blockLength(sbeBlockLength())
+            .templateId(sbeTemplateId())
+            .schemaId(sbeSchemaId())
+            .version(sbeSchemaVersion());
+
+        return *this = Book(
+            buffer,
+            offset + messageHeader::encodedLength(),
+            bufferLength,
+            sbeBlockLength(),
+            sbeSchemaVersion());
+    }
+
+    Book &wrapForDecode(
+        char *buffer,
+        const std::uint64_t offset,
+        const std::uint64_t actingBlockLength,
+        const std::uint64_t actingVersion,
+        const std::uint64_t bufferLength)
+    {
+        return *this = Book(buffer, offset, bufferLength, actingBlockLength, actingVersion);
+    }
+
+    Book &sbeRewind()
+    {
+        return wrapForDecode(m_buffer, m_offset, m_actingBlockLength, m_actingVersion, m_bufferLength);
+    }
+
+    SBE_NODISCARD std::uint64_t sbePosition() const SBE_NOEXCEPT
+    {
+        return m_position;
+    }
+
+    // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
+    std::uint64_t sbeCheckPosition(const std::uint64_t position)
+    {
+        if (SBE_BOUNDS_CHECK_EXPECT((position > m_bufferLength), false))
+        {
+            throw std::runtime_error("buffer too short [E100]");
+        }
+        return position;
+    }
+
+    void sbePosition(const std::uint64_t position)
+    {
+        m_position = sbeCheckPosition(position);
+    }
+
+    SBE_NODISCARD std::uint64_t encodedLength() const SBE_NOEXCEPT
+    {
+        return sbePosition() - m_offset;
+    }
+
+    SBE_NODISCARD std::uint64_t decodeLength() const
+    {
+        Book skipper(m_buffer, m_offset, m_bufferLength, sbeBlockLength(), m_actingVersion);
+        skipper.skip();
+        return skipper.encodedLength();
+    }
+
+    SBE_NODISCARD const char *buffer() const SBE_NOEXCEPT
+    {
+        return m_buffer;
+    }
+
+    SBE_NODISCARD char *buffer() SBE_NOEXCEPT
+    {
+        return m_buffer;
+    }
+
+    SBE_NODISCARD std::uint64_t bufferLength() const SBE_NOEXCEPT
+    {
+        return m_bufferLength;
+    }
+
+    SBE_NODISCARD std::uint64_t actingVersion() const SBE_NOEXCEPT
+    {
+        return m_actingVersion;
+    }
+
+    SBE_NODISCARD static const char *headerMetaAttribute(const MetaAttribute metaAttribute) SBE_NOEXCEPT
+    {
+        switch (metaAttribute)
+        {
+            case MetaAttribute::PRESENCE: return "required";
+            default: return "";
+        }
+    }
+
+    static SBE_CONSTEXPR std::uint16_t headerId() SBE_NOEXCEPT
+    {
+        return 1;
+    }
+
+    SBE_NODISCARD static SBE_CONSTEXPR std::uint64_t headerSinceVersion() SBE_NOEXCEPT
+    {
+        return 0;
+    }
+
+    SBE_NODISCARD bool headerInActingVersion() SBE_NOEXCEPT
+    {
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wtautological-compare"
+#endif
+        return m_actingVersion >= headerSinceVersion();
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#endif
+    }
+
+    SBE_NODISCARD static SBE_CONSTEXPR std::size_t headerEncodingOffset() SBE_NOEXCEPT
+    {
+        return 0;
+    }
+
+private:
+    MessageHeader m_header;
+
+public:
+    SBE_NODISCARD MessageHeader &header()
+    {
+        m_header.wrap(m_buffer, m_offset + 0, m_actingVersion, m_bufferLength);
+        return m_header;
+    }
+
+    SBE_NODISCARD static const char *instrumentIdMetaAttribute(const MetaAttribute metaAttribute) SBE_NOEXCEPT
+    {
+        switch (metaAttribute)
+        {
+            case MetaAttribute::PRESENCE: return "required";
+            default: return "";
+        }
+    }
+
+    static SBE_CONSTEXPR std::uint16_t instrumentIdId() SBE_NOEXCEPT
+    {
+        return 2;
+    }
+
+    SBE_NODISCARD static SBE_CONSTEXPR std::uint64_t instrumentIdSinceVersion() SBE_NOEXCEPT
+    {
+        return 0;
+    }
+
+    SBE_NODISCARD bool instrumentIdInActingVersion() SBE_NOEXCEPT
+    {
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wtautological-compare"
+#endif
+        return m_actingVersion >= instrumentIdSinceVersion();
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#endif
+    }
+
+    SBE_NODISCARD static SBE_CONSTEXPR std::size_t instrumentIdEncodingOffset() SBE_NOEXCEPT
+    {
+        return 12;
+    }
+
+    static SBE_CONSTEXPR std::uint32_t instrumentIdNullValue() SBE_NOEXCEPT
+    {
+        return SBE_NULLVALUE_UINT32;
+    }
+
+    static SBE_CONSTEXPR std::uint32_t instrumentIdMinValue() SBE_NOEXCEPT
+    {
+        return UINT32_C(0x0);
+    }
+
+    static SBE_CONSTEXPR std::uint32_t instrumentIdMaxValue() SBE_NOEXCEPT
+    {
+        return UINT32_C(0xfffffffe);
+    }
+
+    static SBE_CONSTEXPR std::size_t instrumentIdEncodingLength() SBE_NOEXCEPT
+    {
+        return 4;
+    }
+
+    SBE_NODISCARD std::uint32_t instrumentId() const SBE_NOEXCEPT
+    {
+        std::uint32_t val;
+        std::memcpy(&val, m_buffer + m_offset + 12, sizeof(std::uint32_t));
+        return SBE_LITTLE_ENDIAN_ENCODE_32(val);
+    }
+
+    Book &instrumentId(const std::uint32_t value) SBE_NOEXCEPT
+    {
+        std::uint32_t val = SBE_LITTLE_ENDIAN_ENCODE_32(value);
+        std::memcpy(m_buffer + m_offset + 12, &val, sizeof(std::uint32_t));
+        return *this;
+    }
+
+    SBE_NODISCARD static const char *timestampMsMetaAttribute(const MetaAttribute metaAttribute) SBE_NOEXCEPT
+    {
+        switch (metaAttribute)
+        {
+            case MetaAttribute::PRESENCE: return "required";
+            default: return "";
+        }
+    }
+
+    static SBE_CONSTEXPR std::uint16_t timestampMsId() SBE_NOEXCEPT
+    {
+        return 3;
+    }
+
+    SBE_NODISCARD static SBE_CONSTEXPR std::uint64_t timestampMsSinceVersion() SBE_NOEXCEPT
+    {
+        return 0;
+    }
+
+    SBE_NODISCARD bool timestampMsInActingVersion() SBE_NOEXCEPT
+    {
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wtautological-compare"
+#endif
+        return m_actingVersion >= timestampMsSinceVersion();
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#endif
+    }
+
+    SBE_NODISCARD static SBE_CONSTEXPR std::size_t timestampMsEncodingOffset() SBE_NOEXCEPT
+    {
+        return 16;
+    }
+
+    static SBE_CONSTEXPR std::uint64_t timestampMsNullValue() SBE_NOEXCEPT
+    {
+        return SBE_NULLVALUE_UINT64;
+    }
+
+    static SBE_CONSTEXPR std::uint64_t timestampMsMinValue() SBE_NOEXCEPT
+    {
+        return UINT64_C(0x0);
+    }
+
+    static SBE_CONSTEXPR std::uint64_t timestampMsMaxValue() SBE_NOEXCEPT
+    {
+        return UINT64_C(0xfffffffffffffffe);
+    }
+
+    static SBE_CONSTEXPR std::size_t timestampMsEncodingLength() SBE_NOEXCEPT
+    {
+        return 8;
+    }
+
+    SBE_NODISCARD std::uint64_t timestampMs() const SBE_NOEXCEPT
+    {
+        std::uint64_t val;
+        std::memcpy(&val, m_buffer + m_offset + 16, sizeof(std::uint64_t));
+        return SBE_LITTLE_ENDIAN_ENCODE_64(val);
+    }
+
+    Book &timestampMs(const std::uint64_t value) SBE_NOEXCEPT
+    {
+        std::uint64_t val = SBE_LITTLE_ENDIAN_ENCODE_64(value);
+        std::memcpy(m_buffer + m_offset + 16, &val, sizeof(std::uint64_t));
+        return *this;
+    }
+
+    SBE_NODISCARD static const char *prevChangeIdMetaAttribute(const MetaAttribute metaAttribute) SBE_NOEXCEPT
+    {
+        switch (metaAttribute)
+        {
+            case MetaAttribute::PRESENCE: return "required";
+            default: return "";
+        }
+    }
+
+    static SBE_CONSTEXPR std::uint16_t prevChangeIdId() SBE_NOEXCEPT
+    {
+        return 4;
+    }
+
+    SBE_NODISCARD static SBE_CONSTEXPR std::uint64_t prevChangeIdSinceVersion() SBE_NOEXCEPT
+    {
+        return 0;
+    }
+
+    SBE_NODISCARD bool prevChangeIdInActingVersion() SBE_NOEXCEPT
+    {
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wtautological-compare"
+#endif
+        return m_actingVersion >= prevChangeIdSinceVersion();
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#endif
+    }
+
+    SBE_NODISCARD static SBE_CONSTEXPR std::size_t prevChangeIdEncodingOffset() SBE_NOEXCEPT
+    {
+        return 24;
+    }
+
+    static SBE_CONSTEXPR std::uint64_t prevChangeIdNullValue() SBE_NOEXCEPT
+    {
+        return SBE_NULLVALUE_UINT64;
+    }
+
+    static SBE_CONSTEXPR std::uint64_t prevChangeIdMinValue() SBE_NOEXCEPT
+    {
+        return UINT64_C(0x0);
+    }
+
+    static SBE_CONSTEXPR std::uint64_t prevChangeIdMaxValue() SBE_NOEXCEPT
+    {
+        return UINT64_C(0xfffffffffffffffe);
+    }
+
+    static SBE_CONSTEXPR std::size_t prevChangeIdEncodingLength() SBE_NOEXCEPT
+    {
+        return 8;
+    }
+
+    SBE_NODISCARD std::uint64_t prevChangeId() const SBE_NOEXCEPT
+    {
+        std::uint64_t val;
+        std::memcpy(&val, m_buffer + m_offset + 24, sizeof(std::uint64_t));
+        return SBE_LITTLE_ENDIAN_ENCODE_64(val);
+    }
+
+    Book &prevChangeId(const std::uint64_t value) SBE_NOEXCEPT
+    {
+        std::uint64_t val = SBE_LITTLE_ENDIAN_ENCODE_64(value);
+        std::memcpy(m_buffer + m_offset + 24, &val, sizeof(std::uint64_t));
+        return *this;
+    }
+
+    SBE_NODISCARD static const char *changeIdMetaAttribute(const MetaAttribute metaAttribute) SBE_NOEXCEPT
+    {
+        switch (metaAttribute)
+        {
+            case MetaAttribute::PRESENCE: return "required";
+            default: return "";
+        }
+    }
+
+    static SBE_CONSTEXPR std::uint16_t changeIdId() SBE_NOEXCEPT
+    {
+        return 5;
+    }
+
+    SBE_NODISCARD static SBE_CONSTEXPR std::uint64_t changeIdSinceVersion() SBE_NOEXCEPT
+    {
+        return 0;
+    }
+
+    SBE_NODISCARD bool changeIdInActingVersion() SBE_NOEXCEPT
+    {
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wtautological-compare"
+#endif
+        return m_actingVersion >= changeIdSinceVersion();
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#endif
+    }
+
+    SBE_NODISCARD static SBE_CONSTEXPR std::size_t changeIdEncodingOffset() SBE_NOEXCEPT
+    {
+        return 32;
+    }
+
+    static SBE_CONSTEXPR std::uint64_t changeIdNullValue() SBE_NOEXCEPT
+    {
+        return SBE_NULLVALUE_UINT64;
+    }
+
+    static SBE_CONSTEXPR std::uint64_t changeIdMinValue() SBE_NOEXCEPT
+    {
+        return UINT64_C(0x0);
+    }
+
+    static SBE_CONSTEXPR std::uint64_t changeIdMaxValue() SBE_NOEXCEPT
+    {
+        return UINT64_C(0xfffffffffffffffe);
+    }
+
+    static SBE_CONSTEXPR std::size_t changeIdEncodingLength() SBE_NOEXCEPT
+    {
+        return 8;
+    }
+
+    SBE_NODISCARD std::uint64_t changeId() const SBE_NOEXCEPT
+    {
+        std::uint64_t val;
+        std::memcpy(&val, m_buffer + m_offset + 32, sizeof(std::uint64_t));
+        return SBE_LITTLE_ENDIAN_ENCODE_64(val);
+    }
+
+    Book &changeId(const std::uint64_t value) SBE_NOEXCEPT
+    {
+        std::uint64_t val = SBE_LITTLE_ENDIAN_ENCODE_64(value);
+        std::memcpy(m_buffer + m_offset + 32, &val, sizeof(std::uint64_t));
+        return *this;
+    }
+
+    SBE_NODISCARD static const char *isLastMetaAttribute(const MetaAttribute metaAttribute) SBE_NOEXCEPT
+    {
+        switch (metaAttribute)
+        {
+            case MetaAttribute::PRESENCE: return "required";
+            default: return "";
+        }
+    }
+
+    static SBE_CONSTEXPR std::uint16_t isLastId() SBE_NOEXCEPT
+    {
+        return 6;
+    }
+
+    SBE_NODISCARD static SBE_CONSTEXPR std::uint64_t isLastSinceVersion() SBE_NOEXCEPT
+    {
+        return 0;
+    }
+
+    SBE_NODISCARD bool isLastInActingVersion() SBE_NOEXCEPT
+    {
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wtautological-compare"
+#endif
+        return m_actingVersion >= isLastSinceVersion();
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#endif
+    }
+
+    SBE_NODISCARD static SBE_CONSTEXPR std::size_t isLastEncodingOffset() SBE_NOEXCEPT
+    {
+        return 40;
+    }
+
+    SBE_NODISCARD static SBE_CONSTEXPR std::size_t isLastEncodingLength() SBE_NOEXCEPT
+    {
+        return 1;
+    }
+
+    SBE_NODISCARD std::uint8_t isLastRaw() const SBE_NOEXCEPT
+    {
+        std::uint8_t val;
+        std::memcpy(&val, m_buffer + m_offset + 40, sizeof(std::uint8_t));
+        return (val);
+    }
+
+    SBE_NODISCARD YesNo::Value isLast() const
+    {
+        std::uint8_t val;
+        std::memcpy(&val, m_buffer + m_offset + 40, sizeof(std::uint8_t));
+        return YesNo::get((val));
+    }
+
+    Book &isLast(const YesNo::Value value) SBE_NOEXCEPT
+    {
+        std::uint8_t val = (value);
+        std::memcpy(m_buffer + m_offset + 40, &val, sizeof(std::uint8_t));
+        return *this;
+    }
+
+    class ChangesList
+    {
+    private:
+        char *m_buffer = nullptr;
+        std::uint64_t m_bufferLength = 0;
+        std::uint64_t m_initialPosition = 0;
+        std::uint64_t *m_positionPtr = nullptr;
+        std::uint64_t m_blockLength = 0;
+        std::uint64_t m_count = 0;
+        std::uint64_t m_index = 0;
+        std::uint64_t m_offset = 0;
+        std::uint64_t m_actingVersion = 0;
+
+        SBE_NODISCARD std::uint64_t *sbePositionPtr() SBE_NOEXCEPT
+        {
+            return m_positionPtr;
+        }
+
+    public:
+        inline void wrapForDecode(
+            char *buffer,
+            std::uint64_t *pos,
+            const std::uint64_t actingVersion,
+            const std::uint64_t bufferLength)
+        {
+            GroupSizeEncoding dimensions(buffer, *pos, bufferLength, actingVersion);
+            m_buffer = buffer;
+            m_bufferLength = bufferLength;
+            m_blockLength = dimensions.blockLength();
+            m_count = dimensions.numInGroup();
+            m_index = 0;
+            m_actingVersion = actingVersion;
+            m_initialPosition = *pos;
+            m_positionPtr = pos;
+            *m_positionPtr = *m_positionPtr + 8;
+        }
+
+        inline void wrapForEncode(
+            char *buffer,
+            const std::uint16_t count,
+            std::uint64_t *pos,
+            const std::uint64_t actingVersion,
+            const std::uint64_t bufferLength)
+        {
+    #if defined(__GNUG__) && !defined(__clang__)
+    #pragma GCC diagnostic push
+    #pragma GCC diagnostic ignored "-Wtype-limits"
+    #endif
+            if (count > 65534)
+            {
+                throw std::runtime_error("count outside of allowed range [E110]");
+            }
+    #if defined(__GNUG__) && !defined(__clang__)
+    #pragma GCC diagnostic pop
+    #endif
+            m_buffer = buffer;
+            m_bufferLength = bufferLength;
+            GroupSizeEncoding dimensions(buffer, *pos, bufferLength, actingVersion);
+            dimensions.blockLength(static_cast<std::uint16_t>(18));
+            dimensions.numInGroup(static_cast<std::uint16_t>(count));
+            m_index = 0;
+            m_count = count;
+            m_blockLength = 18;
+            m_actingVersion = actingVersion;
+            m_initialPosition = *pos;
+            m_positionPtr = pos;
+            *m_positionPtr = *m_positionPtr + 8;
+        }
+
+        static SBE_CONSTEXPR std::uint64_t sbeHeaderSize() SBE_NOEXCEPT
+        {
+            return 8;
+        }
+
+        static SBE_CONSTEXPR std::uint64_t sbeBlockLength() SBE_NOEXCEPT
+        {
+            return 18;
+        }
+
+        SBE_NODISCARD std::uint64_t sbePosition() const SBE_NOEXCEPT
+        {
+            return *m_positionPtr;
+        }
+
+        // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
+        std::uint64_t sbeCheckPosition(const std::uint64_t position)
+        {
+            if (SBE_BOUNDS_CHECK_EXPECT((position > m_bufferLength), false))
+            {
+                throw std::runtime_error("buffer too short [E100]");
+            }
+            return position;
+        }
+
+        void sbePosition(const std::uint64_t position)
+        {
+            *m_positionPtr = sbeCheckPosition(position);
+        }
+
+        SBE_NODISCARD inline std::uint64_t count() const SBE_NOEXCEPT
+        {
+            return m_count;
+        }
+
+        SBE_NODISCARD inline bool hasNext() const SBE_NOEXCEPT
+        {
+            return m_index < m_count;
+        }
+
+        inline ChangesList &next()
+        {
+            if (m_index >= m_count)
+            {
+                throw std::runtime_error("index >= count [E108]");
+            }
+            m_offset = *m_positionPtr;
+            if (SBE_BOUNDS_CHECK_EXPECT(((m_offset + m_blockLength) > m_bufferLength), false))
+            {
+                throw std::runtime_error("buffer too short for next group index [E108]");
+            }
+            *m_positionPtr = m_offset + m_blockLength;
+            ++m_index;
+
+            return *this;
+        }
+
+        inline std::uint64_t resetCountToIndex()
+        {
+            m_count = m_index;
+            GroupSizeEncoding dimensions(m_buffer, m_initialPosition, m_bufferLength, m_actingVersion);
+            dimensions.numInGroup(static_cast<std::uint16_t>(m_count));
+            return m_count;
+        }
+
+    #if __cplusplus < 201103L
+        template<class Func> inline void forEach(Func &func)
+        {
+            while (hasNext())
+            {
+                next();
+                func(*this);
+            }
+        }
+
+    #else
+        template<class Func> inline void forEach(Func &&func)
+        {
+            while (hasNext())
+            {
+                next();
+                func(*this);
+            }
+        }
+
+    #endif
+
+        SBE_NODISCARD static const char *sideMetaAttribute(const MetaAttribute metaAttribute) SBE_NOEXCEPT
+        {
+            switch (metaAttribute)
+            {
+                case MetaAttribute::PRESENCE: return "required";
+                default: return "";
+            }
+        }
+
+        static SBE_CONSTEXPR std::uint16_t sideId() SBE_NOEXCEPT
+        {
+            return 1;
+        }
+
+        SBE_NODISCARD static SBE_CONSTEXPR std::uint64_t sideSinceVersion() SBE_NOEXCEPT
+        {
+            return 0;
+        }
+
+        SBE_NODISCARD bool sideInActingVersion() SBE_NOEXCEPT
+        {
+    #if defined(__clang__)
+    #pragma clang diagnostic push
+    #pragma clang diagnostic ignored "-Wtautological-compare"
+    #endif
+            return m_actingVersion >= sideSinceVersion();
+    #if defined(__clang__)
+    #pragma clang diagnostic pop
+    #endif
+        }
+
+        SBE_NODISCARD static SBE_CONSTEXPR std::size_t sideEncodingOffset() SBE_NOEXCEPT
+        {
+            return 0;
+        }
+
+        SBE_NODISCARD static SBE_CONSTEXPR std::size_t sideEncodingLength() SBE_NOEXCEPT
+        {
+            return 1;
+        }
+
+        SBE_NODISCARD std::uint8_t sideRaw() const SBE_NOEXCEPT
+        {
+            std::uint8_t val;
+            std::memcpy(&val, m_buffer + m_offset + 0, sizeof(std::uint8_t));
+            return (val);
+        }
+
+        SBE_NODISCARD BookSide::Value side() const
+        {
+            std::uint8_t val;
+            std::memcpy(&val, m_buffer + m_offset + 0, sizeof(std::uint8_t));
+            return BookSide::get((val));
+        }
+
+        ChangesList &side(const BookSide::Value value) SBE_NOEXCEPT
+        {
+            std::uint8_t val = (value);
+            std::memcpy(m_buffer + m_offset + 0, &val, sizeof(std::uint8_t));
+            return *this;
+        }
+
+        SBE_NODISCARD static const char *changeMetaAttribute(const MetaAttribute metaAttribute) SBE_NOEXCEPT
+        {
+            switch (metaAttribute)
+            {
+                case MetaAttribute::PRESENCE: return "required";
+                default: return "";
+            }
+        }
+
+        static SBE_CONSTEXPR std::uint16_t changeId() SBE_NOEXCEPT
+        {
+            return 2;
+        }
+
+        SBE_NODISCARD static SBE_CONSTEXPR std::uint64_t changeSinceVersion() SBE_NOEXCEPT
+        {
+            return 0;
+        }
+
+        SBE_NODISCARD bool changeInActingVersion() SBE_NOEXCEPT
+        {
+    #if defined(__clang__)
+    #pragma clang diagnostic push
+    #pragma clang diagnostic ignored "-Wtautological-compare"
+    #endif
+            return m_actingVersion >= changeSinceVersion();
+    #if defined(__clang__)
+    #pragma clang diagnostic pop
+    #endif
+        }
+
+        SBE_NODISCARD static SBE_CONSTEXPR std::size_t changeEncodingOffset() SBE_NOEXCEPT
+        {
+            return 1;
+        }
+
+        SBE_NODISCARD static SBE_CONSTEXPR std::size_t changeEncodingLength() SBE_NOEXCEPT
+        {
+            return 1;
+        }
+
+        SBE_NODISCARD std::uint8_t changeRaw() const SBE_NOEXCEPT
+        {
+            std::uint8_t val;
+            std::memcpy(&val, m_buffer + m_offset + 1, sizeof(std::uint8_t));
+            return (val);
+        }
+
+        SBE_NODISCARD BookChange::Value change() const
+        {
+            std::uint8_t val;
+            std::memcpy(&val, m_buffer + m_offset + 1, sizeof(std::uint8_t));
+            return BookChange::get((val));
+        }
+
+        ChangesList &change(const BookChange::Value value) SBE_NOEXCEPT
+        {
+            std::uint8_t val = (value);
+            std::memcpy(m_buffer + m_offset + 1, &val, sizeof(std::uint8_t));
+            return *this;
+        }
+
+        SBE_NODISCARD static const char *priceMetaAttribute(const MetaAttribute metaAttribute) SBE_NOEXCEPT
+        {
+            switch (metaAttribute)
+            {
+                case MetaAttribute::PRESENCE: return "required";
+                default: return "";
+            }
+        }
+
+        static SBE_CONSTEXPR std::uint16_t priceId() SBE_NOEXCEPT
+        {
+            return 3;
+        }
+
+        SBE_NODISCARD static SBE_CONSTEXPR std::uint64_t priceSinceVersion() SBE_NOEXCEPT
+        {
+            return 0;
+        }
+
+        SBE_NODISCARD bool priceInActingVersion() SBE_NOEXCEPT
+        {
+    #if defined(__clang__)
+    #pragma clang diagnostic push
+    #pragma clang diagnostic ignored "-Wtautological-compare"
+    #endif
+            return m_actingVersion >= priceSinceVersion();
+    #if defined(__clang__)
+    #pragma clang diagnostic pop
+    #endif
+        }
+
+        SBE_NODISCARD static SBE_CONSTEXPR std::size_t priceEncodingOffset() SBE_NOEXCEPT
+        {
+            return 2;
+        }
+
+        static SBE_CONSTEXPR double priceNullValue() SBE_NOEXCEPT
+        {
+            return SBE_DOUBLE_NAN;
+        }
+
+        static SBE_CONSTEXPR double priceMinValue() SBE_NOEXCEPT
+        {
+            return 4.9E-324;
+        }
+
+        static SBE_CONSTEXPR double priceMaxValue() SBE_NOEXCEPT
+        {
+            return 1.7976931348623157E308;
+        }
+
+        static SBE_CONSTEXPR std::size_t priceEncodingLength() SBE_NOEXCEPT
+        {
+            return 8;
+        }
+
+        SBE_NODISCARD double price() const SBE_NOEXCEPT
+        {
+            union sbe_double_as_uint_u val;
+            std::memcpy(&val, m_buffer + m_offset + 2, sizeof(double));
+            val.uint_value = SBE_LITTLE_ENDIAN_ENCODE_64(val.uint_value);
+            return val.fp_value;
+        }
+
+        ChangesList &price(const double value) SBE_NOEXCEPT
+        {
+            union sbe_double_as_uint_u val;
+            val.fp_value = value;
+            val.uint_value = SBE_LITTLE_ENDIAN_ENCODE_64(val.uint_value);
+            std::memcpy(m_buffer + m_offset + 2, &val, sizeof(double));
+            return *this;
+        }
+
+        SBE_NODISCARD static const char *amountMetaAttribute(const MetaAttribute metaAttribute) SBE_NOEXCEPT
+        {
+            switch (metaAttribute)
+            {
+                case MetaAttribute::PRESENCE: return "required";
+                default: return "";
+            }
+        }
+
+        static SBE_CONSTEXPR std::uint16_t amountId() SBE_NOEXCEPT
+        {
+            return 4;
+        }
+
+        SBE_NODISCARD static SBE_CONSTEXPR std::uint64_t amountSinceVersion() SBE_NOEXCEPT
+        {
+            return 0;
+        }
+
+        SBE_NODISCARD bool amountInActingVersion() SBE_NOEXCEPT
+        {
+    #if defined(__clang__)
+    #pragma clang diagnostic push
+    #pragma clang diagnostic ignored "-Wtautological-compare"
+    #endif
+            return m_actingVersion >= amountSinceVersion();
+    #if defined(__clang__)
+    #pragma clang diagnostic pop
+    #endif
+        }
+
+        SBE_NODISCARD static SBE_CONSTEXPR std::size_t amountEncodingOffset() SBE_NOEXCEPT
+        {
+            return 10;
+        }
+
+        static SBE_CONSTEXPR double amountNullValue() SBE_NOEXCEPT
+        {
+            return SBE_DOUBLE_NAN;
+        }
+
+        static SBE_CONSTEXPR double amountMinValue() SBE_NOEXCEPT
+        {
+            return 4.9E-324;
+        }
+
+        static SBE_CONSTEXPR double amountMaxValue() SBE_NOEXCEPT
+        {
+            return 1.7976931348623157E308;
+        }
+
+        static SBE_CONSTEXPR std::size_t amountEncodingLength() SBE_NOEXCEPT
+        {
+            return 8;
+        }
+
+        SBE_NODISCARD double amount() const SBE_NOEXCEPT
+        {
+            union sbe_double_as_uint_u val;
+            std::memcpy(&val, m_buffer + m_offset + 10, sizeof(double));
+            val.uint_value = SBE_LITTLE_ENDIAN_ENCODE_64(val.uint_value);
+            return val.fp_value;
+        }
+
+        ChangesList &amount(const double value) SBE_NOEXCEPT
+        {
+            union sbe_double_as_uint_u val;
+            val.fp_value = value;
+            val.uint_value = SBE_LITTLE_ENDIAN_ENCODE_64(val.uint_value);
+            std::memcpy(m_buffer + m_offset + 10, &val, sizeof(double));
+            return *this;
+        }
+
+        template<typename CharT, typename Traits>
+        friend std::basic_ostream<CharT, Traits> & operator << (
+            std::basic_ostream<CharT, Traits> &builder, ChangesList writer)
+        {
+            builder << '{';
+            builder << R"("side": )";
+            builder << '"' << writer.side() << '"';
+
+            builder << ", ";
+            builder << R"("change": )";
+            builder << '"' << writer.change() << '"';
+
+            builder << ", ";
+            builder << R"("price": )";
+            builder << +writer.price();
+
+            builder << ", ";
+            builder << R"("amount": )";
+            builder << +writer.amount();
+
+            builder << '}';
+
+            return builder;
+        }
+
+        void skip()
+        {
+        }
+
+        SBE_NODISCARD static SBE_CONSTEXPR bool isConstLength() SBE_NOEXCEPT
+        {
+            return true;
+        }
+
+        SBE_NODISCARD static std::size_t computeLength()
+        {
+#if defined(__GNUG__) && !defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wtype-limits"
+#endif
+            std::size_t length = sbeBlockLength();
+
+            return length;
+#if defined(__GNUG__) && !defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
+        }
+    };
+
+private:
+    ChangesList m_changesList;
+
+public:
+    SBE_NODISCARD static SBE_CONSTEXPR std::uint16_t changesListId() SBE_NOEXCEPT
+    {
+        return 7;
+    }
+
+    SBE_NODISCARD inline ChangesList &changesList()
+    {
+        m_changesList.wrapForDecode(m_buffer, sbePositionPtr(), m_actingVersion, m_bufferLength);
+        return m_changesList;
+    }
+
+    ChangesList &changesListCount(const std::uint16_t count)
+    {
+        m_changesList.wrapForEncode(m_buffer, count, sbePositionPtr(), m_actingVersion, m_bufferLength);
+        return m_changesList;
+    }
+
+    SBE_NODISCARD static SBE_CONSTEXPR std::uint64_t changesListSinceVersion() SBE_NOEXCEPT
+    {
+        return 0;
+    }
+
+    SBE_NODISCARD bool changesListInActingVersion() const SBE_NOEXCEPT
+    {
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wtautological-compare"
+#endif
+        return m_actingVersion >= changesListSinceVersion();
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#endif
+    }
+
+template<typename CharT, typename Traits>
+friend std::basic_ostream<CharT, Traits> & operator << (
+    std::basic_ostream<CharT, Traits> &builder, Book _writer)
+{
+    Book writer(
+        _writer.m_buffer,
+        _writer.m_offset,
+        _writer.m_bufferLength,
+        _writer.m_actingBlockLength,
+        _writer.m_actingVersion);
+
+    builder << '{';
+    builder << R"("Name": "Book", )";
+    builder << R"("sbeTemplateId": )";
+    builder << writer.sbeTemplateId();
+    builder << ", ";
+
+    builder << R"("header": )";
+    builder << writer.header();
+
+    builder << ", ";
+    builder << R"("instrumentId": )";
+    builder << +writer.instrumentId();
+
+    builder << ", ";
+    builder << R"("timestampMs": )";
+    builder << +writer.timestampMs();
+
+    builder << ", ";
+    builder << R"("prevChangeId": )";
+    builder << +writer.prevChangeId();
+
+    builder << ", ";
+    builder << R"("changeId": )";
+    builder << +writer.changeId();
+
+    builder << ", ";
+    builder << R"("isLast": )";
+    builder << '"' << writer.isLast() << '"';
+
+    builder << ", ";
+    {
+        bool atLeastOne = false;
+        builder << R"("changesList": [)";
+        // writer.changesList().forEach(
+        //     [&](ChangesList &changesList)
+        //     {
+        //         if (atLeastOne)
+        //         {
+        //             builder << ", ";
+        //         }
+        //         atLeastOne = true;
+        //         builder << changesList;
+        //     });
+        for(int i=1; i<=writer.header().numGroups(); i++)
+        {
+            builder << writer.changesList().next();
+        }
+        builder << ']';
+    }
+
+    builder << '}';
+
+    return builder;
+}
+
+void skip()
+{
+    changesList().forEach([](ChangesList &e){ e.skip(); });
+}
+
+SBE_NODISCARD static SBE_CONSTEXPR bool isConstLength() SBE_NOEXCEPT
+{
+    return false;
+}
+
+SBE_NODISCARD static std::size_t computeLength(std::size_t changesListLength = 0)
+{
+#if defined(__GNUG__) && !defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wtype-limits"
+#endif
+    std::size_t length = sbeBlockLength();
+
+    length += ChangesList::sbeHeaderSize();
+    if (changesListLength > 65534LL)
+    {
+        throw std::runtime_error("changesListLength outside of allowed range [E110]");
+    }
+    length += changesListLength *ChangesList::sbeBlockLength();
+
+    return length;
+#if defined(__GNUG__) && !defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
+}
+};
+}
+#endif
