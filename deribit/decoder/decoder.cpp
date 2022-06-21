@@ -2,12 +2,12 @@
 #include <chrono>
 #include <iostream>
 #include <boost/beast/core/detail/base64.hpp>
-#include "./deribit_multicast/MessageHeader.h"
-#include "./deribit_multicast/Book.h"
-#include "./deribit_multicast/Instrument.h"
-#include "./deribit_multicast/Snapshot.h"
-#include "./deribit_multicast/Ticker.h"
-#include "./deribit_multicast/Trades.h"
+#include "deribit_multicast/MessageHeader.h"
+#include "deribit_multicast/Book.h"
+#include "deribit_multicast/Instrument.h"
+#include "deribit_multicast/Snapshot.h"
+#include "deribit_multicast/Ticker.h"
+#include "deribit_multicast/Trades.h"
 
 void decode(int msgType, char *buffer, size_t offset, size_t buffLen, size_t blockLen, int version) {
    // check template-id
@@ -16,10 +16,18 @@ void decode(int msgType, char *buffer, size_t offset, size_t buffLen, size_t blo
        std::cout << "msg type: Instrument" << std::endl;
        break;
    case 1001:
+   {
        std::cout << "msg type: Book" << std::endl;
-       std::cout << deribit_multicast::Book(buffer, offset, buffLen, blockLen, version) << std::endl;
+       deribit_multicast::Book book(buffer, offset, buffLen, blockLen, version);
+       std::cout << "instrumentId: " << book.instrumentId() << std::endl;
+       std::cout << "timestampMs: " << book.timestampMs() << std::endl;
+       std::cout << "changeId: " << book.changeId() << std::endl;
+       std::cout << "groups: " << book.header().numGroups() << std::endl;
+       for (int idx=0; idx<book.header().numGroups(); ++idx)
+           std::cout << "changeList: " << book.changesList().next() << std::endl;
        std::cout << std::endl;
        break;
+   }
    case 1002:
        std::cout << "msg type: Trades" << std::endl;
        std::cout << deribit_multicast::Trades(buffer, offset, buffLen, blockLen, version) << std::endl;
