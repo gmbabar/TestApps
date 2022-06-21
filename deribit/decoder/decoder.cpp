@@ -93,9 +93,9 @@ int main () {
    while(offset < buffLen) {
        // decode msg header.
        header.wrap(buffer, offset, version, buffLen);
-       blockLen = header.blockLength();
-       msgType = header.templateId();
        // decode full msg.
+       msgType = header.templateId();
+       blockLen = header.blockLength();
        offset = decode(msgType, buffer, offset, buffLen, blockLen, version);
    }
 }
