@@ -9,7 +9,15 @@
 #include "deribit_multicast/Ticker.h"
 #include "deribit_multicast/Trades.h"
 
-void decode(int msgType, char *buffer, size_t offset, size_t buffLen, size_t blockLen, int version) {
+void printBuffer(const char *buffer, size_t size) {
+   std::cout << "Output data:" << std::endl;
+   for (int idx=0; idx<size; ++idx) 
+       printf("%.02x ", static_cast<unsigned char>(buffer[idx]));
+   printf("\n");
+}
+
+size_t decode(int msgType, char *buffer, size_t offset, size_t buffLen, size_t blockLen, int version) {
+   size_t varLen = 0;
    // check template-id
    switch(msgType) {
    case 1000:
@@ -23,28 +31,44 @@ void decode(int msgType, char *buffer, size_t offset, size_t buffLen, size_t blo
        std::cout << "timestampMs: " << book.timestampMs() << std::endl;
        std::cout << "changeId: " << book.changeId() << std::endl;
        std::cout << "groups: " << book.header().numGroups() << std::endl;
-       for (int idx=0; idx<book.header().numGroups(); ++idx)
-           std::cout << "changeList: " << book.changesList().next() << std::endl;
+
+       deribit_multicast::Book::ChangesList changesList;
+       offset += book.sbeBlockLength();
+       changesList.wrapForDecode(buffer, &offset, version, buffLen);
+       for (int idx=0; idx<book.header().numGroups(); ++idx) {
+           std::cout << "changeList: " << changesList.next() << std::endl;
+       }
        std::cout << std::endl;
        break;
    }
    case 1002:
+   {
        std::cout << "msg type: Trades" << std::endl;
-       std::cout << deribit_multicast::Trades(buffer, offset, buffLen, blockLen, version) << std::endl;
+       deribit_multicast::Trades trades(buffer, offset, buffLen, blockLen, version);
+       std::cout << trades << std::endl;
+       offset += trades.sbeBlockLength();
        std::cout << std::endl;
        break;
+   }
    case 1003:
+   {
        std::cout << "msg type: Ticker " << std::endl;
-       std::cout << deribit_multicast::Ticker(buffer, offset, buffLen, blockLen, version) << std::endl;
+       deribit_multicast::Ticker ticker(buffer, offset, buffLen, blockLen, version);
+       std::cout << ticker << std::endl;
+       offset += ticker.sbeBlockLength();
        std::cout << std::endl;
        break;
+   }
    case 1004:
+   {
        std::cout << "msg type: Snapshot" << std::endl;
        break;
+   }
    default:
        std::cout << "Unknown message type." << std::endl;
        break;
    }
+   return offset;
 }
 
 int main () {
@@ -54,35 +78,26 @@ int main () {
 
    char buffer[10 * 1024];
    auto res = boost::beast::detail::base64::decode(buffer, explMsg.c_str(), explMsg.size());
-   std::cout << "Input size: " << explMsg.size() << std::endl;
-   std::cout << "Input read: " << res.second << std::endl;
-   std::cout << "Output size: " << res.first << std::endl;
+   //printBuffer(buffer, res.first);
 
-   std::cout << "Output data:" << std::endl;
-   for (int idx=0; idx<res.first; ++idx) 
-       printf("%.02x ", static_cast<unsigned char>(buffer[idx]));
-   printf("\n");
-
-   // decode msg header.
-   deribit_multicast::MessageHeader header(buffer, 0, res.first, 1);
-   std::cout << "Header: " << std::endl << header << std::endl << std::endl;
 
    // decode msg
    size_t buffLen = res.first;
-   size_t blockLen = header.blockLength();
+   size_t blockLen = sizeof(buffer);
    size_t offset = 0;
-   int msgType = header.templateId();
    int version = 1;
-   decode(msgType, buffer, offset, buffLen, blockLen, version);
+   int msgType = 0;
+   deribit_multicast::MessageHeader header;
 
-   // decode second msg.
-   offset = blockLen + header.encodedLength();
-   //buffLen -= offset;
-   header.wrap(buffer, offset, version, buffLen);
-   std::cout << "Header: " << std::endl << header << std::endl << std::endl;
-   blockLen = header.blockLength();
-   msgType = header.templateId();
-   decode(msgType, buffer, offset, buffLen, blockLen, version);
+
+   while(offset < buffLen) {
+       // decode msg header.
+       header.wrap(buffer, offset, version, buffLen);
+       blockLen = header.blockLength();
+       msgType = header.templateId();
+       // decode full msg.
+       offset = decode(msgType, buffer, offset, buffLen, blockLen, version);
+   }
 }
 
 
