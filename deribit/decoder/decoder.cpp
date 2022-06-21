@@ -62,7 +62,23 @@ size_t decode(int msgType, char *buffer, size_t offset, size_t buffLen, size_t b
    case 1004:
    {
        std::cout << "msg type: Snapshot" << std::endl;
-       break;
+       deribit_multicast::Snapshot snapshot(buffer, offset, buffLen, blockLen, version);
+       //std::cout << snapshot << std::endl;
+       std::cout << "instrumentId: " << snapshot.instrumentId() << std::endl;
+       std::cout << "timestampMs: " << snapshot.timestampMs() << std::endl;
+       std::cout << "changeId: " << snapshot.changeId() << std::endl;
+       std::cout << "groups: " << snapshot.header().numGroups() << std::endl;
+       //offset += snapshot.sbeBlockLength();
+
+       deribit_multicast::Snapshot::LevelsList levelsList;
+       offset += snapshot.sbeBlockLength();
+       levelsList.wrapForDecode(buffer, &offset, version, buffLen);
+       for (int idx=0; idx<snapshot.header().numGroups(); ++idx) {
+           std::cout << "levelsList: " << levelsList.next() << std::endl;
+       }
+       std::cout << std::endl;
+       return buffLen;
+       //break;
    }
    default:
        std::cout << "Unknown message type." << std::endl;
@@ -89,7 +105,20 @@ int main () {
    int msgType = 0;
    deribit_multicast::MessageHeader header;
 
+   // decoding ticker message
+   while(offset < buffLen) {
+       // decode msg header.
+       header.wrap(buffer, offset, version, buffLen);
+       // decode full msg.
+       msgType = header.templateId();
+       blockLen = header.blockLength();
+       offset = decode(msgType, buffer, offset, buffLen, blockLen, version);
+   }
 
+   // decoding snapshot message
+   res = boost::beast::detail::base64::decode(buffer, snapMsg.c_str(), snapMsg.size());
+   buffLen = res.first;
+   offset = 0;
    while(offset < buffLen) {
        // decode msg header.
        header.wrap(buffer, offset, version, buffLen);
