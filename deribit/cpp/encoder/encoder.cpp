@@ -10,13 +10,15 @@ void encodeTrades() {
    size_t offset = 0;
    memset(buffer, 0, sizeof(buffer));
 
+   /*** 
    MessageHeader hdr(buffer, sizeof(buffer));
-   hdr.blockLength(Trades::sbeBlockLength())
+   hdr.blockLength(Trades::sbeBlockLength()) // Deribit expects header size to be excluded.
       .templateId(Trades::sbeTemplateId())
       .schemaId(Trades::sbeSchemaId())
       .version(Trades::sbeSchemaVersion())
       .numGroups(1)
       .numVarDataFields(0);
+   ***/
 
    /***
    <message name="trades" id="1002">
@@ -41,8 +43,15 @@ void encodeTrades() {
    ***/
    
    Trades trades;
-   trades.wrapForEncode(buffer, hdr.encodedLength(), sizeof(buffer)) 
+   trades.wrapForEncode(buffer, 0, sizeof(buffer)) 
          .instrumentId(1234);
+   // Deribit expects header size excluded
+   trades.header().blockLength(Trades::sbeBlockLength() - MessageHeader::encodedLength())
+      .templateId(Trades::sbeTemplateId())
+      .schemaId(Trades::sbeSchemaId())
+      .version(Trades::sbeSchemaVersion())
+      .numGroups(1)
+      .numVarDataFields(0);
    auto& tradesList = trades.tradesListCount(1); 
    tradesList.next()
              .direction(Direction::Value::sell)
@@ -59,7 +68,7 @@ void encodeTrades() {
              .blockTradeId(0)
              .comboTradeId(0);
 
-   std::cout << "Header: " << hdr << std::endl;
+   std::cout << "Header: " << trades.header() << std::endl;
    std::cout << "Trades: \n" << trades << std::endl;
    std::cout << "position: " << trades.sbePosition() << std::endl;
 
