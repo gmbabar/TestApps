@@ -111,8 +111,7 @@ size_t decode(int msgType, char *buffer, size_t offset, size_t buffLen, size_t b
 }
 
 
-void DecodeTrade(const char *buffer)
-{
+void parseMsg(const char *buffer) {
     size_t buffLen = sizeof(buffer);
     size_t blockLen = sizeof(buffer);
     size_t offset = 0;
@@ -124,24 +123,21 @@ void DecodeTrade(const char *buffer)
     auto res = boost::beast::detail::base64::decode(binBuff, buffer, strlen(buffer));
     buffLen = res.first;
     while(offset < buffLen) {
-    // decode msg header.
-    header.wrap(binBuff, offset, version, buffLen);
-    // decode full msg.
-    msgType = header.templateId();
-    blockLen = header.blockLength();
-    offset = decode(msgType, binBuff, offset, buffLen, blockLen, version);
+        // decode msg header.
+        header.wrap(binBuff, offset, version, buffLen);
+        // decode full msg.
+        msgType = header.templateId();
+        blockLen = header.blockLength();
+        offset = decode(msgType, binBuff, offset, buffLen, blockLen, version);
    }
-   offset = 0;
 }
 
-void ReciveAndDecode(int &sockFd, sockaddr_in &addr, socklen_t &size)
-{
+void reciveAndDecode(int &sockFd, sockaddr_in &addr, socklen_t &size) {
     char buffer[1024];
-    while (true)
-    {
+    while (true) {
         recvfrom(sockFd, buffer, sizeof(buffer), 0, (sockaddr*)&addr, &size);
         std::cout << "[Data Recieved] " << buffer << std::endl;
-        DecodeTrade(buffer);
+        parseMsg(buffer);
     }   
 }
 
@@ -181,7 +177,7 @@ int main () {
     }
 
     std::cout << "Starting To Recieve Data" << std::endl;
-    ReciveAndDecode(sockfd, srvAddr, size);
+    reciveAndDecode(sockfd, srvAddr, size);
 }
 
 

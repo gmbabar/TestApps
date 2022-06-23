@@ -8,7 +8,7 @@ FLAGS = -g -std=c++11 -I./  -I../../cpp/
 
 LIBS = -lboost_system -lpthread 
 
-objects = encoder
+objects = encoder encoder_all
 
 all: $(objects)
 

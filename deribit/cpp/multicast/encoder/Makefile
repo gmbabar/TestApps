@@ -1,7 +1,7 @@
 
 CC = g++
 
-FLAGS = -g -std=c++11 -I./  -I../../cpp/
+FLAGS = -g -std=c++11 -I./  -I../../../cpp/
 
 ## Nebula headers
 #FLAGS += -I/tmp/gbabar/dist/nebula/include/
