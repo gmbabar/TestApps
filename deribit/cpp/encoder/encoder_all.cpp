@@ -61,87 +61,87 @@ void encodeSnapshot() {
 
 }
 
-// void encodeInstrument() {
-//    char buffer[1024];
-//    size_t version = 1;
-//    size_t offset = 0;
-//    memset(buffer, 0, sizeof(buffer));
+void encodeInstrument() {
+   char buffer[1024];
+   size_t version = 1;
+   size_t offset = 0;
+   memset(buffer, 0, sizeof(buffer));
 
-//    /*
-//    <message name="instrument" id="1000">
-// 		<field name="header" id="1" type="messageHeader" />
-// 		<field name="instrumentId" id ="2" type="uint32" />
-// 		<field name="instrumentState" id="3" type="instrumentState" />
-// 		<field name="kind" id="4" type="instrumentKind" />
-// 		<field name="futureType" id="5" type="futureType" />
-// 		<field name="optionType" id="6" type="optionType" />
-// 		<field name="rfq" id="7" type="yesNo" />
-// 		<field name="settlementPeriod" id="8" type="period" />
-// 		<field name="settlementPeriodCount" id="9" type="uint16" />
-// 		<field name="baseCurrency" id="10" type="string8" />
-// 		<field name="quoteCurrency" id="11" type="string8" />
-// 		<field name="counterCurrency" id="12" type="string8" />
-// 		<field name="settlementCurrency" id="13" type="string8" />
-// 		<field name="sizeCurrency" id="14" type="string8" />
-// 		<field name="creationTimestampMs" id="15" type="uint64" />
-// 		<field name="expirationTimestampMs" id="16" type="uint64" />
-// 		<field name="strikePrice" id="17" type="double" />
-// 		<field name="contractSize" id="18" type="double" />
-// 		<field name="minTradeAmount" id="19" type="double" />
-// 		<field name="tickSize" id="20" type="double" />
-// 		<field name="makerCommission" id="21" type="double" />
-// 		<field name="takerCommission" id="22" type="double" />
-// 		<field name="blockTradeCommission" id="23" type="double" />
-// 		<field name="maxLiquidationCommission" id="24" type="double" />
-// 		<field name="maxLeverage" id="25" type="double" />
-// 		<data name="instrumentName" id="26" type="varString" />
-// 	</message>
-//    */
-//   Instrument instrument;
-//   instrument.header().blockLength(Instrument::sbeBlockLength() - MessageHeader::encodedLength())
-//   .templateId(Instrument::sbeTemplateId())
-//   .schemaId(Instrument::sbeSchemaId())
-//   .version(Instrument::sbeSchemaVersion())
-//   .numGroups(1)
-//   .numVarDataFields(0);
+   /*
+   <message name="instrument" id="1000">
+		<field name="header" id="1" type="messageHeader" />
+		<field name="instrumentId" id ="2" type="uint32" />
+		<field name="instrumentState" id="3" type="instrumentState" />
+		<field name="kind" id="4" type="instrumentKind" />
+		<field name="futureType" id="5" type="futureType" />
+		<field name="optionType" id="6" type="optionType" />
+		<field name="rfq" id="7" type="yesNo" />
+		<field name="settlementPeriod" id="8" type="period" />
+		<field name="settlementPeriodCount" id="9" type="uint16" />
+		<field name="baseCurrency" id="10" type="string8" />
+		<field name="quoteCurrency" id="11" type="string8" />
+		<field name="counterCurrency" id="12" type="string8" />
+		<field name="settlementCurrency" id="13" type="string8" />
+		<field name="sizeCurrency" id="14" type="string8" />
+		<field name="creationTimestampMs" id="15" type="uint64" />
+		<field name="expirationTimestampMs" id="16" type="uint64" />
+		<field name="strikePrice" id="17" type="double" />
+		<field name="contractSize" id="18" type="double" />
+		<field name="minTradeAmount" id="19" type="double" />
+		<field name="tickSize" id="20" type="double" />
+		<field name="makerCommission" id="21" type="double" />
+		<field name="takerCommission" id="22" type="double" />
+		<field name="blockTradeCommission" id="23" type="double" />
+		<field name="maxLiquidationCommission" id="24" type="double" />
+		<field name="maxLeverage" id="25" type="double" />
+		<data name="instrumentName" id="26" type="varString" />
+	</message>
+   */
+  Instrument instrument;
+  instrument.wrapForEncode(buffer, 0, sizeof(buffer))
+  .instrumentId(618)
+  .instrumentState(InstrumentState::created)
+  .kind(InstrumentKind::option)
+  .futureType(FutureType::not_applicable)
+  .optionType(OptionType::put)
+  .rfq(YesNo::no)
+  .settlementPeriod(Period::minute)
+  .settlementPeriodCount(15)
+  .baseCurrency(1, 'B')
+  .quoteCurrency(1, 'B')
+  .counterCurrency(1, 'B')
+  .settlementCurrency(1, 'B')
+  .sizeCurrency(1, 'B')
+  .creationTimestampMs(1655921357363)
+  .expirationTimestampMs(1651021357363)
+  .strikePrice(29200)
+  .contractSize(1)
+  .minTradeAmount(0.01)
+  .tickSize(0.0001)
+  .makerCommission(0.0001)
+  .takerCommission(0.0005)
+  .blockTradeCommission(0.00015)
+  .maxLiquidationCommission(0)
+  .maxLeverage(0)
+  .instrumentName();
 
-//   instrument.wrapForEncode(buffer, 0, sizeof(buffer))
-//   .instrumentId(1234)
-//   .instrumentState(InstrumentState::open)
-//   .kind(InstrumentKind::future)
-//   .futureType(FutureType::linear)
-//   .optionType(OptionType::call)
-//   .rfq(YesNo::yes)
-//   .settlementPeriod(Period::month)
-//   .settlementPeriodCount(30)
-//   .baseCurrency(12, 'C')
-//   .quoteCurrency(12, 'C')
-//   .counterCurrency(12, 'C')
-//   .settlementCurrency(12, 'C')
-//   .sizeCurrency(12, 'C')
-//   .creationTimestampMs(1655921357363)
-//   .expirationTimestampMs(1651021357363)
-//   .strikePrice(30000.125)
-//   .contractSize(64)
-//   .minTradeAmount(1.25)
-//   .tickSize(256)
-//   .makerCommission(1.125)
-//   .takerCommission(1.25)
-//   .blockTradeCommission(0.750)
-//   .maxLiquidationCommission(2.125)
-//   .maxLeverage(5.5);
-// //   .instrumentName();
+  instrument.header().blockLength(Instrument::sbeBlockLength() - MessageHeader::encodedLength())
+  .templateId(Instrument::sbeTemplateId())
+  .schemaId(Instrument::sbeSchemaId())
+  .version(Instrument::sbeSchemaVersion())
+  .numGroups(0)
+  .numVarDataFields(1);
 
-//    std::cout << "Header : " << instrument.header() << std::endl;
-//    std::cout << "Instrument : " << instrument << std::endl;
-//    std::cout << "Position : " << instrument.sbePosition() << std::endl;
+   std::cout << "Header : " << instrument.header() << std::endl;
+   std::cout << "Instrument : " << instrument << std::endl;
+   std::cout << "Position : " << instrument.sbePosition() << std::endl;
 
-//    char baseBuffer[1024];
-//    memset(baseBuffer, 0, sizeof(buffer));
-//    auto len = boost::beast::detail::base64::encode(baseBuffer, buffer, instrument.sbePosition());
-//    std::cout << "Encoded Size : " << len << std::endl;
-//    std::cout << "Base64 Buffer : " << baseBuffer << std::endl;
-// }
+   char baseBuffer[1024];
+   memset(baseBuffer, 0, sizeof(buffer));
+   auto len = boost::beast::detail::base64::encode(baseBuffer, buffer, instrument.sbePosition());
+   std::cout << "Encoded Size : " << len << std::endl;
+   std::cout << "Base64 Buffer : " << baseBuffer << std::endl;
+}
 
 void encodeBook() {
    char buffer[1024];
@@ -271,7 +271,7 @@ int main () {
 
    encodeTrades();
    encodeBook();
-   // encodeInstrument();
+   encodeInstrument();
    encodeSnapshot();
    return 0;
 }
