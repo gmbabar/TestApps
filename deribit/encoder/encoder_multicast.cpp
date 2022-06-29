@@ -6,6 +6,8 @@
 #include <unistd.h>
 #include "deribit_multicast/Trades.h"
 #include "deribit_multicast/Book.h"
+#include "deribit_multicast/Instrument.h"
+#include "deribit_multicast/Snapshot.h"
 
 using namespace deribit_multicast;
 void encodeTrades(char *baseBuffer, size_t buffSize) {
@@ -42,15 +44,143 @@ void encodeTrades(char *baseBuffer, size_t buffSize) {
    auto len = boost::beast::detail::base64::encode(baseBuffer, buffer, trades.sbePosition());
 }
 
+void encodeSnapshot(char *baseBuffer, size_t buffSize) {
+  char buffer[1024];
+  size_t version = 1;
+  size_t offset = 0;
+  memset(buffer, 0, sizeof(buffer));
+
+  Snapshot snapshot;
+  snapshot.wrapForEncode(buffer, offset, sizeof(buffer))
+          .instrumentId(210760)
+          .timestampMs(1656008239522)
+          .changeId(25571955513)
+          .isBookComplete(YesNo::yes)
+          .isLastInBook(YesNo::yes);
+
+  snapshot.header().blockLength(Snapshot::sbeBlockLength() - MessageHeader::encodedLength())
+          .templateId(Snapshot::sbeTemplateId())
+          .schemaId(Snapshot::sbeSchemaId())
+          .version(Snapshot::sbeSchemaVersion())
+          .numGroups(1)
+          .numVarDataFields(0);
+
+  auto &levelsList = snapshot.levelsListCount(1);
+  levelsList.next()
+            .side(BookSide::ask)
+            .price(3600)
+            .amount(10000);
+
+  memset(baseBuffer, 0, sizeof(buffer));
+  auto len = boost::beast::detail::base64::encode(baseBuffer, buffer, snapshot.sbePosition());
+}
+
+void encodeInstrument(char *baseBuffer, size_t buffSize) {
+   char buffer[1024];
+   size_t version = 1;
+   size_t offset = 0;
+   memset(buffer, 0, sizeof(buffer));
+
+  Instrument instrument;
+  instrument.wrapForEncode(buffer, 0, sizeof(buffer))
+            .instrumentId(618)
+            .instrumentState(InstrumentState::created)
+            .kind(InstrumentKind::option)
+            .futureType(FutureType::not_applicable)
+            .optionType(OptionType::put)
+            .rfq(YesNo::no)
+            .settlementPeriod(Period::minute)
+            .settlementPeriodCount(15)
+            .baseCurrency(1, 'B')
+            .quoteCurrency(1, 'B')
+            .counterCurrency(1, 'B')
+            .settlementCurrency(1, 'B')
+            .sizeCurrency(1, 'B')
+            .creationTimestampMs(1655921357363)
+            .expirationTimestampMs(1651021357363)
+            .strikePrice(29200)
+            .contractSize(1)
+            .minTradeAmount(0.01)
+            .tickSize(0.0001)
+            .makerCommission(0.0001)
+            .takerCommission(0.0005)
+            .blockTradeCommission(0.00015)
+            .maxLiquidationCommission(0)
+            .maxLeverage(0)
+            .instrumentName();
+
+  instrument.header().blockLength(Instrument::sbeBlockLength() - MessageHeader::encodedLength())
+         .templateId(Instrument::sbeTemplateId())
+         .schemaId(Instrument::sbeSchemaId())
+         .version(Instrument::sbeSchemaVersion())
+         .numGroups(0)
+         .numVarDataFields(1);
+
+  memset(baseBuffer, 0, sizeof(buffer));
+  auto len = boost::beast::detail::base64::encode(baseBuffer, buffer, instrument.sbePosition());
+}
+
+void encodeBook(char *baseBuffer, size_t buffSize) {
+   char buffer[1024];
+   size_t version = 1;
+   size_t offset = 0;
+   memset(buffer, 0, sizeof(buffer));
+
+   Book book;
+   book.wrapForEncode(buffer, 0, sizeof(buffer))
+       .instrumentId(212871)
+       .timestampMs(1656008799550)
+       .prevChangeId(25572133998)
+       .changeId(25572134006)
+       .isLast(YesNo::yes);
+
+   book.header().blockLength(Book::sbeBlockLength() - MessageHeader::encodedLength())
+       .templateId(Book::sbeTemplateId())
+       .schemaId(Book::sbeSchemaId())
+       .version(Book::sbeSchemaVersion())
+       .numGroups(1)
+       .numVarDataFields(0);
+
+   auto& changeList = book.changesListCount(1);
+   changeList.next()
+             .side(BookSide::bid)
+             .change(BookChange::created)
+             .price(1091.9)
+             .amount(2970);
+
+   memset(baseBuffer, 0, sizeof(buffer));
+   auto len = boost::beast::detail::base64::encode(baseBuffer, buffer, book.sbePosition());
+}
+
 void publishData(int &sockFd,sockaddr_in &addr, socklen_t &size) {  
    char buffer[1024];
    memset(buffer, 0, sizeof(buffer));
+   const int delay = 5;
 
    while (true) {
       encodeTrades(buffer, sizeof(buffer));
-      sleep(1);
-      std::cout << "[Sent Data] " << buffer << std::endl;
+      sleep(delay);
+      std::cout << "[Sent Trade Data] " << buffer << std::endl;
       sendto(sockFd, buffer, strlen(buffer), 0, (sockaddr*)&addr, size);
+      memset(buffer, 0, sizeof(buffer));
+
+      encodeSnapshot(buffer, sizeof(buffer));
+      sleep(delay);
+      std::cout << "[Sent Snapshot Data] " << buffer << std::endl;
+      sendto(sockFd, buffer, strlen(buffer), 0, (sockaddr*)&addr, size);
+      memset(buffer, 0, sizeof(buffer));
+
+      encodeInstrument(buffer, sizeof(buffer));
+      sleep(delay);
+      std::cout << "[Sent Instrument Data] " << buffer << std::endl;
+      sendto(sockFd, buffer, strlen(buffer), 0, (sockaddr*)&addr, size);
+      memset(buffer, 0, sizeof(buffer));
+
+      encodeBook(buffer, sizeof(buffer));
+      sleep(delay);
+      std::cout << "[Sent Instrument Data] " << buffer << std::endl;
+      sendto(sockFd, buffer, strlen(buffer), 0, (sockaddr*)&addr, size);
+      memset(buffer, 0, sizeof(buffer));
    }   
 }
 
