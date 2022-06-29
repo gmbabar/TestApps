@@ -47,7 +47,7 @@ size_t decode(int msgType, char *buffer, size_t offset, size_t buffLen, size_t b
 
        deribit_multicast::Book::ChangesList changesList;
        offset += book.sbeBlockLength();
-       changesList.wrapForDecode(buffer, &offset, version, buffLen);
+       changesList.wrapForDecode(buffer, (uint64_t*)&offset, version, buffLen);
        while (changesList.hasNext()) {
            std::cout << "changesList: " << changesList.next() << std::endl;
        }
@@ -65,7 +65,7 @@ size_t decode(int msgType, char *buffer, size_t offset, size_t buffLen, size_t b
 
        deribit_multicast::Trades::TradesList tradesList;
        offset += trades.sbeBlockLength();
-       tradesList.wrapForDecode(buffer, &offset, version, buffLen);
+       tradesList.wrapForDecode(buffer, (uint64_t*)&offset, version, buffLen);
        while (tradesList.hasNext()) {
            std::cout << "tradesList: " << tradesList.next() << std::endl;
        }
@@ -92,7 +92,7 @@ size_t decode(int msgType, char *buffer, size_t offset, size_t buffLen, size_t b
 
        deribit_multicast::Snapshot::LevelsList levelsList;
        offset += snapshot.sbeBlockLength();
-       levelsList.wrapForDecode(buffer, &offset, version, buffLen);
+       levelsList.wrapForDecode(buffer, (uint64_t*)&offset, version, buffLen);
        while (levelsList.hasNext()) {
            std::cout << "levelsList: " << levelsList.next() << std::endl;
        }

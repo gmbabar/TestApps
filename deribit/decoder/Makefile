@@ -8,7 +8,7 @@ FLAGS = -g -std=c++11 -I./  -I../cpp/
 
 LIBS = -lboost_system -lpthread 
 
-objects = decoder
+objects = decoder decoder_multicast
 
 all: $(objects)
 
