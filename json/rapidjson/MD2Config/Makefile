@@ -3,7 +3,7 @@ CC = g++
 FLAGS = -g -std=c++11 -I../include
 LIBS = -lboost_system -lpthread -lcrypto -lssl
 
-objects = Md2ConfigParser 
+objects = Md2ConfigParser Md2ExchFees
 
 all: $(objects)
 
