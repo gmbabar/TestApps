@@ -4,6 +4,7 @@
 //
 // https://www.boost.org/doc/libs/1_69_0/doc/html/boost_asio/example/cpp11/multicast/receiver.cpp
 //
+// Input: multicast_address, multicast_port, interface_address
 
 #include <array>
 #include <iostream>
@@ -12,14 +13,12 @@
 
 constexpr short multicast_port = 30001;
 
-class receiver
-{
+class receiver {
 public:
   receiver(boost::asio::io_context& io_context,
       const boost::asio::ip::address& listen_address,
       const boost::asio::ip::address& multicast_address)
-    : socket_(io_context)
-  {
+    : socket_(io_context) {
     // Create the socket so that multiple may be bound to the same address.
     boost::asio::ip::udp::endpoint listen_endpoint(
         listen_address, multicast_port);
@@ -35,14 +34,11 @@ public:
   }
 
 private:
-  void do_receive()
-  {
+  void do_receive() {
     socket_.async_receive_from(
         boost::asio::buffer(data_), sender_endpoint_,
-        [this](boost::system::error_code ec, std::size_t length)
-        {
-          if (!ec)
-          {
+        [this](boost::system::error_code ec, std::size_t length) {
+          if (!ec) {
             std::cout.write(data_.data(), length);
             std::cout << std::endl;
 
@@ -56,12 +52,9 @@ private:
   std::array<char, 1024> data_;
 };
 
-int main(int argc, char* argv[])
-{
-  try
-  {
-    if (argc != 3)
-    {
+int main(int argc, char* argv[]) {
+  try {
+    if (argc != 3) {
       std::cerr << "Usage: receiver <listen_address> <multicast_address>\n";
       std::cerr << "  For IPv4, try:\n";
       std::cerr << "    receiver 0.0.0.0 239.255.0.1\n";
@@ -76,8 +69,7 @@ int main(int argc, char* argv[])
         boost::asio::ip::make_address(argv[2]));
     io_context.run();
   }
-  catch (std::exception& e)
-  {
+  catch (std::exception& e) {
     std::cerr << "Exception: " << e.what() << "\n";
   }
 
