@@ -11,7 +11,7 @@
 #include <string>
 #include <boost/asio.hpp>
 
-constexpr short multicast_port = 30001;
+short multicast_port = 30001;
 
 class receiver {
 public:
@@ -35,8 +35,10 @@ public:
 
 private:
   void do_receive() {
-    socket_.async_receive_from(
-        boost::asio::buffer(data_), sender_endpoint_,
+    // socket_.async_receive_from(
+    //     boost::asio::buffer(data_), sender_endpoint_,
+    socket_.async_receive(
+        boost::asio::buffer(data_),
         [this](boost::system::error_code ec, std::size_t length) {
           if (!ec) {
             std::cout.write(data_.data(), length);
@@ -54,14 +56,16 @@ private:
 
 int main(int argc, char* argv[]) {
   try {
-    if (argc != 3) {
+    if (argc != 4) {
       std::cerr << "Usage: receiver <listen_address> <multicast_address>\n";
       std::cerr << "  For IPv4, try:\n";
-      std::cerr << "    receiver 0.0.0.0 239.255.0.1\n";
+      std::cerr << "    receiver 0.0.0.0 239.255.0.1 33001\n";
       std::cerr << "  For IPv6, try:\n";
-      std::cerr << "    receiver 0::0 ff31::8000:1234\n";
+      std::cerr << "    receiver 0::0 ff31::8000:1234 3300\n";
       return 1;
     }
+
+    multicast_port = atoi(argv[3]);
 
     boost::asio::io_context io_context;
     receiver r(io_context,
