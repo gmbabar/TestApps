@@ -66,7 +66,7 @@ int main(int argc, char* argv[]) {
       return 1;
     }
 
-    multicast_port = atoi(argv[3]);
+    multicast_port = atoi(argv[2]);
     boost::asio::io_context io_context;
     sender s(io_context, boost::asio::ip::make_address(argv[1]));
     io_context.run();
