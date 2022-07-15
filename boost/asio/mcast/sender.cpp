@@ -10,7 +10,7 @@
 #include <string>
 #include <boost/asio.hpp>
 
-constexpr short multicast_port = 30001;
+short multicast_port = 30001;
 constexpr int max_message_count = 10;
 
 class sender {
@@ -57,15 +57,16 @@ private:
 
 int main(int argc, char* argv[]) {
   try {
-    if (argc != 2) {
-      std::cerr << "Usage: sender <multicast_address>\n";
+    if (argc != 3) {
+      std::cerr << "Usage: sender <multicast_address> <port>\n";
       std::cerr << "  For IPv4, try:\n";
-      std::cerr << "    sender 239.255.0.1\n";
+      std::cerr << "    sender 239.255.0.1 33001\n";
       std::cerr << "  For IPv6, try:\n";
-      std::cerr << "    sender ff31::8000:1234\n";
+      std::cerr << "    sender ff31::8000:1234 33001\n";
       return 1;
     }
 
+    multicast_port = atoi(argv[3]);
     boost::asio::io_context io_context;
     sender s(io_context, boost::asio::ip::make_address(argv[1]));
     io_context.run();
