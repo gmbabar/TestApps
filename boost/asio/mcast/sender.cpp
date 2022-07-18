@@ -21,6 +21,8 @@ public:
       socket_(io_context, endpoint_.protocol()),
       timer_(io_context),
       message_count_(0) {
+    //socket_.set_option(boost::asio::ip::multicast::enable_loopback(true));
+    //socket_.set_option(boost::asio::ip::multicast::hops(1));
     do_send();
   }
 

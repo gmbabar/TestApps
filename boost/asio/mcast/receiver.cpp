@@ -24,6 +24,7 @@ public:
         listen_address, multicast_port);
     socket_.open(listen_endpoint.protocol());
     socket_.set_option(boost::asio::ip::udp::socket::reuse_address(true));
+    //socket_.set_option(boost::asio::ip::multicast::enable_loopback(true));
     socket_.bind(listen_endpoint);
 
     // Join the multicast group.
@@ -35,10 +36,10 @@ public:
 
 private:
   void do_receive() {
-    // socket_.async_receive_from(
-    //     boost::asio::buffer(data_), sender_endpoint_,
-    socket_.async_receive(
-        boost::asio::buffer(data_),
+     socket_.async_receive_from(
+         boost::asio::buffer(data_), sender_endpoint_,
+    //socket_.async_receive(
+    //    boost::asio::buffer(data_),
         [this](boost::system::error_code ec, std::size_t length) {
           if (!ec) {
             std::cout.write(data_.data(), length);

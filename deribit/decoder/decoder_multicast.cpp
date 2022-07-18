@@ -112,8 +112,8 @@ size_t decode(int msgType, char *buffer, size_t offset, size_t buffLen, size_t b
 
 
 void parseMsg(const char *buffer) {
-    size_t buffLen = sizeof(buffer);
-    size_t blockLen = sizeof(buffer);
+    size_t buffLen = 0;
+    size_t blockLen = 0;
     size_t offset = 0;
     int version = 1;
     int msgType = 0;
