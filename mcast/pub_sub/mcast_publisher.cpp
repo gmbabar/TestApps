@@ -86,7 +86,7 @@ int main(int argc, char *argv[])
   /* The IP address specified must be associated with a local, */
   /* multicast capable interface. */
   localInterface.s_addr = inet_addr(interface_ip.c_str());
-  if (setsockopt(sockfd, IPPROTO_IP, IP_MULTICAST_IF, (char *)&localInterface, sizeof(localInterface)) < 0)
+  if (setsockopt(sockfd, IPPROTO_IP, IP_MULTICAST_LOOP, (char *)&localInterface, sizeof(localInterface)) < 0)
   {
     perror("Setting local interface error");
     exit(1);
