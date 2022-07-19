@@ -91,11 +91,11 @@ void encodeInstrument(char *baseBuffer, size_t buffSize) {
             .rfq(YesNo::no)
             .settlementPeriod(Period::minute)
             .settlementPeriodCount(15)
-            .baseCurrency(1, 'B')
-            .quoteCurrency(1, 'B')
-            .counterCurrency(1, 'B')
-            .settlementCurrency(1, 'B')
-            .sizeCurrency(1, 'B')
+            // .baseCurrency(1, "BTC")
+            // .quoteCurrency(1, "BTC")
+            // .counterCurrency(1, "USD")
+            // .settlementCurrency(1, "BTC")
+            // .sizeCurrency(1, "BTC")
             .creationTimestampMs(1655921357363)
             .expirationTimestampMs(1651021357363)
             .strikePrice(29200)
@@ -108,6 +108,12 @@ void encodeInstrument(char *baseBuffer, size_t buffSize) {
             .maxLiquidationCommission(0)
             .maxLeverage(0)
             .instrumentName();
+   strcpy(instrument.baseCurrency(), "BTC");
+   strcpy(instrument.quoteCurrency(), "BTC");
+   strcpy(instrument.counterCurrency(), "USD");
+   strcpy(instrument.settlementCurrency(), "BTC");
+   strcpy(instrument.sizeCurrency(), "BTC");
+
 
   instrument.header().blockLength(Instrument::sbeBlockLength() - MessageHeader::encodedLength())
          .templateId(Instrument::sbeTemplateId())
@@ -190,7 +196,7 @@ int main () {
    in_addr lAddr;
    srvAddr.sin_family = AF_INET;
    srvAddr.sin_port = htons(1234);
-   srvAddr.sin_addr.s_addr = inet_addr("226.0.0.1");
+   srvAddr.sin_addr.s_addr = inet_addr("0.0.0.0");
    lAddr.s_addr = inet_addr("127.0.0.1");
    socklen_t size = sizeof(srvAddr);
    
