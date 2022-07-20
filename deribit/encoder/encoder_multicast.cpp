@@ -184,19 +184,27 @@ void publishData(int &sockFd,sockaddr_in &addr, socklen_t &size) {
 
       encodeBook(buffer, sizeof(buffer));
       sleep(delay);
-      std::cout << "[Sent Instrument Data] " << buffer << std::endl;
+      std::cout << "[Sent Book Data] " << buffer << std::endl;
       sendto(sockFd, buffer, strlen(buffer), 0, (sockaddr*)&addr, size);
       memset(buffer, 0, sizeof(buffer));
    }   
 }
 
 
-int main () {
+int main (int argc, char **argv) {
+   if(argc < 3)
+   {
+      std::cout << "Too Few Arguements:\n\t";
+      std::cout << "Example:\n\t" << argv[0] << "<host> " << "<Port>" << "\n\t";
+      std::cout << argv[0] << " 0.0.0.0 " << "1234" << std::endl;
+      return -1;
+   }
+
    sockaddr_in srvAddr;
    in_addr lAddr;
    srvAddr.sin_family = AF_INET;
-   srvAddr.sin_port = htons(1234);
-   srvAddr.sin_addr.s_addr = inet_addr("0.0.0.0");
+   srvAddr.sin_port = htons(atoi(argv[2]));
+   srvAddr.sin_addr.s_addr = inet_addr(argv[1]);
    lAddr.s_addr = inet_addr("127.0.0.1");
    socklen_t size = sizeof(srvAddr);
    
