@@ -10,50 +10,91 @@
 
 using namespace deribit_multicast;
 
+void FormatDate(std::string &date)
+{
+   date.erase(1, 2); // Removes First 2 Digits Of Year
+   if (date.substr(2, 3) == "Jan")
+   {
+      date.replace(2, 3, "01");
+   } else if (date.substr(2, 3) == "Feb") {
+      date.replace(2, 3, "02");
+   } else if (date.substr(2, 3) == "Mar") {
+      date.replace(2, 3, "03");
+   } else if (date.substr(2, 3) == "Apr") {
+      date.replace(2, 3, "04");
+   } else if (date.substr(2, 3) == "May") {
+      date.replace(2, 3, "05");
+   } else if (date.substr(2, 3) == "Jun") {
+      date.replace(2, 3, "06");
+   } else if (date.substr(2, 3) == "Jul") {
+      date.replace(2, 3, "07");
+   } else if (date.substr(2, 3) == "Aug") {
+      date.replace(2, 3, "08");
+   } else if (date.substr(2, 3) == "Sep") {
+      date.replace(2, 3, "09");
+   } else if (date.substr(2, 3) == "Oct") {
+      date.replace(2, 3, "10");
+   } else if (date.substr(2, 3) == "Nov") {
+      date.replace(2, 3, "11");
+   } else {
+      date.replace(2, 3, "12");
+   }
+}
+
 void FormBfcSym(Instrument &instrument)
 {
    std::string bfcSym = "R_";
 
    if(instrument.kind() == InstrumentKind::option) {
       bfcSym += "T_";
-   }
-   else if(instrument.kind() == InstrumentKind::future) {
+      bfcSym += instrument.baseCurrency();
+      bfcSym += "_";
+      bfcSym += instrument.counterCurrency();
+      bfcSym += "_";
+      int expTms = instrument.expirationTimestampMs()/1000; //Converting Ms to Seconds
+      std::ostringstream oss;
+      oss << boost::posix_time::from_time_t(expTms);
+      std::string date = oss.str().substr(0, 11);
+      date.erase(remove(date.begin(), date.end(), '-'), date.end());
+      bfcSym += date;
+      FormatDate(date);
+      bfcSym += "_";
+
+      std::string px = std::to_string(instrument.strikePrice());
+      int pos = px.find(".", 0);
+      px.erase(pos);
+      bfcSym += px;
+      
+      if(instrument.optionType() == OptionType::put) {
+         bfcSym += "_P";
+      }
+      else if(instrument.optionType() == OptionType::call) {
+         bfcSym += "_C";
+      } else {
+         bfcSym += "_P";
+      }
+
+   } else if(instrument.kind() == InstrumentKind::future) {
       if(instrument.futureType() == FutureType::reversed) {
          bfcSym += "I_";
-      }
-      else {
+      } else {
          bfcSym += "T_";
       }
-   }
-   else {
+
+      bfcSym += instrument.baseCurrency();
+      bfcSym += "_";
+      bfcSym += instrument.counterCurrency();
+      bfcSym += "_";
+      int expTms = instrument.expirationTimestampMs()/1000; //Converting Ms to Seconds
+      std::ostringstream oss;
+      oss << boost::posix_time::from_time_t(expTms);
+      std::string date = oss.str().substr(0, 11);
+      date.erase(remove(date.begin(), date.end(), '-'), date.end());
+      FormatDate(date);
+      bfcSym += date;
+   } else {
       std::cerr << "Invalid Instrument Kind" << std::endl;
       return;
-   }
-
-   bfcSym += instrument.baseCurrency();
-   bfcSym += "_";
-   bfcSym += instrument.counterCurrency();
-   bfcSym += "_";
-   int expTms = instrument.expirationTimestampMs()/1000; //Converting Ms to Seconds
-   std::ostringstream oss;
-   oss << boost::posix_time::from_time_t(expTms);
-   std::string date = oss.str().substr(0, 11);
-   date.erase(remove(date.begin(), date.end(), '-'), date.end());
-   bfcSym += date;
-   bfcSym += "_";
-
-   std::string px = std::to_string(instrument.strikePrice());
-   int pos = px.find(".", 0);
-   px.erase(pos);
-   bfcSym += px;
-   
-   if(instrument.optionType() == OptionType::put) {
-      bfcSym += "_P";
-   }
-   else if(instrument.optionType() == OptionType::call) {
-      bfcSym += "_C";
-   } else {
-      bfcSym += "_P";
    }
 
    std::cout << std::endl << bfcSym << std::endl;
