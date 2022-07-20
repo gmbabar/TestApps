@@ -51,13 +51,14 @@ void FormBfcSym(Instrument &instrument)
       bfcSym += "_";
       bfcSym += instrument.counterCurrency();
       bfcSym += "_";
+      
       int expTms = instrument.expirationTimestampMs()/1000; //Converting Ms to Seconds
       std::ostringstream oss;
       oss << boost::posix_time::from_time_t(expTms);
-      std::string date = oss.str().substr(0, 11);
+      std::string date = oss.str().substr(0, 11); // Actuall Date
       date.erase(remove(date.begin(), date.end(), '-'), date.end());
-      bfcSym += date;
       FormatDate(date);
+      bfcSym += date;
       bfcSym += "_";
 
       std::string px = std::to_string(instrument.strikePrice());
@@ -83,15 +84,21 @@ void FormBfcSym(Instrument &instrument)
 
       bfcSym += instrument.baseCurrency();
       bfcSym += "_";
-      bfcSym += instrument.counterCurrency();
-      bfcSym += "_";
-      int expTms = instrument.expirationTimestampMs()/1000; //Converting Ms to Seconds
-      std::ostringstream oss;
-      oss << boost::posix_time::from_time_t(expTms);
-      std::string date = oss.str().substr(0, 11);
-      date.erase(remove(date.begin(), date.end(), '-'), date.end());
-      FormatDate(date);
-      bfcSym += date;
+      
+      if(instrument.settlementPeriod() == Period::perpetual) {
+         bfcSym += "Perpetual";
+      } else {
+
+         bfcSym += instrument.counterCurrency();
+         bfcSym += "_";
+         int expTms = instrument.expirationTimestampMs()/1000; //Converting Ms to Seconds
+         std::ostringstream oss;
+         oss << boost::posix_time::from_time_t(expTms);
+         std::string date = oss.str().substr(0, 11);
+         date.erase(remove(date.begin(), date.end(), '-'), date.end());
+         FormatDate(date);
+         bfcSym += date;
+      }
    } else {
       std::cerr << "Invalid Instrument Kind" << std::endl;
       return;
@@ -200,11 +207,8 @@ void encodeInstrument() {
   .rfq(YesNo::no)
   .settlementPeriod(Period::minute)
   .settlementPeriodCount(15)
-//   .baseCurrency(1, 'B')
-//   .quoteCurrency(1, 'B')
-//   .counterCurrency(1, 'B')
-//   .settlementCurrency(1, 'B')
-//   .sizeCurrency(1, 'B')
+  .settlementPeriod(Period::perpetual)
+  .settlementPeriodCount(15)
   .creationTimestampMs(1655921357363)
   .expirationTimestampMs(1651021357363)
   .strikePrice(29200)
