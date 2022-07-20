@@ -4,8 +4,60 @@
 #include "deribit_multicast/Instrument.h"
 #include "deribit_multicast/Book.h"
 #include "deribit_multicast/Snapshot.h"
+#include <boost/date_time/posix_time/posix_time.hpp>
+#include <boost/date_time/gregorian/gregorian.hpp>
+#include <ctime>
 
 using namespace deribit_multicast;
+
+void FormBfcSym(Instrument &instrument)
+{
+   std::string bfcSym = "R_";
+
+   if(instrument.kind() == InstrumentKind::option) {
+      bfcSym += "T_";
+   }
+   else if(instrument.kind() == InstrumentKind::future) {
+      if(instrument.futureType() == FutureType::reversed) {
+         bfcSym += "I_";
+      }
+      else {
+         bfcSym += "T_";
+      }
+   }
+   else {
+      std::cerr << "Invalid Instrument Kind" << std::endl;
+      return;
+   }
+
+   bfcSym += instrument.baseCurrency();
+   bfcSym += "_";
+   bfcSym += instrument.counterCurrency();
+   bfcSym += "_";
+   int expTms = instrument.expirationTimestampMs()/1000; //Converting Ms to Seconds
+   std::ostringstream oss;
+   oss << boost::posix_time::from_time_t(expTms);
+   std::string date = oss.str().substr(0, 11);
+   date.erase(remove(date.begin(), date.end(), '-'), date.end());
+   bfcSym += date;
+   bfcSym += "_";
+
+   std::string px = std::to_string(instrument.strikePrice());
+   int pos = px.find(".", 0);
+   px.erase(pos);
+   bfcSym += px;
+   
+   if(instrument.optionType() == OptionType::put) {
+      bfcSym += "_P";
+   }
+   else if(instrument.optionType() == OptionType::call) {
+      bfcSym += "_C";
+   } else {
+      bfcSym += "_P";
+   }
+
+   std::cout << std::endl << bfcSym << std::endl;
+}
 
 void encodeSnapshot() {
    char buffer[1024];
@@ -101,17 +153,17 @@ void encodeInstrument() {
   instrument.wrapForEncode(buffer, 0, sizeof(buffer))
   .instrumentId(618)
   .instrumentState(InstrumentState::created)
-  .kind(InstrumentKind::option)
-  .futureType(FutureType::not_applicable)
-  .optionType(OptionType::put)
+  .kind(InstrumentKind::future)
+  .futureType(FutureType::reversed)
+  .optionType(OptionType::not_applicable)
   .rfq(YesNo::no)
   .settlementPeriod(Period::minute)
   .settlementPeriodCount(15)
-  .baseCurrency(1, 'B')
-  .quoteCurrency(1, 'B')
-  .counterCurrency(1, 'B')
-  .settlementCurrency(1, 'B')
-  .sizeCurrency(1, 'B')
+//   .baseCurrency(1, 'B')
+//   .quoteCurrency(1, 'B')
+//   .counterCurrency(1, 'B')
+//   .settlementCurrency(1, 'B')
+//   .sizeCurrency(1, 'B')
   .creationTimestampMs(1655921357363)
   .expirationTimestampMs(1651021357363)
   .strikePrice(29200)
@@ -124,6 +176,13 @@ void encodeInstrument() {
   .maxLiquidationCommission(0)
   .maxLeverage(0)
   .instrumentName();
+
+  strcpy(instrument.baseCurrency(), "BTC");
+  strcpy(instrument.quoteCurrency(), "BTC");
+  strcpy(instrument.counterCurrency(), "USD");
+  strcpy(instrument.settlementCurrency(), "BTC");
+  strcpy(instrument.sizeCurrency(), "BTC");
+
 
   instrument.header().blockLength(Instrument::sbeBlockLength() - MessageHeader::encodedLength())
   .templateId(Instrument::sbeTemplateId())
@@ -141,6 +200,10 @@ void encodeInstrument() {
    auto len = boost::beast::detail::base64::encode(baseBuffer, buffer, instrument.sbePosition());
    std::cout << "Encoded Size : " << len << std::endl;
    std::cout << "Base64 Buffer : " << baseBuffer << std::endl;
+
+// Forming BFC Symbol From Instrument
+   FormBfcSym(instrument);
+
 }
 
 void encodeBook() {
@@ -269,9 +332,9 @@ void encodeTrades() {
 
 int main () {
 
-   encodeTrades();
-   encodeBook();
+   // encodeTrades();
+   // encodeBook();
    encodeInstrument();
-   encodeSnapshot();
+   // encodeSnapshot();
    return 0;
 }
