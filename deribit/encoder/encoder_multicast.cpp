@@ -81,6 +81,9 @@ void encodeInstrument(char *baseBuffer, size_t buffSize) {
    size_t offset = 0;
    memset(buffer, 0, sizeof(buffer));
 
+   auto dtn = std::chrono::system_clock::now().time_since_epoch().count();
+   auto timestampMs = std::chrono::duration_cast<std::chrono::milliseconds> (dtn).count()
+
   Instrument instrument;
   instrument.wrapForEncode(buffer, 0, sizeof(buffer))
             .instrumentId(618)
@@ -96,8 +99,8 @@ void encodeInstrument(char *baseBuffer, size_t buffSize) {
             // .counterCurrency(1, "USD")
             // .settlementCurrency(1, "BTC")
             // .sizeCurrency(1, "BTC")
-            .creationTimestampMs(1655921357363)
-            .expirationTimestampMs(1651021357363)
+            .creationTimestampMs(timestampMs)
+            .expirationTimestampMs(timestampMs)
             .strikePrice(29200)
             .contractSize(1)
             .minTradeAmount(0.01)
