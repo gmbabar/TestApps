@@ -28,15 +28,100 @@
 #include <memory>
 #include <string>
 
+#include "rapidjson/document.h"
+#include "rapidjson/writer.h"
+#include "rapidjson/stringbuffer.h"
+
 namespace beast = boost::beast;         // from <boost/beast.hpp>
 namespace http = beast::http;           // from <boost/beast/http.hpp>
 namespace websocket = beast::websocket; // from <boost/beast/websocket.hpp>
 namespace net = boost::asio;            // from <boost/asio.hpp>
 namespace ssl = boost::asio::ssl;       // from <boost/asio/ssl.hpp>
 using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
+using namespace rapidjson;
 
 //------------------------------------------------------------------------------
 
+inline void parseSnapshot(const char *json) {
+        Document document;
+        document.Parse(json);
+        StringBuffer sb;
+        Writer<StringBuffer> writer(sb);
+        std::cout << "Type : " << document["type"].GetString() << std::endl;
+        std::cout << "product Id : " << document["product_id"].GetString() << std::endl;
+        //Gets The Value Of Asks
+        document["asks"].Accept(writer);
+        std::cout << "Asks : " << sb.GetString() << std::endl;
+        //Clears The Buffer
+        sb.Clear();
+        writer.Reset(sb);
+        //Gets The Value Of Bids
+        document["bids"].Accept(writer);
+        std::cout << "Bids : " << sb.GetString() << std::endl;
+        sb.Clear();
+        writer.Reset(sb);
+        
+}
+
+inline void parseSubscriptions(const char *json) {
+        Document document;
+        document.Parse(json);
+        StringBuffer sb;
+        Writer<StringBuffer> writer(sb);
+        std::cout << "Type : " << document["type"].GetString() << std::endl;
+        document["channels"].Accept(writer);
+        std::cout << "Channels : " << sb.GetString() << std::endl;
+        sb.Clear();
+        writer.Reset(sb);
+        
+}
+
+inline void parseL2update(const char *json) {
+        Document document;
+        document.Parse(json);
+        StringBuffer sb;
+        Writer<StringBuffer> writer(sb);
+        std::cout << "Type : " << document["type"].GetString() << std::endl;
+        std::cout << "ProductId : " << document["product_id"].GetString() << std::endl;
+        document["channels"].Accept(writer);
+        std::cout << "Channels : " << sb.GetString() << std::endl;
+        std::cout<< "Time : " << document["time"].GetString() << std::endl;
+        sb.Clear();
+        writer.Reset(sb);
+        
+}
+
+inline void parseHeartbeat(const char *json) {
+        Document document;
+        document.Parse(json);
+        std::cout << "type: " << document["type"].GetString() << std::endl;
+        std::cout << "last_trade_id: " << document["last_trade_id"].GetInt64() << std::endl;
+        std::cout << "product_id: " << document["product_id"].GetString() << std::endl;
+        std::cout << "sequence: " << document["sequence"].GetInt64() << std::endl;
+        std::cout << "time: " << document["time"].GetString() << std::endl;
+        
+}
+
+inline void parseTicker(const char *json) {
+        Document document;
+        document.Parse(json);
+        std::cout << "type: " << document["type"].GetString() << std::endl;
+        std::cout << "sequence: " << document["sequence"].GetInt64() << std::endl;
+        std::cout << "product_id: " << document["product_id"].GetString() << std::endl;
+        std::cout << "price: " << document["price"].GetString() << std::endl;
+        std::cout << "open_24h: " << document["open_24h"].GetString() << std::endl;
+        std::cout << "volume_24h: " << document["volume_24h"].GetString() << std::endl;
+        std::cout << "low_24h: " << document["low_24h"].GetString() << std::endl;
+        std::cout << "high_24h: " << document["high_24h"].GetString() << std::endl;
+        std::cout << "volume_30d: " << document["volume_30d"].GetString() << std::endl;
+        std::cout << "best_bid: " << document["best_bid"].GetString() << std::endl;
+        std::cout << "best_ask: " << document["best_ask"].GetString() << std::endl;
+        std::cout << "side: " << document["side"].GetString() << std::endl;
+        std::cout << "time: " << document["time"].GetString() << std::endl;
+        std::cout << "trade_id: " << document["trade_id"].GetInt64() << std::endl;
+        std::cout << "last_size: " << document["last_size"].GetString() << std::endl;
+        
+}
 // Report a failure
 void
 fail(beast::error_code ec, char const* what)
@@ -49,7 +134,7 @@ class session : public std::enable_shared_from_this<session>
 {
     tcp::resolver resolver_;
     websocket::stream<
-        beast::ssl_stream<beast::tcp_stream>> ws_;
+    beast::ssl_stream<beast::tcp_stream>> ws_;
     beast::flat_buffer buffer_;
     std::string host_;
     std::string text_;
@@ -234,7 +319,24 @@ std::cout << "Listener:" << __func__ << std::endl;
             return fail(ec, "read");
 
         // The make_printable() function helps print a ConstBufferSequence
-        std::cout << __func__ << "-" << msg_count_ + 1 << ": " << beast::make_printable(buffer_.data()) << std::endl;
+        std::ostringstream oss;
+        oss << beast::make_printable(buffer_.data());
+        std::cout << __func__ << "-" << msg_count_ + 1 << ": " << oss.str() << std::endl;
+        Document doc;
+        doc.Parse(oss.str().c_str());
+        std::string type = doc["type"].GetString();
+        if(strcmp(type.c_str(), "subscriptions") != 0) {
+            parseSubscriptions(oss.str().c_str());
+        } else if(strcmp(type.c_str(), "l2update") != 0) {
+            parseL2update(oss.str().c_str());
+        } else if(strcmp(type.c_str(), "ticker") != 0) {
+            parseTicker(oss.str().c_str());
+        } else if(strcmp(type.c_str(), "heartbeat") != 0) {
+            parseHeartbeat(oss.str().c_str());
+        } else if(strcmp(type.c_str(), "snapshot") != 0) {
+            parseSnapshot(oss.str().c_str());
+        }
+
         // Clear the buffer
         buffer_.consume(buffer_.size());
 
@@ -253,6 +355,7 @@ std::cout << "Listener:" << __func__ << std::endl;
                     shared_from_this()));
 	} else {
             // Read a message into our buffer
+            sleep(1);
             ws_.async_read(
                 buffer_,
                 beast::bind_front_handler(
@@ -295,20 +398,12 @@ std::cout << "Listener:" << __func__ << std::endl;
 
 //------------------------------------------------------------------------------
 
-int main(int argc, char** argv)
+int main()
 {
     // Check command line arguments.
-    if(argc != 4)
-    {
-        std::cerr <<
-            "Usage: " << argv[0] << " <host> <port> <text>\n" <<
-            "Example:\n" <<
-            "    " << argv[0] << " echo.websocket.org 443 \"Hello, world!\"\n";
-        return EXIT_FAILURE;
-    }
-    auto const host = argv[1];
-    auto const port = argv[2];
-    auto const text = argv[3];
+    auto const host = "ws-feed.exchange.coinbase.com";
+    auto const port = "443";
+    auto const text = "{\"type\":\"subscribe\",\"product_ids\":[\"ETH-USD\",\"ETH-EUR\"],\"channels\":[\"level2\",\"heartbeat\",{\"name\":\"ticker\",\"product_ids\":[\"ETH-BTC\",\"ETH-USD\"]}]}";
 
     // The io_context is required for all I/O
     net::io_context ioc;
