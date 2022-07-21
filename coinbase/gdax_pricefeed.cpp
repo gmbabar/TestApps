@@ -14,7 +14,7 @@
 //------------------------------------------------------------------------------
 
 //#include <example/common/root_certificates.hpp>
-#include "common/root_certificates.hpp"		// copied local
+//#include "common/root_certificates.hpp"		// copied local
 
 #include <boost/beast/core.hpp>
 #include <boost/beast/ssl.hpp>
@@ -317,7 +317,7 @@ int main(int argc, char** argv)
     ssl::context ctx{ssl::context::tlsv12_client};
 
     // This holds the root certificate used for verification
-    load_root_certificates(ctx);
+    //load_root_certificates(ctx);
 
     // Launch the asynchronous operation
     std::make_shared<session>(ioc, ctx)->run(host, port, text);
