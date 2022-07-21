@@ -105,7 +105,7 @@ inline uint64_t getMicrosSinceEpoch() {
 {
     "type":"l2update",
     "product_id":"ETHUSD",
-    "changes":[["buy","1550.16","0.80679000"]],
+    "channels":[["buy","1550.16","0.80679000"]],
     "time":"2022-07-19T12:09:18.390473Z"
 }
 */
@@ -128,27 +128,25 @@ inline void parseL2updateMsg(const std::string& json) {
 
             Document document;
             document.Parse(json.c_str());
-            std::cout << __func__ << ": type: " << document["type"].GetString() << std::endl;
-            std::cout<< __func__ << ": product_id: " << document["product_id"].GetString() << std::endl;
+            std::cout << "type: " << document["type"].GetString() << std::endl;
+            std::cout << "product_id: " << document["product_id"].GetString() << std::endl;
             auto var = document["channels"].GetArray();
+            std::cout << "channels: [";
             for (int idx=0; idx<var.Size(); ++idx) {
                 auto &arrVal = var[idx];
-                if (arrVal.IsString()) {
-                    std::cout << arrVal.GetString() << std::endl;
-                } 
-                else if (arrVal.IsArray()) {
-                    std::cout << __func__ << ": channels: [ ";
+                if (arrVal.IsArray()) {
                     auto jsonArr = arrVal.GetArray();
                     for (int x=0; x<jsonArr.Size(); ++x) {
                         std::cout << jsonArr[x].GetString() << " ";
                     }
-                    std::cout << "]"<< std::endl;
 
                 }
             }
-            std::cout<< __func__ << ": time: " << document["time"].GetString() << std::endl;
+            std::cout << "]" << std::endl;
+            std::cout << "time: " << document["time"].GetString() << std::endl;
 
         }
+
 
 /*
 ----Ticker

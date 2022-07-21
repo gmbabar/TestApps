@@ -63,33 +63,49 @@ inline void parseSnapshot(const char *json) {
         
 }
 
-inline void parseSubscriptions(const char *json) {
+inline void parseSubscriptions(const std::string& json) {
         Document document;
-        document.Parse(json);
-        StringBuffer sb;
-        Writer<StringBuffer> writer(sb);
-        std::cout << "Type : " << document["type"].GetString() << std::endl;
-        document["channels"].Accept(writer);
-        std::cout << "Channels : " << sb.GetString() << std::endl;
-        sb.Clear();
-        writer.Reset(sb);
-        
-}
+        document.Parse(json.c_str());
+        std::cout << "type: " << document["type"].GetString() << std::endl;
+        auto var = document["channels"].GetArray();
+        std::cout << "channels: [";
+        for (int idx=0; idx<var.Size(); ++idx) {
+            auto &arrVal = var[idx];
+            if (arrVal.IsString()) {
+                std::cout << arrVal.GetString() << " ";
+            } 
+            else if (arrVal.IsObject()) {
+                std::cout << "  name: " << arrVal["name"].GetString() << std::endl;
+                auto jsonArr = arrVal["product_ids"].GetArray();
+                std::cout << "  product_ids:[ ";
+                for (int x=0; x<jsonArr.Size(); ++x) {
+                    std::cout << jsonArr[x].GetString() << " ";
+                }
+                std::cout << "]" << std::endl;
+            }
+        }
+        std::cout << "]" << std::endl;
+    }
 
-inline void parseL2update(const char *json) {
+inline void parseL2update(const std::string& json) {
         Document document;
-        document.Parse(json);
-        StringBuffer sb;
-        Writer<StringBuffer> writer(sb);
-        std::cout << "Type : " << document["type"].GetString() << std::endl;
-        std::cout << "ProductId : " << document["product_id"].GetString() << std::endl;
-        document["channels"].Accept(writer);
-        std::cout << "Channels : " << sb.GetString() << std::endl;
-        std::cout<< "Time : " << document["time"].GetString() << std::endl;
-        sb.Clear();
-        writer.Reset(sb);
-        
-}
+        document.Parse(json.c_str());
+        std::cout << "type: " << document["type"].GetString() << std::endl;
+        std::cout << "product_id: " << document["product_id"].GetString() << std::endl;
+        auto var = document["changes"].GetArray();
+        std::cout << "changes: [";
+        for (int idx=0; idx<var.Size(); ++idx) {
+            auto &arrVal = var[idx];
+            if (arrVal.IsArray()) {
+                auto jsonArr = arrVal.GetArray();
+                for (int x=0; x<jsonArr.Size(); ++x) {
+                    std::cout << jsonArr[x].GetString() << " ";
+                }
+            }
+        }
+        std::cout << "]" << std::endl;
+        std::cout << "time: " << document["time"].GetString() << std::endl;
+    }
 
 inline void parseHeartbeat(const char *json) {
         Document document;
@@ -156,7 +172,7 @@ public:
         char const* port,
         char const* text)
     {
-std::cout << "Listener:" << __func__ << std::endl;
+        std::cout << "Listener:" << __func__ << std::endl;
         // Save these for later
         host_ = host;
         text_ = text;
@@ -175,7 +191,7 @@ std::cout << "Listener:" << __func__ << std::endl;
         beast::error_code ec,
         tcp::resolver::results_type results)
     {
-std::cout << "Listener:" << __func__ << std::endl;
+        std::cout << "Listener:" << __func__ << std::endl;
         if(ec)
             return fail(ec, "resolve");
 
@@ -193,7 +209,7 @@ std::cout << "Listener:" << __func__ << std::endl;
     void
     on_connect(beast::error_code ec, tcp::resolver::results_type::endpoint_type ep)
     {
-std::cout << "Listener:" << __func__ << std::endl;
+        std::cout << "Listener:" << __func__ << std::endl;
         if(ec)
             return fail(ec, "connect");
 
@@ -226,7 +242,7 @@ std::cout << "Listener:" << __func__ << std::endl;
     void
     on_ssl_handshake(beast::error_code ec)
     {
-std::cout << "Listener:" << __func__ << std::endl;
+        std::cout << "Listener:" << __func__ << std::endl;
         if(ec)
             return fail(ec, "ssl_handshake");
 
@@ -258,7 +274,7 @@ std::cout << "Listener:" << __func__ << std::endl;
     void
     on_handshake(beast::error_code ec)
     {
-std::cout << "Listener:" << __func__ << std::endl;
+        std::cout << "Listener:" << __func__ << std::endl;
         if(ec)
             return fail(ec, "handshake");
 
@@ -282,7 +298,7 @@ std::cout << "Listener:" << __func__ << std::endl;
         beast::error_code ec,
         std::size_t bytes_transferred)
     {
-std::cout << "Listener:" << __func__ << std::endl;
+        std::cout << "Listener:" << __func__ << std::endl;
         boost::ignore_unused(bytes_transferred);
 
         if(ec)
@@ -325,17 +341,17 @@ std::cout << "Listener:" << __func__ << std::endl;
         Document doc;
         doc.Parse(oss.str().c_str());
         std::string type = doc["type"].GetString();
-        if(strcmp(type.c_str(), "subscriptions") != 0) {
+        if(strcmp(type.c_str(), "subscriptions") == 0) {
             parseSubscriptions(oss.str().c_str());
-        } else if(strcmp(type.c_str(), "l2update") != 0) {
+    } else if(strcmp(type.c_str(), "l2update") == 0) {
             parseL2update(oss.str().c_str());
-        } else if(strcmp(type.c_str(), "ticker") != 0) {
+    } else if(strcmp(type.c_str(), "ticker") == 0) {
             parseTicker(oss.str().c_str());
-        } else if(strcmp(type.c_str(), "heartbeat") != 0) {
+    } else if(strcmp(type.c_str(), "heartbeat") == 0) {
             parseHeartbeat(oss.str().c_str());
-        } else if(strcmp(type.c_str(), "snapshot") != 0) {
+    } else if(strcmp(type.c_str(), "snapshot") == 0) {
             parseSnapshot(oss.str().c_str());
-        }
+    }
 
         // Clear the buffer
         buffer_.consume(buffer_.size());
@@ -385,7 +401,7 @@ std::cout << "Listener:" << __func__ << std::endl;
     void
     on_close(beast::error_code ec)
     {
-std::cout << "Listener:" << __func__ << std::endl;
+        std::cout << "Listener:" << __func__ << std::endl;
         if(ec)
             return fail(ec, "close");
 
@@ -423,4 +439,3 @@ int main()
 
     return EXIT_SUCCESS;
 }
-
