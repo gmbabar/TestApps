@@ -1,0 +1,5 @@
+
+wscat -c wss://ws-feed.exchange.coinbase.com
+
+{"type":"subscribe","product_ids":["ETH-USD","ETH-EUR"],"channels":["level2","heartbeat",{"name":"ticker","product_ids":["ETH-BTC","ETH-USD"]}]}
+
