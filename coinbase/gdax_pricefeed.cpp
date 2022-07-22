@@ -48,9 +48,9 @@ inline void parseSnapshot(const char *json) {
         for(SizeType i = 0; i < arrVal.Size(); i++)
         {
             auto val = arrVal[i].GetString();
-            std::cout << val << " ";
+            std::cout << val << ",";
         }
-        std::cout << "]" << std::endl;
+        std::cout << "\b]" << std::endl;
     }
     std::cout << "]" << std::endl;
     
@@ -61,9 +61,9 @@ inline void parseSnapshot(const char *json) {
         std::cout << "Bids : [";
         for(SizeType i = 0; i < arrVal.Size(); i++) {
             auto val = arrVal[i].GetString();
-            std::cout << val << " ";
+            std::cout << val << ",";
         }
-        std::cout << "]" << std::endl;
+        std::cout << "\b]" << std::endl;
     }
     std::cout << "]" << std::endl;
 }
@@ -77,16 +77,16 @@ inline void parseSubscriptions(const std::string& json) {
     for (int idx=0; idx<var.Size(); ++idx) {
         auto &arrVal = var[idx];
         if (arrVal.IsString()) {
-            std::cout << arrVal.GetString() << " ";
+            std::cout << arrVal.GetString() << ",";
         } 
         else if (arrVal.IsObject()) {
             std::cout << "  name: " << arrVal["name"].GetString() << std::endl;
             auto jsonArr = arrVal["product_ids"].GetArray();
             std::cout << "  product_ids:[ ";
             for (int x=0; x<jsonArr.Size(); ++x) {
-                std::cout << jsonArr[x].GetString() << " ";
+                std::cout << jsonArr[x].GetString() << ",";
             }
-            std::cout << "]" << std::endl;
+            std::cout << "\b]" << std::endl;
         }
     }
     std::cout << "]" << std::endl;
@@ -104,11 +104,11 @@ inline void parseL2update(const std::string& json) {
         if (arrVal.IsArray()) {
             auto jsonArr = arrVal.GetArray();
             for (int x=0; x<jsonArr.Size(); ++x) {
-                std::cout << jsonArr[x].GetString() << " ";
+                std::cout << jsonArr[x].GetString() << ",";
             }
         }
     }
-    std::cout << "]" << std::endl;
+    std::cout << "\b]" << std::endl;
     std::cout << "time: " << document["time"].GetString() << std::endl;
 }
 
