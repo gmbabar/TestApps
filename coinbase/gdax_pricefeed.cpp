@@ -55,11 +55,8 @@ inline void parseSnapshot(const char *json) {
         for (SizeType i = 0; i < asks.Size(); i++)
         {
             auto &arrVal = asks[i];
-            if(arrVal.IsArray())
-            {
-                arrVal.Accept(writer);
-                std::cout << sb.GetString() << std::endl;
-            }
+            arrVal.Accept(writer);
+            std::cout << sb.GetString() << std::endl;
             sb.Clear();
             writer.Reset(sb);
         }
@@ -70,11 +67,8 @@ inline void parseSnapshot(const char *json) {
         for (SizeType i = 0; i < bids.Size(); i++)
         {
             auto &arrVal = bids[i];
-            if(arrVal.IsArray())
-            {
-                arrVal.Accept(writer);
-                std::cout << sb.GetString() << std::endl;
-            }
+            arrVal.Accept(writer);
+            std::cout << sb.GetString() << std::endl;
             sb.Clear();
             writer.Reset(sb);
         }
