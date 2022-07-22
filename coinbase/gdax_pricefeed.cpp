@@ -76,9 +76,8 @@ inline void parseSubscriptions(const std::string& json) {
     std::cout << "channels: [";
     for (int idx=0; idx<var.Size(); ++idx) {
         auto &arrVal = var[idx];
-        if (arrVal.IsString()) {
-            std::cout << arrVal.GetString() << ",";
-        } 
+        if (arrVal.IsString()) 
+            std::cout << arrVal.GetString() << ","; 
         else if (arrVal.IsObject()) {
             std::cout << "  name: " << arrVal["name"].GetString() << std::endl;
             auto jsonArr = arrVal["product_ids"].GetArray();
@@ -112,25 +111,75 @@ inline void parseL2update(const std::string& json) {
     std::cout << "time: " << document["time"].GetString() << std::endl;
 }
 
-// inline void parseHeartbeat(const char *json) {
-//     Document document;
-//     document.Parse(json);
-//     std::cout << "type: " << document["type"].GetString() << std::endl;
-//     std::cout << "last_trade_id: " << document["last_trade_id"].GetInt64() << std::endl;
-//     std::cout << "product_id: " << document["product_id"].GetString() << std::endl;
-//     std::cout << "sequence: " << document["sequence"].GetInt64() << std::endl;
-//     std::cout << "time: " << document["time"].GetString() << std::endl;
-        
-// }
+inline void parseL2updateSs(const std::string& json) {
+    size_t len = json.length();
+	char ch;
+    int idx = 0;
+	int begin = idx;
+	do {
+		ch = json[idx];
+		if (::isspace(ch)) 
+            continue; 
+		else if (ch == '{') {
+			std::cout << json[idx] << std::endl;
+			begin = idx+1;
+	} else if (ch == '[') {
+			std::cout << json.substr(begin, idx-begin);
+			std::cout << json[idx];
+			begin = idx+1;
+	} else if (ch == ',' ) {
+            // std::cout << begin << ":";
+            if(begin >= 53 && begin <=70) {
+                std::cout << json.substr(begin, idx-begin) << " ";
+			    begin = idx+1;
+        } else {
+                std::cout << json.substr(begin, idx-begin) << std::endl;
+			    begin = idx+1;
+            }
+    } else if (ch == ']') {
+			std::cout  << json.substr(begin, idx-begin);
+			std::cout << ch  ;
+			begin = idx+1;
+	} else if (ch == '}') {
+			std::cout  << json.substr(begin, idx-begin) << std::endl;
+			std::cout << ch  ;
+			begin = idx+1;
+            if(++idx >= len)
+                std::cout << std::endl;
+		} 
+    }  while ( ++idx <= len ); 
+}
 
 inline void parseTicker(const char *json) {
     Document document;
     document.Parse(json);
     std::cout << "type: " << document["type"].GetString() << std::endl;
     std::cout << "price: " << document["price"].GetString() << std::endl;
-    std::cout << "last_size: " << document["last_size"].GetString() << std::endl;
-        
+    std::cout << "last_size: " << document["last_size"].GetString() << std::endl;       
 }
+
+inline void parseTickerSs(const std::string &json) {
+	size_t len = json.length();
+	char ch;
+    int idx =0;
+	int begin = idx;
+	do {
+		ch = json[idx];
+		if (::isspace(ch)) { continue; }
+		else if (ch == '[' || ch == '{') {
+			std::cout << json[idx] << std::endl;
+			begin = idx+1;
+		} else if (ch == ',' ) {
+			std::cout << json.substr(begin, idx-begin) << std::endl;
+			begin = idx+1;
+		} else if (ch == '}' || ch == ']') {
+			std::cout  << json.substr(begin, idx-begin) << std::endl;
+			std::cout << ch  << std::endl;
+			begin = idx+1;
+		} 
+        }  while ( ++idx <= len ); 
+}
+
 // Report a failure
 void fail(beast::error_code ec, char const* what) {
     std::cerr << what << ": " << ec.message() << "\n";
@@ -186,8 +235,7 @@ public:
 
         // Set SNI Hostname (many hosts need this to handshake successfully)
         if(! SSL_set_tlsext_host_name(ws_.next_layer().native_handle(), host_.c_str())) {
-            ec = beast::error_code(static_cast<int>(::ERR_get_error()),
-                net::error::get_ssl_category());
+            ec = beast::error_code(static_cast<int>(::ERR_get_error()), net::error::get_ssl_category());
             return fail(ec, "connect");
         }
 
@@ -226,15 +274,8 @@ public:
         if(ec)
             return fail(ec, "handshake");
 
-        //// Read a message into our buffer
-        //ws_.async_read(
-        //    buffer_,
-        //    beast::bind_front_handler(
-        //        &session::on_read,
-        //        shared_from_this()));
-
         // Send the message
-        ws_.async_write(net::buffer(text_),beast::bind_front_handler(&session::on_write,shared_from_this()));
+        ws_.async_write(net::buffer(text_), beast::bind_front_handler(&session::on_write,shared_from_this()));
     }
 
     void on_write(beast::error_code ec,std::size_t bytes_transferred) {
@@ -245,11 +286,7 @@ public:
             return fail(ec, "write");
 
         // Read a message into our buffer
-        ws_.async_read(
-            buffer_,
-            beast::bind_front_handler(
-                &session::on_read,
-                shared_from_this()));
+        ws_.async_read(buffer_, beast::bind_front_handler(&session::on_read, shared_from_this()));
     }
 
     std::string unsubscribe(std::string exchange, std::string symbol, std::string level) {
@@ -280,9 +317,11 @@ public:
         if(strcmp(type.c_str(), "subscriptions") == 0) {
             parseSubscriptions(oss.str().c_str());
     } else if(strcmp(type.c_str(), "l2update") == 0) {
-            parseL2update(oss.str().c_str());
+            parseL2updateSs(oss.str().c_str());
+            // parseL2update(oss.str().c_str());
     } else if(strcmp(type.c_str(), "ticker") == 0) {
-            parseTicker(oss.str().c_str());
+            // parseTicker(oss.str().c_str());
+            parseTickerSs(oss.str().c_str());
     }  else if(strcmp(type.c_str(), "snapshot") == 0) {
             parseSnapshot(oss.str().c_str());
     }
@@ -300,24 +339,7 @@ public:
             sleep(1);
             ws_.async_read( buffer_, beast::bind_front_handler(&session::on_read, shared_from_this()));
 	}
-	/*
-        if (++msg_count_ == 15) {
-            // Close the WebSocket connection
-            ws_.async_close(websocket::close_code::normal,
-                beast::bind_front_handler(
-                    &session::on_close,
-                    shared_from_this()));
-        } else {
-            std::this_thread::sleep_for(std::chrono::seconds(1));
 
-            // Send the message
-            ws_.async_write(
-                net::buffer(text_),
-                beast::bind_front_handler(
-                    &session::on_write,
-                    shared_from_this()));
-        }
-	*/
     }
 
     void on_close(beast::error_code ec) {
@@ -348,7 +370,7 @@ int main(int argc, char **argv)
     auto const host = "ws-feed.exchange.coinbase.com";
     auto const port = "443";
     std::ostringstream oss;
-    oss << "{\"type\":\"subscribe\",\"product_ids\":[" << argv[1] << "],\"channels\":[\"level2\",\"heartbeat\",{\"name\":\"ticker\",\"product_ids\":[" << argv[1] << "]}]}";
+    oss << "{\"type\":\"subscribe\",\"product_ids\":[" << argv[1] << "],\"channels\":[\"level2\",{\"name\":\"ticker\",\"product_ids\":[" << argv[1] << "]}]}";
 
     // The io_context is required for all I/O
     net::io_context ioc;

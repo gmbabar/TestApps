@@ -5,6 +5,8 @@
 #include "rapidjson/writer.h"
 #include "rapidjson/stringbuffer.h"
 #include <iostream>
+#include <string.h>
+#include <cstring>
 #include <chrono>
 #include <sstream>
 #include <unordered_map>
@@ -22,7 +24,8 @@ using namespace rapidjson;
 {"type": "unsubscribe","channels": ["heartbeat"]}
 
 {"type": "unsubscribe","product_ids": ["ETH-USD","ETH-EUR"],"channels": ["ticker"]}
-
+----Snapshot
+{"type":"snapshot","product_id":"ETH-USD","asks":[["89","0009.989"],["34","0.9879"],["69","0.699696"]],"bids":[["89","0009.989"],["34","0.9879"],["69","0.699696"]]}
 */
 
 /*
@@ -66,6 +69,14 @@ using namespace rapidjson;
     "sequence":32589047800,
     "time":"2022-07-19T12:09:26.296459Z"
 }
+----Snapshot
+{
+    "type":"snapshot",
+    "product_id":"ETH-USD"
+    "asks":[["89","0009.989"],["34","0.9879"],["69","0.699696"]],
+    "bids":[["89","0009.989"],["34","0.9879"],["69","0.699696"]],
+
+}
 
 */
 
@@ -94,10 +105,6 @@ using namespace rapidjson;
 
 */
 
-inline uint64_t getMicrosSinceEpoch() {
-  return std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-}
-
 /*
 ----L2Update
 {
@@ -111,13 +118,13 @@ inline uint64_t getMicrosSinceEpoch() {
 inline void formatL2updateMsg(std::ostringstream &oss,
     const std::string& type,
     const std::string& product_id,
-    const std::string& channels,
+    const std::string& changes,
     const std::string& time) {
 
     oss << "{"
         << R"("type":")" << type << R"(")"
         << R"(,"product_id":")" << product_id << R"(")"
-        << R"(,"channels":)" << channels
+        << R"(,"changes":)" << changes
         << R"(,"time":")" << time << R"(")"
         << "}";
 }
@@ -143,6 +150,46 @@ inline void parseL2updateMsg(const std::string& json) {
     std::cout << "time: " << document["time"].GetString() << std::endl;
 
 }
+
+inline void parseL2updateSs(const std::string& json) {
+    size_t len = json.length();
+	char ch;
+    int idx = 0;
+	int begin = idx;
+	do {
+		ch = json[idx];
+		if (::isspace(ch)) 
+            continue; 
+		else if (ch == '{') {
+			std::cout << json[idx] << std::endl;
+			begin = idx+1;
+	} else if (ch == '[') {
+			std::cout << json.substr(begin, idx-begin);
+			std::cout << json[idx];
+			begin = idx+1;
+	} else if (ch == ',' ) {
+            // std::cout << begin << ":";
+            if(begin >= 53 && begin <=70) {
+                std::cout << json.substr(begin, idx-begin) << " ";
+			    begin = idx+1;
+        } else {
+                std::cout << json.substr(begin, idx-begin) << std::endl;
+			    begin = idx+1;
+            }
+    } else if (ch == ']') {
+			std::cout  << json.substr(begin, idx-begin);
+			std::cout << ch  ;
+			begin = idx+1;
+	} else if (ch == '}') {
+			std::cout  << json.substr(begin, idx-begin) << std::endl;
+			std::cout << ch  ;
+			begin = idx+1;
+            if(++idx >= len)
+                std::cout << std::endl;
+		} 
+    }  while ( ++idx <= len ); 
+}
+
 
 
 /*
@@ -205,7 +252,6 @@ inline void parseTickerMsg(const std::string& json) {
     Document document;
     document.Parse(json.c_str());
 
-
     std::cout << __func__ << ": type: " << document["type"].GetString() << std::endl;
     std::cout << __func__ << ": sequence: " << document["sequence"].GetInt64() << std::endl;
     std::cout << __func__ << ": product_id: " << document["product_id"].GetString() << std::endl;
@@ -221,6 +267,28 @@ inline void parseTickerMsg(const std::string& json) {
     std::cout << __func__ << ": time: " << document["time"].GetString() << std::endl;
     std::cout << __func__ << ": trade_id: " << document["trade_id"].GetInt64() << std::endl;
     std::cout << __func__ << ": last_size: " << document["last_size"].GetString() << std::endl;
+}
+
+inline void parseTickerSs(const std::string &json) {
+	size_t len = json.length();
+	char ch;
+    int idx = 0;
+	int begin = idx;
+	do {
+		ch = json[idx];
+		if (::isspace(ch)) { continue; }
+		else if (ch == '[' || ch == '{') {
+			std::cout << json[idx] << std::endl;
+			begin = idx+1;
+		} else if (ch == ',' ) {
+			std::cout << json.substr(begin, idx-begin) << std::endl;
+			begin = idx+1;
+		} else if (ch == '}' || ch == ']') {
+			std::cout  << json.substr(begin, idx-begin) << std::endl;
+			std::cout << ch  << std::endl;
+			begin = idx+1;
+		} 
+        }  while ( ++idx <= len ); 
 }
 
 /*
@@ -303,8 +371,77 @@ inline void parseSubscriptionsMsg(const std::string& json) {
     }
 }
 
+/*
+----Snapshot
+{
+    "type":"snapshot",
+    "product_id":"ETH-USD",
+    "asks":[["89","0009.989"],["34","0.9879"],["69","0.699696"]],
+    "bids":[["89","0009.989"],["34","0.9879"],["69","0.699696"]]
+}
+
+*/
+inline void formatSnapshotMsg(std::ostringstream &oss,
+    const std::string& type,
+    const std::string& product_id,
+    const std::string& asks,
+    const std::string& bids) {
+
+    oss << "{"
+        << R"("type":")" << type << R"(")"
+        << R"(,"product_id":")" << product_id << R"(")"
+        << R"(,"asks":)" << asks
+        << R"(,"bids":)" << bids 
+        << "}" ;
+}
+
+//---working on it----
+inline void parseSnapshotSs(const std::string& json) {
+    size_t len = json.length();
+	char ch;
+    int idx = 0;
+	int begin = idx;
+	do {
+		ch = json[idx];
+		if (::isspace(ch)) 
+            continue; 
+		else if (ch == '{') {
+			std::cout << json[idx] << std::endl;
+			begin = idx+1;
+	} else if (ch == '[') {
+			std::cout << json.substr(begin, idx-begin);
+			std::cout << json[idx];
+			begin = idx+1;
+	} else if (ch == ',' ) {
+            std::cout << begin << ":";
+            if(begin >= 53 && begin <=70) {
+                std::cout << json.substr(begin, idx-begin) << " ";
+			    begin = idx+1;
+        } else {
+                std::cout << json.substr(begin, idx-begin) << std::endl;
+			    begin = idx+1;
+            }
+    } else if (ch == ']') {
+			std::cout  << json.substr(begin, idx-begin);
+			std::cout << ch  ;
+			begin = idx+1;
+	} else if (ch == '}') {
+			std::cout  << json.substr(begin, idx-begin) << std::endl;
+			std::cout << ch  ;
+			begin = idx+1;
+            if(++idx >= len)
+                std::cout << std::endl;
+		} 
+    }  while ( ++idx <= len ); 
+}
+
 int main() {
     std::ostringstream oss;
+    std::cout << "----------------------- Snapshot Msg -----------------------" << std::endl;
+    formatSnapshotMsg(oss, "snapshot", "ETH-USD",R"([["89","0009.989"],["34","0.9879"],["69","0.699696"]])",R"([["89","0009.989"],["34","0.9879"],["69","0.699696"]])");
+    std::cout << "Json: " << oss.str() << std::endl;
+    parseSnapshotSs(oss.str());
+    oss.str("");
     std::cout << "----------------------- Subscriptions Msg -----------------------" << std::endl;
     formatSubscriptionsMsg(oss, "subscriptions", R"([{"name":"heartbeat","product_ids":["ETH-USD","ETH-EUR"]},{"name":"ticker","product_ids":["ETH-BTC","ETH-USD","ETH-EUR"]},{"name":"level2","product_ids":["ETH-USD","ETH-EUR"]}])");
     std::cout << "Json: " << oss.str() << std::endl;
@@ -313,18 +450,23 @@ int main() {
     std::cout << "----------------------- L2update Msg -----------------------" << std::endl;
     formatL2updateMsg(oss,"l2update","ETHUSD",R"([["buy","1550.16","0.80679000"]])","2022-07-19T12:09:18.390473Z");
     std::cout << "Json: " << oss.str() << std::endl;
+    parseL2updateSs(oss.str());
     parseL2updateMsg(oss.str());
     oss.str("");
     std::cout << "----------------------- Ticker Msg -----------------------" << std::endl;
     formatTickerMsg(oss, "ticker",32589047814, "ETH-USD","1549.08","1485.35","589548.02768130","1450.45","1631.32",
                 "8147557.57837948","1548.81","1549.08","buy","2022-07-19T12:09:26.348930Z",319738529,"0.01803274");
     std::cout << "Json: " << oss.str() << std::endl;
+    JsonParser(oss.str());
     parseTickerMsg(oss.str());
+    parseTickerMsgSs(oss.str());
     oss.str("");
     std::cout << "----------------------- Heartbeat Msg -----------------------" << std::endl;
     formatHeartbeatMsg(oss,"heartbeat",319738525,"ETH-USD",32589047800,"2022-07-19T12:09:26.296459Z");
     std::cout << "Json: " << oss.str() << std::endl;
     parseHeartbeatMsg(oss.str());
     oss.str("");
+
     return 0;
 }
+
