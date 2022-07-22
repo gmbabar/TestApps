@@ -10,36 +10,9 @@
 
 using namespace deribit_multicast;
 
-// void FormatDate(std::string &date)
-// {
-//    date.erase(1, 2); // Removes First 2 Digits Of Year
-//    if (date.substr(2, 3) == "Jan")
-//    {
-//       date.replace(2, 3, "01");
-//    } else if (date.substr(2, 3) == "Feb") {
-//       date.replace(2, 3, "02");
-//    } else if (date.substr(2, 3) == "Mar") {
-//       date.replace(2, 3, "03");
-//    } else if (date.substr(2, 3) == "Apr") {
-//       date.replace(2, 3, "04");
-//    } else if (date.substr(2, 3) == "May") {
-//       date.replace(2, 3, "05");
-//    } else if (date.substr(2, 3) == "Jun") {
-//       date.replace(2, 3, "06");
-//    } else if (date.substr(2, 3) == "Jul") {
-//       date.replace(2, 3, "07");
-//    } else if (date.substr(2, 3) == "Aug") {
-//       date.replace(2, 3, "08");
-//    } else if (date.substr(2, 3) == "Sep") {
-//       date.replace(2, 3, "09");
-//    } else if (date.substr(2, 3) == "Oct") {
-//       date.replace(2, 3, "10");
-//    } else if (date.substr(2, 3) == "Nov") {
-//       date.replace(2, 3, "11");
-//    } else {
-//       date.replace(2, 3, "12");
-//    }
-// }
+// TODO:
+// 1. Make formatting as Nebula standard
+// 2. No need for FormatDate function, construct 'struct tm' and use ostringstream to build symbol.
 
 void FormBfcSym(Instrument &instrument)
 {
@@ -55,7 +28,8 @@ void FormBfcSym(Instrument &instrument)
              << instrument.strikePrice() << "_" 
              << (instrument.optionType() == OptionType::put ? "_P" : "_C");
 
-   } else if(instrument.kind() == InstrumentKind::future) {
+   } 
+   else if(instrument.kind() == InstrumentKind::future) {
       // if(instrument.futureType() == FutureType::reversed) {
       //    bfcSym += "I_";
       // } else {
@@ -79,7 +53,8 @@ void FormBfcSym(Instrument &instrument)
       //    FormatDate(date);
       //    bfcSym += date;
       // }
-   } else {
+   } 
+   else {
       std::cerr << "Invalid Instrument Kind" << std::endl;
       return;
    }
