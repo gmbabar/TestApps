@@ -95,9 +95,7 @@ using namespace rapidjson;
 */
 
 inline uint64_t getMicrosSinceEpoch() {
-  return std::chrono::duration_cast<std::chrono::microseconds>(
-      std::chrono::system_clock::now().time_since_epoch()
-      ).count();
+  return std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 }
 
 /*
@@ -111,41 +109,40 @@ inline uint64_t getMicrosSinceEpoch() {
 */
 
 inline void formatL2updateMsg(std::ostringstream &oss,
-            const std::string& type,
-            const std::string& product_id,
-            const std::string& channels,
-            const std::string& time) {
+    const std::string& type,
+    const std::string& product_id,
+    const std::string& channels,
+    const std::string& time) {
 
-            oss << "{"
-                << R"("type":")" << type << R"(")"
-                << R"(,"product_id":")" << product_id << R"(")"
-                << R"(,"channels":)" << channels
-                << R"(,"time":")" << time << R"(")"
-                << "}";
-            }
+    oss << "{"
+        << R"("type":")" << type << R"(")"
+        << R"(,"product_id":")" << product_id << R"(")"
+        << R"(,"channels":)" << channels
+        << R"(,"time":")" << time << R"(")"
+        << "}";
+}
 
 inline void parseL2updateMsg(const std::string& json) {
 
-            Document document;
-            document.Parse(json.c_str());
-            std::cout << "type: " << document["type"].GetString() << std::endl;
-            std::cout << "product_id: " << document["product_id"].GetString() << std::endl;
-            auto var = document["channels"].GetArray();
-            std::cout << "channels: [";
-            for (int idx=0; idx<var.Size(); ++idx) {
-                auto &arrVal = var[idx];
-                if (arrVal.IsArray()) {
-                    auto jsonArr = arrVal.GetArray();
-                    for (int x=0; x<jsonArr.Size(); ++x) {
-                        std::cout << jsonArr[x].GetString() << " ";
-                    }
-
-                }
+    Document document;
+    document.Parse(json.c_str());
+    std::cout << "type: " << document["type"].GetString() << std::endl;
+    std::cout << "product_id: " << document["product_id"].GetString() << std::endl;
+    auto var = document["channels"].GetArray();
+    std::cout << "channels: [";
+    for (int idx=0; idx<var.Size(); ++idx) {
+        auto &arrVal = var[idx];
+        if (arrVal.IsArray()) {
+            auto jsonArr = arrVal.GetArray();
+            for (int x=0; x<jsonArr.Size(); ++x) {
+                std::cout << jsonArr[x].GetString() << " ";
             }
-            std::cout << "]" << std::endl;
-            std::cout << "time: " << document["time"].GetString() << std::endl;
-
         }
+    }
+    std::cout << "]" << std::endl;
+    std::cout << "time: " << document["time"].GetString() << std::endl;
+
+}
 
 
 /*
@@ -170,65 +167,61 @@ inline void parseL2updateMsg(const std::string& json) {
 */
 
 inline void formatTickerMsg(std::ostringstream &oss,
-            const std::string& type,
-            const long sequence,
-            const std::string& product_id,
-            const std::string& price,
-            const std::string& open_24h,
-            const std::string& volume_24h,
-            const std::string& low_24h,
-            const std::string& high_24h,
-            const std::string& volume_30d,
-            const std::string& best_bid,
-            const std::string& best_ask,
-            const std::string& side,
-            const std::string& time,
-            const long trade_id,
-            const std::string& last_size) {
-
-                oss <<"{"
-                    << R"("type":")" << type << R"(")"
-                    << R"(,"sequence": )" << sequence
-                    << R"(,"product_id":")" << product_id << R"(")"
-                    << R"(,"price":")" << price << R"(")"
-                    << R"(,"open_24h":")" << open_24h << R"(")"
-                    << R"(,"volume_24h":")" << volume_24h << R"(")"
-                    << R"(,"low_24h":")" << low_24h << R"(")"
-                    << R"(,"high_24h":")" << high_24h << R"(")"
-                    << R"(,"volume_30d":")" << volume_30d << R"(")"
-                    << R"(,"best_bid":")" << best_bid << R"(")"
-                    << R"(,"best_ask":")" << best_ask << R"(")"
-                    << R"(,"side":")" << side << R"(")"
-                    << R"(,"time":")" << time << R"(")"
-                    << R"(,"trade_id": )" << trade_id
-                    << R"(,"last_size":")" << last_size << R"(")"
-                    << "}" ;
-
-                }
+    const std::string& type,
+    const long sequence,
+    const std::string& product_id,
+    const std::string& price,
+    const std::string& open_24h,
+    const std::string& volume_24h,
+    const std::string& low_24h,
+    const std::string& high_24h,
+    const std::string& volume_30d,
+    const std::string& best_bid,
+    const std::string& best_ask,
+    const std::string& side,
+    const std::string& time,
+    const long trade_id,
+    const std::string& last_size) {
+        oss <<"{"
+            << R"("type":")" << type << R"(")"
+            << R"(,"sequence": )" << sequence
+            << R"(,"product_id":")" << product_id << R"(")"
+            << R"(,"price":")" << price << R"(")"
+            << R"(,"open_24h":")" << open_24h << R"(")"
+            << R"(,"volume_24h":")" << volume_24h << R"(")"
+            << R"(,"low_24h":")" << low_24h << R"(")"
+            << R"(,"high_24h":")" << high_24h << R"(")"
+            << R"(,"volume_30d":")" << volume_30d << R"(")"
+            << R"(,"best_bid":")" << best_bid << R"(")"
+            << R"(,"best_ask":")" << best_ask << R"(")"
+            << R"(,"side":")" << side << R"(")"
+            << R"(,"time":")" << time << R"(")"
+            << R"(,"trade_id": )" << trade_id
+            << R"(,"last_size":")" << last_size << R"(")"
+            << "}" ;
+}
 
 inline void parseTickerMsg(const std::string& json) {
-            Document document;
-            document.Parse(json.c_str());
+    Document document;
+    document.Parse(json.c_str());
 
 
-            std::cout << __func__ << ": type: " << document["type"].GetString() << std::endl;
-            std::cout << __func__ << ": sequence: " << document["sequence"].GetInt64() << std::endl;
-            std::cout << __func__ << ": product_id: " << document["product_id"].GetString() << std::endl;
-            std::cout << __func__ << ": price: " << document["price"].GetString() << std::endl;
-            std::cout << __func__ << ": open_24h: " << document["open_24h"].GetString() << std::endl;
-            std::cout << __func__ << ": volume_24h: " << document["volume_24h"].GetString() << std::endl;
-            std::cout << __func__ << ": low_24h: " << document["low_24h"].GetString() << std::endl;
-            std::cout << __func__ << ": high_24h: " << document["high_24h"].GetString() << std::endl;
-            std::cout << __func__ << ": volume_30d: " << document["volume_30d"].GetString() << std::endl;
-            std::cout << __func__ << ": best_bid: " << document["best_bid"].GetString() << std::endl;
-            std::cout << __func__ << ": best_ask: " << document["best_ask"].GetString() << std::endl;
-            std::cout << __func__ << ": side: " << document["side"].GetString() << std::endl;
-            std::cout << __func__ << ": time: " << document["time"].GetString() << std::endl;
-            std::cout << __func__ << ": trade_id: " << document["trade_id"].GetInt64() << std::endl;
-            std::cout << __func__ << ": last_size: " << document["last_size"].GetString() << std::endl;
-
-
-        }
+    std::cout << __func__ << ": type: " << document["type"].GetString() << std::endl;
+    std::cout << __func__ << ": sequence: " << document["sequence"].GetInt64() << std::endl;
+    std::cout << __func__ << ": product_id: " << document["product_id"].GetString() << std::endl;
+    std::cout << __func__ << ": price: " << document["price"].GetString() << std::endl;
+    std::cout << __func__ << ": open_24h: " << document["open_24h"].GetString() << std::endl;
+    std::cout << __func__ << ": volume_24h: " << document["volume_24h"].GetString() << std::endl;
+    std::cout << __func__ << ": low_24h: " << document["low_24h"].GetString() << std::endl;
+    std::cout << __func__ << ": high_24h: " << document["high_24h"].GetString() << std::endl;
+    std::cout << __func__ << ": volume_30d: " << document["volume_30d"].GetString() << std::endl;
+    std::cout << __func__ << ": best_bid: " << document["best_bid"].GetString() << std::endl;
+    std::cout << __func__ << ": best_ask: " << document["best_ask"].GetString() << std::endl;
+    std::cout << __func__ << ": side: " << document["side"].GetString() << std::endl;
+    std::cout << __func__ << ": time: " << document["time"].GetString() << std::endl;
+    std::cout << __func__ << ": trade_id: " << document["trade_id"].GetInt64() << std::endl;
+    std::cout << __func__ << ": last_size: " << document["last_size"].GetString() << std::endl;
+}
 
 /*
 ----Heartbeat
@@ -242,33 +235,31 @@ inline void parseTickerMsg(const std::string& json) {
 */
 
 inline void formatHeartbeatMsg(std::ostringstream &oss,
-            const std::string& type,
-            const long last_trade_id,
-            const std::string& product_id,
-            const long sequence,
-            const std::string time) {
-                oss << "{"
-                    << R"("type":")" << type << R"(")"
-                    << R"(,"last_trade_id":)" << last_trade_id
-                    << R"(,"product_id":")" << product_id << R"(")"
-                    << R"(,"sequence":)" << sequence
-                    << R"(,"time":")" << time << R"(")"
-                    << "}";
+    const std::string& type,
+    const long last_trade_id,
+    const std::string& product_id,
+    const long sequence,
+    const std::string time) {
+        oss << "{"
+            << R"("type":")" << type << R"(")"
+            << R"(,"last_trade_id":)" << last_trade_id
+            << R"(,"product_id":")" << product_id << R"(")"
+            << R"(,"sequence":)" << sequence
+            << R"(,"time":")" << time << R"(")"
+            << "}";
 
-            }       
+}       
 
 
 inline void parseHeartbeatMsg(const std::string& json) {
-            Document document;
-            document.Parse(json.c_str());
-
-
-            std::cout << __func__ << ": type: " << document["type"].GetString() << std::endl;
-            std::cout << __func__ << ": last_trade_id: " << document["last_trade_id"].GetInt64() << std::endl;
-            std::cout << __func__ << ": product_id: " << document["product_id"].GetString() << std::endl;
-            std::cout << __func__ << ": sequence: " << document["sequence"].GetInt64() << std::endl;
-            std::cout << __func__ << ": time: " << document["time"].GetString() << std::endl;
-        }
+    Document document;
+    document.Parse(json.c_str());
+    std::cout << __func__ << ": type: " << document["type"].GetString() << std::endl;
+    std::cout << __func__ << ": last_trade_id: " << document["last_trade_id"].GetInt64() << std::endl;
+    std::cout << __func__ << ": product_id: " << document["product_id"].GetString() << std::endl;
+    std::cout << __func__ << ": sequence: " << document["sequence"].GetInt64() << std::endl;
+    std::cout << __func__ << ": time: " << document["time"].GetString() << std::endl;
+}
 
 
 /*
@@ -284,33 +275,33 @@ inline void parseHeartbeatMsg(const std::string& json) {
 */
 
 inline void formatSubscriptionsMsg(std::ostringstream &oss,
-            const std::string& type,
-            const std::string& channels) {
-                oss << "{"
-                    << R"("type":")" << type << R"(")"
-                    << R"(,"channels":)" << channels
-                    << "}" ;
-            }
+    const std::string& type,
+    const std::string& channels) {
+        oss << "{"
+            << R"("type":")" << type << R"(")"
+            << R"(,"channels":)" << channels
+            << "}" ;
+}
 
 inline void parseSubscriptionsMsg(const std::string& json) {
-        Document document;
-        document.Parse(json.c_str());
-        std::cout << "type: " << document["type"].GetString() << std::endl;
-        auto var = document["channels"].GetArray();
-        for (int idx=0; idx<var.Size(); ++idx) {
-            auto &arrVal = var[idx];
-            if (arrVal.IsString()) {
-                std::cout << arrVal.GetString() << std::endl;
-            } 
-            else if (arrVal.IsObject()) {
-                std::cout << "name: " << arrVal["name"].GetString() << std::endl;
-                auto jsonArr = arrVal["product_ids"].GetArray();
-                for (int x=0; x<jsonArr.Size(); ++x) {
-                    std::cout << jsonArr[x].GetString() << std::endl;
-                }
+    Document document;
+    document.Parse(json.c_str());
+    std::cout << "type: " << document["type"].GetString() << std::endl;
+    auto var = document["channels"].GetArray();
+    for (int idx=0; idx<var.Size(); ++idx) {
+        auto &arrVal = var[idx];
+        if (arrVal.IsString()) {
+            std::cout << arrVal.GetString() << std::endl;
+        } 
+        else if (arrVal.IsObject()) {
+            std::cout << "name: " << arrVal["name"].GetString() << std::endl;
+            auto jsonArr = arrVal["product_ids"].GetArray();
+            for (int x=0; x<jsonArr.Size(); ++x) {
+                std::cout << jsonArr[x].GetString() << std::endl;
             }
         }
     }
+}
 
 int main() {
     std::ostringstream oss;
@@ -336,4 +327,4 @@ int main() {
     parseHeartbeatMsg(oss.str());
     oss.str("");
     return 0;
-    }
+}
