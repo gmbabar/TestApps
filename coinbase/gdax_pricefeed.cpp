@@ -34,36 +34,38 @@ using namespace rapidjson;
 //------------------------------------------------------------------------------
 
 inline void parseSnapshot(const char *json) {
-        Document document;
-        document.Parse(json);
-        StringBuffer sb;
-        Writer<StringBuffer> writer(sb);
-        std::cout << "Type : " << document["type"].GetString() << std::endl;
-        std::cout << "product Id : " << document["product_id"].GetString() << std::endl;
-        //Gets The Value Of Asks
-        auto asks = document["asks"].GetArray();
-        std::cout << "Asks : [" << std::endl;
-        for (SizeType i = 0; i < asks.Size(); i++)
+    Document document;
+    document.Parse(json);
+    std::cout << "Type : " << document["type"].GetString() << std::endl;
+    std::cout << "product Id : " << document["product_id"].GetString() << std::endl;
+    //Gets The Value Of Asks
+    auto asks = document["asks"].GetArray();
+    std::cout << "Asks : [" << std::endl;
+    for (SizeType i = 0; i < asks.Size(); i++)
+    {
+        auto arrVal = asks[i].GetArray();
+        std::cout << "Asks : [";
+        for(SizeType i = 0; i < arrVal.Size(); i++)
         {
-            auto &arrVal = asks[i];
-            arrVal.Accept(writer);
-            std::cout << sb.GetString() << std::endl;
-            sb.Clear();
-            writer.Reset(sb);
+            auto val = arrVal[i].GetString();
+            std::cout << val << " ";
         }
         std::cout << "]" << std::endl;
-        
-        auto bids = document["bids"].GetArray();
-        std::cout << "bids : [" << std::endl;
-        for (SizeType i = 0; i < bids.Size(); i++)
-        {
-            auto &arrVal = bids[i];
-            arrVal.Accept(writer);
-            std::cout << sb.GetString() << std::endl;
-            sb.Clear();
-            writer.Reset(sb);
+    }
+    std::cout << "]" << std::endl;
+    
+    auto bids = document["bids"].GetArray();
+    std::cout << "bids : [" << std::endl;
+    for (SizeType i = 0; i < bids.Size(); i++) {
+        auto arrVal = bids[i].GetArray();
+        std::cout << "Bids : [";
+        for(SizeType i = 0; i < arrVal.Size(); i++) {
+            auto val = arrVal[i].GetString();
+            std::cout << val << " ";
         }
         std::cout << "]" << std::endl;
+    }
+    std::cout << "]" << std::endl;
 }
 
 inline void parseSubscriptions(const std::string& json) {
