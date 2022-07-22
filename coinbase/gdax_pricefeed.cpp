@@ -1,11 +1,12 @@
 // TODO:
-// 1. Fix formatting in both boost example as well as yours -ok
-// 2. Take command line argument for symbol to be subscribed -ok
-// 3. No message without type -ok
+// 1. Fix formatting in both boost example as well as yours -done
+// 2. Take command line argument for symbol to be subscribed -done
+// 3. No message without type -done
 // 4. Write another set of function to parse data using simple string parsing
 //    [look at Bitfinex codebase, fastParseWs()]
-//    NOTE: Only parse, L2Update (book), Trade/Ticker, Snapshot
-//    - Try to receive snapshop data only once. (do it on last)
+//    NOTE: Only parse, L2Update (book), Trade/Ticker -done
+//      Snapshot -left
+//    - Try to receive snapshop data only once. (do it on last) -left
 
 #include <boost/beast/core.hpp>
 #include <boost/beast/ssl.hpp>
@@ -377,9 +378,6 @@ int main(int argc, char **argv)
 
     // The SSL context is required, and holds certificates
     ssl::context ctx{ssl::context::tlsv12_client};
-
-    // This holds the root certificate used for verification
-    //load_root_certificates(ctx);
 
     // Launch the asynchronous operation
     // std::cout << text << std::endl;
