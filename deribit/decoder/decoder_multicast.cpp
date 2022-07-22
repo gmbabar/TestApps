@@ -35,6 +35,9 @@ size_t decode(int msgType, char *buffer, size_t offset, size_t buffLen, size_t b
        std::cout << "instrumentNameLength: " << instrNameLen << std::endl;
        std::cout << "instrumentName: " << instrName << std::endl;
        offset += instrNameLen;
+       // TODO:
+       // - Construct symbol as advised in encoder.cpp
+       // - Remove implementation from encoder.cpp
        break;
    }
    case 1001:
@@ -98,6 +101,11 @@ size_t decode(int msgType, char *buffer, size_t offset, size_t buffLen, size_t b
        levelsList.wrapForDecode(buffer, (uint64_t*)&offset, version, buffLen);
        while (levelsList.hasNext()) {
            std::cout << "levelsList: " << levelsList.next() << std::endl;
+	   // Parse snapshot to extract:
+	   // - side
+	   // - price
+	   // - size
+	   // - symbol
        }
        std::cout << std::endl;
        break;
