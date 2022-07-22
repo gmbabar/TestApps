@@ -50,17 +50,35 @@ inline void parseSnapshot(const char *json) {
         std::cout << "Type : " << document["type"].GetString() << std::endl;
         std::cout << "product Id : " << document["product_id"].GetString() << std::endl;
         //Gets The Value Of Asks
-        document["asks"].Accept(writer);
-        std::cout << "Asks : " << sb.GetString() << std::endl;
-        //Clears The Buffer
-        sb.Clear();
-        writer.Reset(sb);
-        //Gets The Value Of Bids
-        document["bids"].Accept(writer);
-        std::cout << "Bids : " << sb.GetString() << std::endl;
-        sb.Clear();
-        writer.Reset(sb);
+        auto asks = document["asks"].GetArray();
+        std::cout << "Asks : [" << std::endl;
+        for (SizeType i = 0; i < asks.Size(); i++)
+        {
+            auto &arrVal = asks[i];
+            if(arrVal.IsArray())
+            {
+                arrVal.Accept(writer);
+                std::cout << sb.GetString() << std::endl;
+            }
+            sb.Clear();
+            writer.Reset(sb);
+        }
+        std::cout << "]" << std::endl;
         
+        auto bids = document["bids"].GetArray();
+        std::cout << "bids : [" << std::endl;
+        for (SizeType i = 0; i < bids.Size(); i++)
+        {
+            auto &arrVal = bids[i];
+            if(arrVal.IsArray())
+            {
+                arrVal.Accept(writer);
+                std::cout << sb.GetString() << std::endl;
+            }
+            sb.Clear();
+            writer.Reset(sb);
+        }
+        std::cout << "]" << std::endl;
 }
 
 inline void parseSubscriptions(const std::string& json) {
