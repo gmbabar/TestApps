@@ -1,7 +1,7 @@
 // TODO:
-// 1. Fix formatting in both boost example as well as yours
-// 2. Take command line argument for symbol to be subscribed
-// 3. No message without type
+// 1. Fix formatting in both boost example as well as yours -ok
+// 2. Take command line argument for symbol to be subscribed -ok
+// 3. No message without type -ok
 // 4. Write another set of function to parse data using simple string parsing
 //    [look at Bitfinex codebase, fastParseWs()]
 //    NOTE: Only parse, L2Update (book), Trade/Ticker, Snapshot
@@ -112,34 +112,22 @@ inline void parseL2update(const std::string& json) {
     std::cout << "time: " << document["time"].GetString() << std::endl;
 }
 
-inline void parseHeartbeat(const char *json) {
-    Document document;
-    document.Parse(json);
-    std::cout << "type: " << document["type"].GetString() << std::endl;
-    std::cout << "last_trade_id: " << document["last_trade_id"].GetInt64() << std::endl;
-    std::cout << "product_id: " << document["product_id"].GetString() << std::endl;
-    std::cout << "sequence: " << document["sequence"].GetInt64() << std::endl;
-    std::cout << "time: " << document["time"].GetString() << std::endl;
+// inline void parseHeartbeat(const char *json) {
+//     Document document;
+//     document.Parse(json);
+//     std::cout << "type: " << document["type"].GetString() << std::endl;
+//     std::cout << "last_trade_id: " << document["last_trade_id"].GetInt64() << std::endl;
+//     std::cout << "product_id: " << document["product_id"].GetString() << std::endl;
+//     std::cout << "sequence: " << document["sequence"].GetInt64() << std::endl;
+//     std::cout << "time: " << document["time"].GetString() << std::endl;
         
-}
+// }
 
 inline void parseTicker(const char *json) {
     Document document;
     document.Parse(json);
     std::cout << "type: " << document["type"].GetString() << std::endl;
-    std::cout << "sequence: " << document["sequence"].GetInt64() << std::endl;
-    std::cout << "product_id: " << document["product_id"].GetString() << std::endl;
     std::cout << "price: " << document["price"].GetString() << std::endl;
-    std::cout << "open_24h: " << document["open_24h"].GetString() << std::endl;
-    std::cout << "volume_24h: " << document["volume_24h"].GetString() << std::endl;
-    std::cout << "low_24h: " << document["low_24h"].GetString() << std::endl;
-    std::cout << "high_24h: " << document["high_24h"].GetString() << std::endl;
-    std::cout << "volume_30d: " << document["volume_30d"].GetString() << std::endl;
-    std::cout << "best_bid: " << document["best_bid"].GetString() << std::endl;
-    std::cout << "best_ask: " << document["best_ask"].GetString() << std::endl;
-    std::cout << "side: " << document["side"].GetString() << std::endl;
-    std::cout << "time: " << document["time"].GetString() << std::endl;
-    std::cout << "trade_id: " << document["trade_id"].GetInt64() << std::endl;
     std::cout << "last_size: " << document["last_size"].GetString() << std::endl;
         
 }
@@ -295,9 +283,7 @@ public:
             parseL2update(oss.str().c_str());
     } else if(strcmp(type.c_str(), "ticker") == 0) {
             parseTicker(oss.str().c_str());
-    } else if(strcmp(type.c_str(), "heartbeat") == 0) {
-            parseHeartbeat(oss.str().c_str());
-    } else if(strcmp(type.c_str(), "snapshot") == 0) {
+    }  else if(strcmp(type.c_str(), "snapshot") == 0) {
             parseSnapshot(oss.str().c_str());
     }
 
