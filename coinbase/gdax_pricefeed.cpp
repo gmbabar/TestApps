@@ -1,20 +1,11 @@
-//
-// Copyright (c) 2016-2019 Vinnie Falco (vinnie dot falco at gmail dot com)
-//
-// Distributed under the Boost Software License, Version 1.0. (See accompanying
-// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-//
-// Official repository: https://github.com/boostorg/beast
-//
-
-//------------------------------------------------------------------------------
-//
-// Example: WebSocket SSL client, asynchronous
-//
-//------------------------------------------------------------------------------
-
-//#include <example/common/root_certificates.hpp>
-//#include "common/root_certificates.hpp"		// copied local
+// TODO:
+// 1. Fix formatting in both boost example as well as yours
+// 2. Take command line argument for symbol to be subscribed
+// 3. No message without type
+// 4. Write another set of function to parse data using simple string parsing
+//    [look at Bitfinex codebase, fastParseWs()]
+//    NOTE: Only parse, L2Update (book), Trade/Ticker, Snapshot
+//    - Try to receive snapshop data only once. (do it on last)
 
 #include <boost/beast/core.hpp>
 #include <boost/beast/ssl.hpp>
@@ -97,7 +88,7 @@ inline void parseSubscriptions(const std::string& json) {
             }
         }
         std::cout << "]" << std::endl;
-    }
+}
 
 inline void parseL2update(const std::string& json) {
         Document document;
@@ -117,7 +108,7 @@ inline void parseL2update(const std::string& json) {
         }
         std::cout << "]" << std::endl;
         std::cout << "time: " << document["time"].GetString() << std::endl;
-    }
+}
 
 inline void parseHeartbeat(const char *json) {
         Document document;
@@ -151,9 +142,7 @@ inline void parseTicker(const char *json) {
         
 }
 // Report a failure
-void
-fail(beast::error_code ec, char const* what)
-{
+void fail(beast::error_code ec, char const* what) {
     std::cerr << what << ": " << ec.message() << "\n";
 }
 
@@ -170,20 +159,13 @@ class session : public std::enable_shared_from_this<session>
 
 public:
     // Resolver and socket require an io_context
-    explicit
-    session(net::io_context& ioc, ssl::context& ctx)
+    explicit session(net::io_context& ioc, ssl::context& ctx)
         : resolver_(net::make_strand(ioc))
-        , ws_(net::make_strand(ioc), ctx)
-    {
+        , ws_(net::make_strand(ioc), ctx) {
     }
 
     // Start the asynchronous operation
-    void
-    run(
-        char const* host,
-        char const* port,
-        char const* text)
-    {
+    void run( char const* host, char const* port, char const* text) {
         std::cout << "Listener:" << __func__ << std::endl;
         // Save these for later
         host_ = host;
