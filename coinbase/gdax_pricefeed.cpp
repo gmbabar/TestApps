@@ -348,12 +348,21 @@ public:
 
 //------------------------------------------------------------------------------
 
-int main()
+int main(int argc, char **argv)
 {
+    if(argc < 2)
+    {
+        std::cout << "Too Few Arguements :";
+        std::cout << "\nExample:";
+        std::cout << "\n\t" << argv[0] << " <Symbols>";
+        std::cout << "\n\t" << argv[0] << " \"\\\"BTC-USD\\\", \\\"ETH-USD\\\"\"\n";
+        return -1;
+    }
     // Check command line arguments.
     auto const host = "ws-feed.exchange.coinbase.com";
     auto const port = "443";
-    auto const text = "{\"type\":\"subscribe\",\"product_ids\":[\"ETH-USD\",\"ETH-EUR\"],\"channels\":[\"level2\",\"heartbeat\",{\"name\":\"ticker\",\"product_ids\":[\"ETH-BTC\",\"ETH-USD\"]}]}";
+    std::ostringstream oss;
+    oss << "{\"type\":\"subscribe\",\"product_ids\":[" << argv[1] << "],\"channels\":[\"level2\",\"heartbeat\",{\"name\":\"ticker\",\"product_ids\":[" << argv[1] << "]}]}";
 
     // The io_context is required for all I/O
     net::io_context ioc;
@@ -365,7 +374,8 @@ int main()
     //load_root_certificates(ctx);
 
     // Launch the asynchronous operation
-    std::make_shared<session>(ioc, ctx)->run(host, port, text);
+    // std::cout << text << std::endl;
+    std::make_shared<session>(ioc, ctx)->run(host, port, oss.str().c_str());
 
     // Run the I/O service. The call will return when
     // the socket is closed.
