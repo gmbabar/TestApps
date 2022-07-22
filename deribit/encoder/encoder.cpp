@@ -11,55 +11,16 @@
 using namespace deribit_multicast;
 
 // TODO:
-// 1. Make formatting as Nebula standard
-// 2. No need for FormatDate function, construct 'struct tm' and use ostringstream to build symbol.
+// 1. Make formatting as Nebula standard [Done]
+// 2. No need for FormatDate function, construct 'struct tm' and use ostringstream to build symbol. [Done]
+// 3. ParseSnapshot [Not Done] -> Stuck At Problem "Decoder Is Not Decoding The Snapshot Correctly";
 
-void FormBfcSym(Instrument &instrument)
-{
-   // std::string bfcSym = "R_";
-   std::ostringstream symbol;
-   if(instrument.kind() == InstrumentKind::option) {
-      std::chrono::duration<uint64_t,std::milli> milliDtn(instrument.expirationTimestampMs());
-      time_t seconds = std::chrono::duration_cast<std::chrono::seconds> (milliDtn).count();
-      struct tm *tms = localtime(&seconds);
+void parseSnapshot(Snapshot &snapshot) {
 
-      symbol << "T_I_" << instrument.baseCurrency() << "_" << instrument.counterCurrency() << "_" << std::setfill('0')
-             << std::setw(2) << tms->tm_year % 100 << std::setw(2) << tms->tm_mon << std::setw(2) << tms->tm_mday << "_"
-             << instrument.strikePrice() << "_" 
-             << (instrument.optionType() == OptionType::put ? "_P" : "_C");
-
-   } 
-   else if(instrument.kind() == InstrumentKind::future) {
-      // if(instrument.futureType() == FutureType::reversed) {
-      //    bfcSym += "I_";
-      // } else {
-      //    bfcSym += "T_";
-      // }
-
-      // bfcSym += instrument.baseCurrency();
-      // bfcSym += "_";
-      
-      // if(instrument.settlementPeriod() == Period::perpetual) {
-      //    bfcSym += "Perpetual";
-      // } else {
-
-      //    bfcSym += instrument.counterCurrency();
-      //    bfcSym += "_";
-      //    int expTms = instrument.expirationTimestampMs()/1000; //Converting Ms to Seconds
-      //    std::ostringstream oss;
-      //    oss << boost::posix_time::from_time_t(expTms);
-      //    std::string date = oss.str().substr(0, 11);
-      //    date.erase(remove(date.begin(), date.end(), '-'), date.end());
-      //    FormatDate(date);
-      //    bfcSym += date;
-      // }
-   } 
-   else {
-      std::cerr << "Invalid Instrument Kind" << std::endl;
-      return;
-   }
-
-   std::cout << std::endl << symbol.str() << std::endl;
+   auto levelList = snapshot.levelsList();
+   std::cout << levelList.amount() << std::endl;
+   std::cout << levelList.price() << std::endl;
+   std::cout << levelList.side() << std::endl;
 }
 
 void encodeSnapshot() {
@@ -113,6 +74,8 @@ void encodeSnapshot() {
    auto len = boost::beast::detail::base64::encode(baseBuffer, buffer, snapshot.sbePosition());
    std::cout << "Encoded Size : " << len << std::endl;
    std::cout << "Base64 Buffer : " << baseBuffer << std::endl;
+
+   parseSnapshot(snapshot);
 
 }
 
@@ -201,8 +164,6 @@ void encodeInstrument() {
    std::cout << "Encoded Size : " << len << std::endl;
    std::cout << "Base64 Buffer : " << baseBuffer << std::endl;
 
-// Forming BFC Symbol From Instrument
-   FormBfcSym(instrument);
 
 }
 
@@ -334,7 +295,7 @@ int main () {
 
    // encodeTrades();
    // encodeBook();
-   encodeInstrument();
-   // encodeSnapshot();
+   // encodeInstrument();
+   encodeSnapshot();
    return 0;
 }

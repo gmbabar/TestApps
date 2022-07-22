@@ -16,6 +16,48 @@ void printBuffer(const char *buffer, size_t size) {
    printf("\n");
 }
 
+using namespace deribit_multicast;
+
+void FormBfcSym(Instrument &instrument) {
+
+    std::ostringstream symbol;
+    std::chrono::duration<uint64_t,std::milli> milliDtn(instrument.expirationTimestampMs());
+    time_t seconds = std::chrono::duration_cast<std::chrono::seconds> (milliDtn).count();
+    struct tm *tms = localtime(&seconds);
+
+    if(instrument.kind() == InstrumentKind::option) {
+
+        symbol << "R_T_" << instrument.baseCurrency() << "_" << instrument.counterCurrency() << "_" << std::setfill('0')
+                << std::setw(2) << tms->tm_year % 100 << std::setw(2) << tms->tm_mon << std::setw(2) << tms->tm_mday << "_"
+                << instrument.strikePrice()
+                << (instrument.optionType() == OptionType::put ? "_P" : "_C");
+
+    }
+    else if(instrument.kind() == InstrumentKind::future && instrument.settlementPeriod() == Period::perpetual){
+            symbol << "R_" << (instrument.futureType() == FutureType::reversed ? "I_" : "T_") << instrument.baseCurrency() << "Perpetual";
+    }
+    else if(instrument.kind() == InstrumentKind::future) {
+
+        symbol << "R_" << (instrument.futureType() == FutureType::reversed ? "I_" : "T_") << instrument.baseCurrency() << "_" << instrument.counterCurrency() << "_" 
+                << std::setfill('0') << std::setw(2) << tms->tm_year % 100 << std::setw(2) << tms->tm_mon << std::setw(2) << tms->tm_mday << "_"
+                << instrument.strikePrice();
+    } 
+    else {
+        std::cerr << "Invalid Instrument Kind" << std::endl;
+        return;
+    }
+
+    std::cout << std::endl << symbol.str() << std::endl;
+}
+
+// void parseSnapshot(Snapshot &snapshot) {
+
+//     std::cout << "Instrument : " << snapshot.instrumentId() << std::endl;
+//     std::cout << "Side : " << (snapshot.levelsList().side() == BookSide::ask ? "Ask":"Bid") << std::endl;
+//     std::cout << "Price : " << snapshot.levelsList().price() << std::endl;
+//     std::cout << "Amount : " << snapshot.levelsList().amount() << std::endl;
+// }
+
 size_t decode(int msgType, char *buffer, size_t offset, size_t buffLen, size_t blockLen, int version) {
    size_t varLen = 0;
    // check template-id
@@ -32,6 +74,7 @@ size_t decode(int msgType, char *buffer, size_t offset, size_t buffLen, size_t b
        std::cout << "instrumentNameLength: " << instrNameLen << std::endl;
        std::cout << "instrumentName: " << instrName << std::endl;
        offset += instrNameLen;
+       FormBfcSym(instrument);
        break;
    }
    case 1001:
@@ -97,6 +140,8 @@ size_t decode(int msgType, char *buffer, size_t offset, size_t buffLen, size_t b
            std::cout << "levelsList: " << levelsList.next() << std::endl;
        }
        std::cout << std::endl;
+       /*parseSnapshot(snapshot);  When This Function Is Not Called It Does Not Prints The LevelsList But When 
+                                   It Is Called It Prints The LevelsList But Gives An Error Unknow Value For Book Side */
        break;
    }
    default:
@@ -110,7 +155,7 @@ size_t decode(int msgType, char *buffer, size_t offset, size_t buffLen, size_t b
 int main () {
     std::string explMsg = "hQDrAwEAAQAAAAAALOgBAAE34DTMgAEAAAAAAGV7ReZBSOF6FO5s3EAAAAAAkErdQAAAAADA3dxAuB6F6zHb3ECF61G47tvcQAAAAABg29xAAAAAAAAANEAAAAAAgNzcQAAAAAAALKpAAAAAAAAAAADTBSdotNHgvrgehesx29xA//////////8K16Nw7d/cQB0A6QMBAAEAAQAAACzoAQA34DTMgAEAAMW85rMCAAAA0LzmswIAAAABEgABAAAAAAAAAQAAAACA3NxAAAAAAAAsqkA=";
 
-    std::string snapMsg = "FgDsAwEAAQABAAAASDcDAKIDzXyBAQAANrzM5wUAAAABAREAEAAAAAAAAAAAAAAAPK5AAAAAAACIw0AAAAAAAABQrkAAAAAAAIjDQAAAAAAAANauQAAAAAAAAPA/AAAAAAAApK9AAAAAAICEDkEAMzMzM7PdsEAAAAAAAIB8QAAAAAAAACOxQAAAAAAAJ7BAAAAAAAAAxrFAAAAAAIBPEkEAAAAAAADrsUAAAAAAACewQAAAAAAAAFSzQAAAAAAAVLNAAAAAAAAAiLNAAAAAAABQlEAAAAAAAABQtEAAAAAAAGroQAAAAAAAAIK0QAAAAAAAADlAAAAAAAAAGLVAAAAAAABq+EAAAAAAAACttUAAAAAAAACKQAAAAAAAAKi2QAAAAAAAF/FAAAAAAAAAXMFAAAAAAADgdUA=";
+    std::string snapMsg = "FgDsAwEAAQABAAAASDcDAKJpyJGBAQAAORM19AUAAAABAREAAQAAAAAAAAAAAAAAIKxAAAAAAACIw0A=";
 
     std::string instMsg = "jADoAwEAAQAAAAEARTcDAAEBAAIABQMARVRIAAAAAABFVEgAAAAAAFVTRAAAAAAARVRIAAAAAABFVEgAAAAAAOha1It+AQAAAJi5lIEBAAAAAAAAAFirQAAAAAAAAPA/AAAAAAAA8D/8qfHSTWJAP2EyVTAqqTM/YTJVMCqpMz9hMlUwKqkzPwAAAAAAAAAAAAAAAAAAAAASRVRILTI0SlVOMjItMzUwMC1QhQDrAwEAAQAAAAAARTcDAAFlrJWIgQEAAAAAAAAAoH5AkxgEVg4tAEB56SYxCKwBQJqZmZmZmfE/9ihcj8KUkUBmZmZmZuYAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//////////////////////YoXI/ClJFA//////////9mZmZmZmYAQBYA7AMBAAEAAQAAAEU3AwBlrJWIgQEAAI5Tq98FAAAAAQERAAAAAAAAAA==";
 
