@@ -10,101 +10,81 @@
 
 using namespace deribit_multicast;
 
-void FormatDate(std::string &date)
-{
-   date.erase(1, 2); // Removes First 2 Digits Of Year
-   if (date.substr(2, 3) == "Jan")
-   {
-      date.replace(2, 3, "01");
-   } else if (date.substr(2, 3) == "Feb") {
-      date.replace(2, 3, "02");
-   } else if (date.substr(2, 3) == "Mar") {
-      date.replace(2, 3, "03");
-   } else if (date.substr(2, 3) == "Apr") {
-      date.replace(2, 3, "04");
-   } else if (date.substr(2, 3) == "May") {
-      date.replace(2, 3, "05");
-   } else if (date.substr(2, 3) == "Jun") {
-      date.replace(2, 3, "06");
-   } else if (date.substr(2, 3) == "Jul") {
-      date.replace(2, 3, "07");
-   } else if (date.substr(2, 3) == "Aug") {
-      date.replace(2, 3, "08");
-   } else if (date.substr(2, 3) == "Sep") {
-      date.replace(2, 3, "09");
-   } else if (date.substr(2, 3) == "Oct") {
-      date.replace(2, 3, "10");
-   } else if (date.substr(2, 3) == "Nov") {
-      date.replace(2, 3, "11");
-   } else {
-      date.replace(2, 3, "12");
-   }
-}
+// void FormatDate(std::string &date)
+// {
+//    date.erase(1, 2); // Removes First 2 Digits Of Year
+//    if (date.substr(2, 3) == "Jan")
+//    {
+//       date.replace(2, 3, "01");
+//    } else if (date.substr(2, 3) == "Feb") {
+//       date.replace(2, 3, "02");
+//    } else if (date.substr(2, 3) == "Mar") {
+//       date.replace(2, 3, "03");
+//    } else if (date.substr(2, 3) == "Apr") {
+//       date.replace(2, 3, "04");
+//    } else if (date.substr(2, 3) == "May") {
+//       date.replace(2, 3, "05");
+//    } else if (date.substr(2, 3) == "Jun") {
+//       date.replace(2, 3, "06");
+//    } else if (date.substr(2, 3) == "Jul") {
+//       date.replace(2, 3, "07");
+//    } else if (date.substr(2, 3) == "Aug") {
+//       date.replace(2, 3, "08");
+//    } else if (date.substr(2, 3) == "Sep") {
+//       date.replace(2, 3, "09");
+//    } else if (date.substr(2, 3) == "Oct") {
+//       date.replace(2, 3, "10");
+//    } else if (date.substr(2, 3) == "Nov") {
+//       date.replace(2, 3, "11");
+//    } else {
+//       date.replace(2, 3, "12");
+//    }
+// }
 
 void FormBfcSym(Instrument &instrument)
 {
-   std::string bfcSym = "R_";
-
+   // std::string bfcSym = "R_";
+   std::ostringstream symbol;
    if(instrument.kind() == InstrumentKind::option) {
-      bfcSym += "T_";
-      bfcSym += instrument.baseCurrency();
-      bfcSym += "_";
-      bfcSym += instrument.counterCurrency();
-      bfcSym += "_";
-      
-      int expTms = instrument.expirationTimestampMs()/1000; //Converting Ms to Seconds
-      std::ostringstream oss;
-      oss << boost::posix_time::from_time_t(expTms);
-      std::string date = oss.str().substr(0, 11); // Actuall Date
-      date.erase(remove(date.begin(), date.end(), '-'), date.end());
-      FormatDate(date);
-      bfcSym += date;
-      bfcSym += "_";
+      std::chrono::duration<uint64_t,std::milli> milliDtn(instrument.expirationTimestampMs());
+      time_t seconds = std::chrono::duration_cast<std::chrono::seconds> (milliDtn).count();
+      struct tm *tms = localtime(&seconds);
 
-      std::string px = std::to_string(instrument.strikePrice());
-      int pos = px.find(".", 0);
-      px.erase(pos);
-      bfcSym += px;
-      
-      if(instrument.optionType() == OptionType::put) {
-         bfcSym += "_P";
-      }
-      else if(instrument.optionType() == OptionType::call) {
-         bfcSym += "_C";
-      } else {
-         bfcSym += "_P";
-      }
+      symbol << "T_I_" << instrument.baseCurrency() << "_" << instrument.counterCurrency() << "_" << std::setfill('0')
+             << std::setw(2) << tms->tm_year % 100 << std::setw(2) << tms->tm_mon << std::setw(2) << tms->tm_mday << "_"
+             << instrument.strikePrice() << "_" 
+             << (instrument.optionType() == OptionType::put ? "_P" : "_C");
 
    } else if(instrument.kind() == InstrumentKind::future) {
-      if(instrument.futureType() == FutureType::reversed) {
-         bfcSym += "I_";
-      } else {
-         bfcSym += "T_";
-      }
+      // if(instrument.futureType() == FutureType::reversed) {
+      //    bfcSym += "I_";
+      // } else {
+      //    bfcSym += "T_";
+      // }
 
-      bfcSym += instrument.baseCurrency();
-      bfcSym += "_";
+      // bfcSym += instrument.baseCurrency();
+      // bfcSym += "_";
       
-      if(instrument.settlementPeriod() == Period::perpetual) {
-         bfcSym += "Perpetual";
-      } else {
+      // if(instrument.settlementPeriod() == Period::perpetual) {
+      //    bfcSym += "Perpetual";
+      // } else {
 
-         bfcSym += instrument.counterCurrency();
-         bfcSym += "_";
-         int expTms = instrument.expirationTimestampMs()/1000; //Converting Ms to Seconds
-         std::ostringstream oss;
-         oss << boost::posix_time::from_time_t(expTms);
-         std::string date = oss.str().substr(0, 11);
-         date.erase(remove(date.begin(), date.end(), '-'), date.end());
-         FormatDate(date);
-         bfcSym += date;
-      }
+      //    bfcSym += instrument.counterCurrency();
+      //    bfcSym += "_";
+      //    int expTms = instrument.expirationTimestampMs()/1000; //Converting Ms to Seconds
+      //    std::ostringstream oss;
+      //    oss << boost::posix_time::from_time_t(expTms);
+      //    std::string date = oss.str().substr(0, 11);
+      //    date.erase(remove(date.begin(), date.end(), '-'), date.end());
+      //    FormatDate(date);
+      //    bfcSym += date;
+      // }
    } else {
       std::cerr << "Invalid Instrument Kind" << std::endl;
       return;
    }
 
-   std::cout << std::endl << bfcSym << std::endl;
+   std::cout << std::endl << symbol.str() << std::endl;
 }
 
 void encodeSnapshot() {
