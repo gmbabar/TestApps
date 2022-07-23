@@ -25,7 +25,8 @@ def loadExchangeContracts(currency):
                 if kind == 'option':
                     print("strike : %s" % (val['strike']))
                     print("option_type : %s" % (val['option_type']))
-                    print("Symbol: R_I_{0}_{1}_{2}_{3}".format(baseCcy, counterCcy, expStr, int(val['strike'])))
+                    optionType = 'C' if val['option_type'].lower() == 'call' else 'P'
+                    print("Symbol: R_I_{0}_{1}_{2}_{3}_{4}".format(baseCcy, counterCcy, expStr, int(val['strike']), optionType))
                 elif val['instrument_name'].lower().count("perpetual"):
                     print("future_type : %s" % (val['future_type']))
                     instType = "I" if val['future_type'].lower() == "reversed" else "T"
