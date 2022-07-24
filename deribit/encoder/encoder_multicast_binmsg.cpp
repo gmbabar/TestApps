@@ -86,6 +86,7 @@ size_t encodeInstrument(char *baseBuffer, size_t buffSize) {
    auto timestampMs = std::chrono::duration_cast<std::chrono::milliseconds> (dtn).count();
 
   Instrument instrument;
+  std::string instrumentName = "BTC-24JUL22-29200-P";
   instrument.wrapForEncode(buffer, 0, sizeof(buffer))
             .instrumentId(618)
             .instrumentState(InstrumentState::created)
@@ -111,7 +112,7 @@ size_t encodeInstrument(char *baseBuffer, size_t buffSize) {
             .blockTradeCommission(0.00015)
             .maxLiquidationCommission(0)
             .maxLeverage(0)
-            .instrumentName();
+            .putInstrumentName(instrumentName.c_str(), instrumentName.size());
    strcpy(instrument.baseCurrency(), "BTC");
    strcpy(instrument.quoteCurrency(), "BTC");
    strcpy(instrument.counterCurrency(), "USD");
