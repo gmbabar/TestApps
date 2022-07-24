@@ -4,6 +4,7 @@
 #include <arpa/inet.h>
 #include <netinet/ip.h>
 #include <unistd.h>
+#include <chrono>
 #include "deribit_multicast/Trades.h"
 #include "deribit_multicast/Book.h"
 #include "deribit_multicast/Instrument.h"
@@ -81,8 +82,8 @@ void encodeInstrument(char *baseBuffer, size_t buffSize) {
    size_t offset = 0;
    memset(buffer, 0, sizeof(buffer));
 
-   auto dtn = std::chrono::system_clock::now().time_since_epoch().count();
-   auto timestampMs = std::chrono::duration_cast<std::chrono::milliseconds> (dtn).count()
+   auto dtn = std::chrono::system_clock::now().time_since_epoch();
+   auto timestampMs = std::chrono::duration_cast<std::chrono::milliseconds> (dtn).count();
 
   Instrument instrument;
   instrument.wrapForEncode(buffer, 0, sizeof(buffer))
