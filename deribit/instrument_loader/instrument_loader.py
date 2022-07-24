@@ -21,6 +21,7 @@ def loadExchangeContracts(currency):
                 baseCcy = val['base_currency']
                 quoteCcy = val['quote_currency']
                 counterCcy = val['counter_currency']
+                print("tick_size : %s" % (val['tick_size']))
                 print("quote_currency : %s" % (val['quote_currency']))
                 if kind == 'option':
                     print("strike : %s" % (val['strike']))
