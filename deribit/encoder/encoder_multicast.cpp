@@ -196,20 +196,20 @@ void publishData(int &sockFd,sockaddr_in &addr, socklen_t &size) {
 
 
 int main (int argc, char **argv) {
-   if(argc < 3)
+   if(argc != 4)
    {
-      std::cout << "Too Few Arguements:\n\t";
-      std::cout << "Example:\n\t" << argv[0] << "<host> " << "<Port>" << "\n\t";
-      std::cout << argv[0] << " 0.0.0.0 " << "1234" << std::endl;
+      std::cout << "Usage:\n";
+      std::cout << "\t" << argv[0] << "<mcast_ip> <local_ip> <Port>" << "\n\t";
+      std::cout << argv[0] << " 226.0.0.1  127.0.0.1  1234\n" << std::endl;
       return -1;
    }
 
    sockaddr_in srvAddr;
    in_addr lAddr;
    srvAddr.sin_family = AF_INET;
-   srvAddr.sin_port = htons(atoi(argv[2]));
+   srvAddr.sin_port = htons(atoi(argv[3]));
    srvAddr.sin_addr.s_addr = inet_addr(argv[1]);
-   lAddr.s_addr = inet_addr("127.0.0.1");
+   lAddr.s_addr = inet_addr(argv[2]);
    socklen_t size = sizeof(srvAddr);
    
    int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
