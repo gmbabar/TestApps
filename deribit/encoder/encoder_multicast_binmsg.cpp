@@ -11,7 +11,7 @@
 #include "deribit_multicast/Snapshot.h"
 
 using namespace deribit_multicast;
-void encodeTrades(char *baseBuffer, size_t buffSize) {
+size_t encodeTrades(char *baseBuffer, size_t buffSize) {
    char buffer[1024];
    memset(buffer, 0, sizeof(buffer));
 
@@ -41,11 +41,11 @@ void encodeTrades(char *baseBuffer, size_t buffSize) {
              .blockTradeId(0)
              .comboTradeId(0);
 
-   memset(baseBuffer, 0, buffSize);
-   auto len = boost::beast::detail::base64::encode(baseBuffer, buffer, trades.sbePosition());
+   memcpy(baseBuffer, buffer, trades.sbePosition());
+   return trades.sbePosition();
 }
 
-void encodeSnapshot(char *baseBuffer, size_t buffSize) {
+size_t encodeSnapshot(char *baseBuffer, size_t buffSize) {
   char buffer[1024];
   size_t version = 1;
   size_t offset = 0;
@@ -72,11 +72,11 @@ void encodeSnapshot(char *baseBuffer, size_t buffSize) {
             .price(3600)
             .amount(10000);
 
-  memset(baseBuffer, 0, sizeof(buffer));
-  auto len = boost::beast::detail::base64::encode(baseBuffer, buffer, snapshot.sbePosition());
+   memcpy(baseBuffer, buffer, snapshot.sbePosition());
+   return snapshot.sbePosition();
 }
 
-void encodeInstrument(char *baseBuffer, size_t buffSize) {
+size_t encodeInstrument(char *baseBuffer, size_t buffSize) {
    char buffer[1024];
    size_t version = 1;
    size_t offset = 0;
@@ -127,11 +127,11 @@ void encodeInstrument(char *baseBuffer, size_t buffSize) {
          .numGroups(0)
          .numVarDataFields(1);
 
-  memset(baseBuffer, 0, sizeof(buffer));
-  auto len = boost::beast::detail::base64::encode(baseBuffer, buffer, instrument.sbePosition());
+   memcpy(baseBuffer, buffer, instrument.sbePosition());
+   return instrument.sbePosition();
 }
 
-void encodeBook(char *baseBuffer, size_t buffSize) {
+size_t encodeBook(char *baseBuffer, size_t buffSize) {
    char buffer[1024];
    size_t version = 1;
    size_t offset = 0;
@@ -159,42 +159,42 @@ void encodeBook(char *baseBuffer, size_t buffSize) {
              .price(1091.9)
              .amount(2970);
 
-   memset(baseBuffer, 0, sizeof(buffer));
-   auto len = boost::beast::detail::base64::encode(baseBuffer, buffer, book.sbePosition());
+   memcpy(baseBuffer, buffer, book.sbePosition());
+   return book.sbePosition();
 }
 
 void publishData(int &sockFd,sockaddr_in &addr, socklen_t &size) {  
    char buffer[1024];
    memset(buffer, 0, sizeof(buffer));
    const int delay = 5;
+   size_t length = 0;
 
    while (true) {
-      encodeTrades(buffer, sizeof(buffer));
+      length = encodeTrades(buffer, sizeof(buffer));
       sleep(delay);
-      std::cout << "[Sent Trade Data] " << buffer << std::endl;
-      sendto(sockFd, buffer, strlen(buffer), 0, (sockaddr*)&addr, size);
+      std::cout << "Sent Trade Data: " << length << " bytes." << std::endl;
+      sendto(sockFd, buffer, length, 0, (sockaddr*)&addr, size);
       memset(buffer, 0, sizeof(buffer));
 
-      encodeSnapshot(buffer, sizeof(buffer));
+      length = encodeSnapshot(buffer, sizeof(buffer));
       sleep(delay);
-      std::cout << "[Sent Snapshot Data] " << buffer << std::endl;
-      sendto(sockFd, buffer, strlen(buffer), 0, (sockaddr*)&addr, size);
+      std::cout << "Sent Snapshot Data: " << length << " bytes." << std::endl;
+      sendto(sockFd, buffer, length, 0, (sockaddr*)&addr, size);
       memset(buffer, 0, sizeof(buffer));
 
-      encodeInstrument(buffer, sizeof(buffer));
+      length = encodeInstrument(buffer, sizeof(buffer));
       sleep(delay);
-      std::cout << "[Sent Instrument Data] " << buffer << std::endl;
-      sendto(sockFd, buffer, strlen(buffer), 0, (sockaddr*)&addr, size);
+      std::cout << "Sent Instrument Data: " << length << " bytes." << std::endl;
+      sendto(sockFd, buffer, length, 0, (sockaddr*)&addr, size);
       memset(buffer, 0, sizeof(buffer));
 
-      encodeBook(buffer, sizeof(buffer));
+      length = encodeBook(buffer, sizeof(buffer));
       sleep(delay);
-      std::cout << "[Sent Book Data] " << buffer << std::endl;
-      sendto(sockFd, buffer, strlen(buffer), 0, (sockaddr*)&addr, size);
+      std::cout << "Sent Book Data: " << length << " bytes." << std::endl;
+      sendto(sockFd, buffer, length, 0, (sockaddr*)&addr, size);
       memset(buffer, 0, sizeof(buffer));
    }   
 }
-
 
 int main (int argc, char **argv) {
    if (argc != 4) {
