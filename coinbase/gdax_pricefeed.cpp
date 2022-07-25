@@ -89,7 +89,6 @@ inline void parseSnapshotSs(const std::string& json) {
 	    	begin = idx+1;
 	    } 
         else if (ch == ',' ) {
-                // std::cout << begin << ":";
             if(begin >= 51) {
                 std::cout << json.substr(begin, idx-begin) << ",";
 	    	    begin = idx+1;
@@ -177,7 +176,6 @@ inline void parseL2updateSs(const std::string& json) {
 	    	begin = idx+1;
 	    } 
         else if (ch == ',' ) {
-            // std::cout << begin << ":";
             if(begin >= 53 && begin <=70) {
                 std::cout << json.substr(begin, idx-begin) << " ";
 	    	    begin = idx+1;
