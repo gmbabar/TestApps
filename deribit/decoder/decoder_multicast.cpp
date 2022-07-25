@@ -19,6 +19,38 @@ void printBuffer(const char *buffer, size_t size) {
    printf("\n");
 }
 
+void FormBfcSym(deribit_multicast::Instrument &instrument) {
+
+    std::ostringstream symbol;
+    std::chrono::duration<uint64_t,std::milli> milliDtn(instrument.expirationTimestampMs());
+    time_t seconds = std::chrono::duration_cast<std::chrono::seconds> (milliDtn).count();
+    struct tm *tms = localtime(&seconds);
+
+    if(instrument.kind() == deribit_multicast::InstrumentKind::option) {
+
+        symbol << "R_T_" << instrument.baseCurrency() << "_" << instrument.counterCurrency() << "_" << std::setfill('0')
+                << std::setw(2) << tms->tm_year % 100 << std::setw(2) << tms->tm_mon << std::setw(2) << tms->tm_mday << "_"
+                << instrument.strikePrice()
+                << (instrument.optionType() == deribit_multicast::OptionType::put ? "_P" : "_C");
+
+    }
+    else if(instrument.kind() == deribit_multicast::InstrumentKind::future && instrument.settlementPeriod() == deribit_multicast::Period::perpetual){
+            symbol << "R_" << (instrument.futureType() == deribit_multicast::FutureType::reversed ? "I_" : "T_") << instrument.baseCurrency() << "Perpetual";
+    }
+    else if(instrument.kind() == deribit_multicast::InstrumentKind::future) {
+
+        symbol << "R_" << (instrument.futureType() == deribit_multicast::FutureType::reversed ? "I_" : "T_") << instrument.baseCurrency() << "_" << instrument.counterCurrency() << "_" 
+                << std::setfill('0') << std::setw(2) << tms->tm_year % 100 << std::setw(2) << tms->tm_mon << std::setw(2) << tms->tm_mday << "_"
+                << instrument.strikePrice();
+    } 
+    else {
+        std::cerr << "Invalid Instrument Kind" << std::endl;
+        return;
+    }
+
+    std::cout << std::endl << "BFC-Sym : "<< symbol.str() << std::endl;
+}
+
 size_t decode(int msgType, char *buffer, size_t offset, size_t buffLen, size_t blockLen, int version) {
    // check template-id
    switch(msgType) {
@@ -37,6 +69,7 @@ size_t decode(int msgType, char *buffer, size_t offset, size_t buffLen, size_t b
        // TODO:
        // - Construct symbol as advised in encoder.cpp
        // - Remove implementation from encoder.cpp
+       FormBfcSym(instrument);
        break;
    }
    case 1001:
@@ -105,6 +138,11 @@ size_t decode(int msgType, char *buffer, size_t offset, size_t buffLen, size_t b
             // - price
             // - size
             // - symbol
+            std::cout << "Snapshot Parser : " << std::endl;
+            std::cout << "\tSide : " << (levelsList.side() == deribit_multicast::BookSide::ask ? "Ask":"Bid") << std::endl;
+            std::cout << "\tPrice : " << levelsList.price() << std::endl;
+            std::cout << "\tAmount : " << levelsList.amount() << std::endl;
+            std::cout << "\tInstrument : " << snapshot.instrumentId() << std::endl;
        }
        std::cout << std::endl;
        break;
