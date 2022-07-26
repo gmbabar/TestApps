@@ -1,6 +1,6 @@
 
 CC = g++
-FLAGS = -g -std=c++11 -I../include
+FLAGS = -g -std=c++11 -I../../json/rapidjson/include
 LIBS = -lboost_system -lpthread -lcrypto -lssl
 
 objects = FormatMessages 
