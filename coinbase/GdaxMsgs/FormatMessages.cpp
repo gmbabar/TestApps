@@ -24,6 +24,7 @@ using namespace rapidjson;
 {"type": "unsubscribe","channels": ["heartbeat"]}
 
 {"type": "unsubscribe","product_ids": ["ETH-USD","ETH-EUR"],"channels": ["ticker"]}
+
 ----Snapshot
 {"type":"snapshot","product_id":"ETH-USD","asks":[["89","0009.989"],["34","0.9879"],["69","0.699696"]],"bids":[["89","0009.989"],["34","0.9879"],["69","0.699696"]]}
 */
@@ -171,7 +172,7 @@ inline void parseL2updateSs(const std::string& json) {
 	    	begin = idx+1;
 	    } 
         else if (ch == ',' ) {
-            // std::cout << begin << ":";
+            // std::cout << begin << ":"; // for debugging 
             if(begin >= 53 && begin <=70) {
                 std::cout << json.substr(begin, idx-begin) << " ";
 	    	    begin = idx+1;
@@ -273,6 +274,9 @@ inline void parseTickerMsg(const std::string& json) {
     std::cout << __func__ << ": trade_id: " << document["trade_id"].GetInt64() << std::endl;
     std::cout << __func__ << ": last_size: " << document["last_size"].GetString() << std::endl;
 }
+
+// only give the required values
+
 inline void parseTickerSs(const std::string &json) {
 	std::string token;
     size_t pos1;
@@ -304,27 +308,35 @@ inline void parseTickerSs(const std::string &json) {
     std::cout << "}" << std::endl;
 }
 
-// inline void parseTickerSs(const std::string &json) {
-// 	size_t len = json.length();
-// 	char ch;
-//     int idx = 0;
-// 	int begin = idx;
-// 	do {
-// 		ch = json[idx];
-// 		if (::isspace(ch)) { continue; }
-// 		else if (ch == '[' || ch == '{') {
-// 			std::cout << json[idx] << std::endl;
-// 			begin = idx+1;
-// 		} else if (ch == ',' ) {
-// 			std::cout << json.substr(begin, idx-begin) << std::endl;
-// 			begin = idx+1;
-// 		} else if (ch == '}' || ch == ']') {
-// 			std::cout  << json.substr(begin, idx-begin) << std::endl;
-// 			std::cout << ch  << std::endl;
-// 			begin = idx+1;
-// 		} 
-//         }  while ( ++idx <= len ); 
-// }
+// give all values in ticker 
+
+/* 
+inline void parseTickerSs(const std::string &json) {
+	size_t len = json.length();
+	char ch;
+    int idx = 0;
+	int begin = idx;
+	do 
+    {
+		ch = json[idx];
+		if (::isspace(ch))
+            continue;
+		else if (ch == '[' || ch == '{') {
+			std::cout << json[idx] << std::endl;
+			begin = idx+1;
+		} 
+        else if (ch == ',' ) {
+			std::cout << json.substr(begin, idx-begin) << std::endl;
+			begin = idx+1;
+		} 
+        else if (ch == '}' || ch == ']') {
+			std::cout  << json.substr(begin, idx-begin) << std::endl;
+			std::cout << ch  << std::endl;
+			begin = idx+1;
+		} 
+    }  while ( ++idx <= len ); 
+}
+*/
 
 /*
 ----Heartbeat
@@ -430,7 +442,6 @@ inline void formatSnapshotMsg(std::ostringstream &oss,
         << "}" ;
 }
 
-//---working on it----
 inline void parseSnapshotSs(const std::string& json) {
     size_t len = json.length();
 	char ch;
