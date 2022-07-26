@@ -46,24 +46,24 @@ void encodeSnapshot() {
    */
   Snapshot snapshot;
   snapshot.wrapForEncode(buffer, offset, sizeof(buffer))
-  .instrumentId(210760)
-  .timestampMs(1656008239522)
-  .changeId(25571955513)
-  .isBookComplete(YesNo::yes)
-  .isLastInBook(YesNo::yes);
+         .instrumentId(210760)
+         .timestampMs(1656008239522)
+         .changeId(25571955513)
+         .isBookComplete(YesNo::yes)
+         .isLastInBook(YesNo::yes);
 
   snapshot.header().blockLength(Snapshot::sbeBlockLength() - MessageHeader::encodedLength())
-  .templateId(Snapshot::sbeTemplateId())
-  .schemaId(Snapshot::sbeSchemaId())
-  .version(Snapshot::sbeSchemaVersion())
-  .numGroups(1)
-  .numVarDataFields(0);
+         .templateId(Snapshot::sbeTemplateId())
+         .schemaId(Snapshot::sbeSchemaId())
+         .version(Snapshot::sbeSchemaVersion())
+         .numGroups(1)
+         .numVarDataFields(0);
 
   auto &levelsList = snapshot.levelsListCount(1);
   levelsList.next()
-  .side(BookSide::ask)
-  .price(3600)
-  .amount(10000);
+            .side(BookSide::ask)
+            .price(3600)
+            .amount(10000);
 
   std::cout << "Header : " << snapshot.header() << std::endl;
    std::cout << "Snapshot : " << snapshot << std::endl;
@@ -117,28 +117,28 @@ void encodeInstrument() {
    */
   Instrument instrument;
   instrument.wrapForEncode(buffer, 0, sizeof(buffer))
-  .instrumentId(618)
-  .instrumentState(InstrumentState::created)
-  .kind(InstrumentKind::future)
-  .futureType(FutureType::reversed)
-  .optionType(OptionType::not_applicable)
-  .rfq(YesNo::no)
-  .settlementPeriod(Period::minute)
-  .settlementPeriodCount(15)
-  .settlementPeriod(Period::perpetual)
-  .settlementPeriodCount(15)
-  .creationTimestampMs(1655921357363)
-  .expirationTimestampMs(1651021357363)
-  .strikePrice(29200)
-  .contractSize(1)
-  .minTradeAmount(0.01)
-  .tickSize(0.0001)
-  .makerCommission(0.0001)
-  .takerCommission(0.0005)
-  .blockTradeCommission(0.00015)
-  .maxLiquidationCommission(0)
-  .maxLeverage(0)
-  .instrumentName();
+            .instrumentId(618)
+            .instrumentState(InstrumentState::created)
+            .kind(InstrumentKind::future)
+            .futureType(FutureType::reversed)
+            .optionType(OptionType::not_applicable)
+            .rfq(YesNo::no)
+            .settlementPeriod(Period::minute)
+            .settlementPeriodCount(15)
+            .settlementPeriod(Period::perpetual)
+            .settlementPeriodCount(15)
+            .creationTimestampMs(1655921357363)
+            .expirationTimestampMs(1651021357363)
+            .strikePrice(29200)
+            .contractSize(1)
+            .minTradeAmount(0.01)
+            .tickSize(0.0001)
+            .makerCommission(0.0001)
+            .takerCommission(0.0005)
+            .blockTradeCommission(0.00015)
+            .maxLiquidationCommission(0)
+            .maxLeverage(0)
+            .instrumentName();
 
   strcpy(instrument.baseCurrency(), "BTC");
   strcpy(instrument.quoteCurrency(), "BTC");
@@ -148,11 +148,11 @@ void encodeInstrument() {
 
 
   instrument.header().blockLength(Instrument::sbeBlockLength() - MessageHeader::encodedLength())
-  .templateId(Instrument::sbeTemplateId())
-  .schemaId(Instrument::sbeSchemaId())
-  .version(Instrument::sbeSchemaVersion())
-  .numGroups(0)
-  .numVarDataFields(1);
+         .templateId(Instrument::sbeTemplateId())
+         .schemaId(Instrument::sbeSchemaId())
+         .version(Instrument::sbeSchemaVersion())
+         .numGroups(0)
+         .numVarDataFields(1);
 
    std::cout << "Header : " << instrument.header() << std::endl;
    std::cout << "Instrument : " << instrument << std::endl;
@@ -200,18 +200,23 @@ void encodeBook() {
       .isLast(YesNo::yes);
 
    book.header().blockLength(Book::sbeBlockLength() - MessageHeader::encodedLength())
-   .templateId(Book::sbeTemplateId())
-   .schemaId(Book::sbeSchemaId())
-   .version(Book::sbeSchemaVersion())
-   .numGroups(1)
-   .numVarDataFields(0);
+      .templateId(Book::sbeTemplateId())
+      .schemaId(Book::sbeSchemaId())
+      .version(Book::sbeSchemaVersion())
+      .numGroups(1)
+      .numVarDataFields(0);
 
-   auto& changeList = book.changesListCount(1);
+   auto& changeList = book.changesListCount(2);
    changeList.next()
-   .side(BookSide::bid)
-   .change(BookChange::created)
-   .price(1091.9)
-   .amount(2970);
+             .side(BookSide::bid)
+             .change(BookChange::created)
+             .price(1091.9)
+             .amount(2970);
+   changeList.next()
+             .side(BookSide::ask)
+             .change(BookChange::created)
+             .price(1092.9)
+             .amount(100);
 
    std::cout << "Header : " << book.header() << std::endl;
    std::cout << "Book : " << book << std::endl;
@@ -266,7 +271,7 @@ void encodeTrades() {
    auto& tradesList = trades.tradesListCount(1); 
    tradesList.next()
              .direction(Direction::Value::sell)
-             .price(39344.25)
+             .price(39344.2401)
              .amount(10)
              .timestampMs(1655921357363 )
              .markPrice(38815.96)
@@ -281,6 +286,11 @@ void encodeTrades() {
 
    std::cout << "Header: " << trades.header() << std::endl;
    std::cout << "Trades: \n" << trades << std::endl;
+   {
+      std::cout << std::setprecision(10);
+      std::cout << "tradesList: " << tradesList << std::endl;
+      std::cout << "trades price: " << tradesList.price() << std::endl;
+   }
    std::cout << "position: " << trades.sbePosition() << std::endl;
 
    char baseBuffer[1024];
@@ -294,8 +304,8 @@ void encodeTrades() {
 int main () {
 
    // encodeTrades();
-   // encodeBook();
+   encodeBook();
    // encodeInstrument();
-   encodeSnapshot();
+   // encodeSnapshot();
    return 0;
 }

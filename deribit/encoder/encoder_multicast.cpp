@@ -152,12 +152,17 @@ void encodeBook(char *baseBuffer, size_t buffSize) {
        .numGroups(1)
        .numVarDataFields(0);
 
-   auto& changeList = book.changesListCount(1);
+   auto& changeList = book.changesListCount(2);
    changeList.next()
              .side(BookSide::bid)
              .change(BookChange::created)
              .price(1091.9)
              .amount(2970);
+   changeList.next()
+             .side(BookSide::ask)
+             .change(BookChange::created)
+             .price(1092.9)
+             .amount(100);
 
    memset(baseBuffer, 0, sizeof(buffer));
    auto len = boost::beast::detail::base64::encode(baseBuffer, buffer, book.sbePosition());
