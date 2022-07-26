@@ -69,6 +69,50 @@ inline void parseSnapshot(const char *json) {
     std::cout << "]" << std::endl;
 }
 
+inline void parseSnapshotSs(const std::string& json) {
+    size_t len = json.length();
+	char ch;
+    int idx = 0;
+	int begin = idx;
+	do 
+    {
+		ch = json[idx];
+		if (::isspace(ch)) 
+            continue; 
+		else if (ch == '{') {
+			std::cout << json[idx] << std::endl;
+			begin = idx+1;
+	    } 
+        else if (ch == '[') {
+	    	std::cout << json.substr(begin, idx-begin);
+	    	std::cout << json[idx];
+	    	begin = idx+1;
+	    } 
+        else if (ch == ',' ) {
+            if(begin >= 51) {
+                std::cout << json.substr(begin, idx-begin) << ",";
+	    	    begin = idx+1;
+            }
+            else {
+                std::cout << json.substr(begin, idx-begin) << std::endl;
+	    	    begin = idx+1;
+            }
+        } 
+        else if (ch == ']') {
+	    	std::cout  << json.substr(begin, idx-begin);
+	    	std::cout << ch  ;
+	    	begin = idx+1;
+	    } 
+        else if (ch == '}') {
+	    	std::cout  << json.substr(begin, idx-begin) << std::endl;
+	    	std::cout << ch  ;
+	    	begin = idx+1;
+            if(++idx >= len)
+                std::cout << std::endl;
+        } 
+    }  while ( ++idx <= len ); 
+}
+
 inline void parseSubscriptions(const std::string& json) {
     Document document;
     document.Parse(json.c_str());
@@ -117,37 +161,42 @@ inline void parseL2updateSs(const std::string& json) {
 	char ch;
     int idx = 0;
 	int begin = idx;
-	do {
-		ch = json[idx];
-		if (::isspace(ch)) 
+	do 
+    {
+	    ch = json[idx];
+	    if (::isspace(ch)) 
             continue; 
-		else if (ch == '{') {
-			std::cout << json[idx] << std::endl;
-			begin = idx+1;
-	} else if (ch == '[') {
-			std::cout << json.substr(begin, idx-begin);
-			std::cout << json[idx];
-			begin = idx+1;
-	} else if (ch == ',' ) {
-            // std::cout << begin << ":";
+	    else if (ch == '{') {
+	    	std::cout << json[idx] << std::endl;
+	    	begin = idx+1;
+	    } 
+        else if (ch == '[') {
+	    	std::cout << json.substr(begin, idx-begin);
+	    	std::cout << json[idx];
+	    	begin = idx+1;
+	    } 
+        else if (ch == ',' ) {
             if(begin >= 53 && begin <=70) {
                 std::cout << json.substr(begin, idx-begin) << " ";
-			    begin = idx+1;
-        } else {
+	    	    begin = idx+1;
+            } 
+            else {
                 std::cout << json.substr(begin, idx-begin) << std::endl;
-			    begin = idx+1;
+	    	    begin = idx+1;
             }
-    } else if (ch == ']') {
-			std::cout  << json.substr(begin, idx-begin);
-			std::cout << ch  ;
-			begin = idx+1;
-	} else if (ch == '}') {
-			std::cout  << json.substr(begin, idx-begin) << std::endl;
-			std::cout << ch  ;
-			begin = idx+1;
+        } 
+        else if (ch == ']') {
+	    	std::cout  << json.substr(begin, idx-begin);
+	    	std::cout << ch;
+	    	begin = idx+1;
+	    } 
+        else if (ch == '}') {
+	    	std::cout  << json.substr(begin, idx-begin) << std::endl;
+	    	std::cout << ch;
+	    	begin = idx+1;
             if(++idx >= len)
                 std::cout << std::endl;
-		} 
+	    } 
     }  while ( ++idx <= len ); 
 }
 
@@ -160,25 +209,34 @@ inline void parseTicker(const char *json) {
 }
 
 inline void parseTickerSs(const std::string &json) {
-	size_t len = json.length();
-	char ch;
-    int idx =0;
-	int begin = idx;
-	do {
-		ch = json[idx];
-		if (::isspace(ch)) { continue; }
-		else if (ch == '[' || ch == '{') {
-			std::cout << json[idx] << std::endl;
-			begin = idx+1;
-		} else if (ch == ',' ) {
-			std::cout << json.substr(begin, idx-begin) << std::endl;
-			begin = idx+1;
-		} else if (ch == '}' || ch == ']') {
-			std::cout  << json.substr(begin, idx-begin) << std::endl;
-			std::cout << ch  << std::endl;
-			begin = idx+1;
-		} 
-        }  while ( ++idx <= len ); 
+	std::string token;
+    size_t pos1;
+    size_t pos2;
+    size_t pos3;
+    size_t pos4;
+    int count = 0;
+    std::cout << "{\n";
+    while(count <= 2) {
+        if(count == 0) {
+            token = "type";
+            pos1 = json.find(token);
+        } 
+        else if(count == 1) {
+            token = "price";
+            pos1 = json.find(token);
+        } 
+        else if(count == 2) {
+            token = "last_size";
+            pos1 = json.find(token);
+        }
+    	pos2 = json.find(":", pos1+1);
+    	pos3 = json.find("\"", pos2+1);
+    	pos4 = json.find("\"", pos3+1);
+    	std::cout << "    " << token << ": " << json.substr(pos3+1, (pos4 - pos3-1)) << std::endl;
+        pos2 = pos3 = pos4 = 0;
+        count ++;
+    }
+    std::cout << "}" << std::endl;
 }
 
 // Report a failure
@@ -316,16 +374,20 @@ public:
         doc.Parse(oss.str().c_str());
         std::string type = doc["type"].GetString();
         if(strcmp(type.c_str(), "subscriptions") == 0) {
-            parseSubscriptions(oss.str().c_str());
-    } else if(strcmp(type.c_str(), "l2update") == 0) {
+            // parseSubscriptions(oss.str().c_str());
+        } 
+        else if(strcmp(type.c_str(), "l2update") == 0) {
             parseL2updateSs(oss.str().c_str());
             // parseL2update(oss.str().c_str());
-    } else if(strcmp(type.c_str(), "ticker") == 0) {
+        } 
+        else if(strcmp(type.c_str(), "ticker") == 0) {
             // parseTicker(oss.str().c_str());
             parseTickerSs(oss.str().c_str());
-    }  else if(strcmp(type.c_str(), "snapshot") == 0) {
-            parseSnapshot(oss.str().c_str());
-    }
+        }  
+        else if(strcmp(type.c_str(), "snapshot") == 0) {
+            // parseSnapshot(oss.str().c_str());
+            parseSnapshotSs(oss.str().c_str());
+        }
 
         // Clear the buffer
         buffer_.consume(buffer_.size());
@@ -333,13 +395,15 @@ public:
         if (++msg_count_ == 50) {
             // Send the message
             ws_.async_write(net::buffer(this->unsubscribe("NBINE", "BTCUSDT", "L2|L1")), beast::bind_front_handler(&session::on_write,shared_from_this()));
-	} else if (msg_count_ == 80) {
+	    } 
+        else if (msg_count_ == 80) {
             ws_.async_write(net::buffer(text_),beast::bind_front_handler(&session::on_write, shared_from_this()));
-	} else {
+	    } 
+        else {
             // Read a message into our buffer
             sleep(1);
             ws_.async_read( buffer_, beast::bind_front_handler(&session::on_read, shared_from_this()));
-	}
+	    }
 
     }
 
