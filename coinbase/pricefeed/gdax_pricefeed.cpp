@@ -5,7 +5,7 @@
 // 4. Write another set of function to parse data using simple string parsing
 //    [look at Bitfinex codebase, fastParseWs()]
 //    NOTE: Only parse, L2Update (book), Trade/Ticker -done
-//      Snapshot -done
+//      Snapshot -left
 //    - Try to receive snapshop data only once. (do it on last) -left
 
 #include <boost/beast/core.hpp>
@@ -20,7 +20,7 @@
 #include <memory>
 #include <string>
 
-#include "../include/ParseMessages.hpp"
+#include "ParseMessages.hpp"
 
 namespace beast = boost::beast;         // from <boost/beast.hpp>
 namespace http = beast::http;           // from <boost/beast/http.hpp>
@@ -32,6 +32,7 @@ using namespace rapidjson;
 
 //------------------------------------------------------------------------------
 
+
 // Report a failure
 void fail(beast::error_code ec, char const* what) {
     std::cerr << what << ": " << ec.message() << "\n";
@@ -39,6 +40,7 @@ void fail(beast::error_code ec, char const* what) {
 
 // Sends a WebSocket message and prints the response
 class Session : public std::enable_shared_from_this<Session> {
+
 
 public:
     // Resolver and socket require an io_context
@@ -99,7 +101,7 @@ public:
             return fail(ec, "ssl_handshake");
 
         // Turn off the timeout on the tcp_stream, because
-        // the websocket stream has its own timeout system.
+       // the websocket stream has its own timeout system.
         beast::get_lowest_layer(m_ws).expires_never();
 
         // Set suggested timeout settings for the websocket
@@ -216,7 +218,7 @@ private:
 //------------------------------------------------------------------------------
 
 int main(int argc, char **argv) {
-    if(argc < 2 || argc > 2 )
+    if(argc < 2 || argc > 2)
     {
         std::cout << "Invalid Arguements :";
         std::cout << "\nExample:";
@@ -229,6 +231,7 @@ int main(int argc, char **argv) {
     auto const port = "443";
     std::ostringstream oss;
     oss << "{\"type\":\"subscribe\",\"product_ids\":[" << argv[1] << "],\"channels\":[\"level2\",{\"name\":\"ticker\",\"product_ids\":[" << argv[1] << "]}]}";
+    std::cout << __func__ << ": " << oss.str() << std::endl;
 
     // The io_context is required for all I/O
     net::io_context ioc;
