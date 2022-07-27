@@ -313,7 +313,7 @@ public:
             return fail(ec, "ssl_handshake");
 
         // Turn off the timeout on the tcp_stream, because
-        // the websocket stream has its own timeout system.
+       // the websocket stream has its own timeout system.
         beast::get_lowest_layer(ws_).expires_never();
 
         // Set suggested timeout settings for the websocket
@@ -436,6 +436,7 @@ int main(int argc, char **argv)
     auto const port = "443";
     std::ostringstream oss;
     oss << "{\"type\":\"subscribe\",\"product_ids\":[" << argv[1] << "],\"channels\":[\"level2\",{\"name\":\"ticker\",\"product_ids\":[" << argv[1] << "]}]}";
+    std::cout << __func__ << ": " << oss.str() << std::endl;
 
     // The io_context is required for all I/O
     net::io_context ioc;
