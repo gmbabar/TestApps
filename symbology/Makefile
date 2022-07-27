@@ -3,7 +3,7 @@ CC = g++
 FLAGS = -g -std=c++11 -I. -I../json/rapidjson/include/
 LIBS = -lboost_system -lpthread -lcrypto -lssl
 
-objects = secmaster_old secmaster_new
+objects = secmaster_old secmaster_new symbology_file
 
 all: $(objects)
 
