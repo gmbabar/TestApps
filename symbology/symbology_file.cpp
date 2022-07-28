@@ -31,10 +31,13 @@ bool getExchangeSymbols(const std::string& aFilePath, ExchSymbolMap &aSymMap) {
     return aSymMap.size() > 0;
 }
 
-int main() {
-    // http://172.21.4.120:8070/api/v1/tm/galaxy-assets?galaxyExchangeCode=OKEXF
+int main(int argc, char *argv[0]) {
+    if (argc != 2) {
+        std::cout << "Usage: " << std::endl;
+        std::cout << argv[0] << " <symbols.json>" << std::endl << std::endl;
+    }
     ExchSymbolMap symbolMap;
-    getExchangeSymbols("symbols.json", symbolMap);
+    getExchangeSymbols(argv[1], symbolMap);
     std::cout << "Loaded " << symbolMap.size() << " items for Okex future. " << std::endl;
 }
 
