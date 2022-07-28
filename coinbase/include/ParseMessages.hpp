@@ -35,7 +35,6 @@ using namespace rapidjson;
 inline void strpnt(const char * str, int start, int stop) {
     for (int i = start; i <= stop; i++) {
         std::cout << str[i];
-        str[i];
     }
     std::cout << std::endl;
 }
