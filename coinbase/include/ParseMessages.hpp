@@ -32,6 +32,13 @@ using namespace rapidjson;
 {"type":"l2update","product_id":"ETHUSD","changes":[["buy","1550.16","0.80679000"]],"time":"2022-07-19T12:09:18.390473Z"}
 
 */
+inline void strpnt(const char * str, int start, int stop) {
+    for (int i = start; i <= stop; i++) {
+        std::cout << str[i];
+        str[i];
+    }
+    std::cout << std::endl;
+}
 
 inline void formatL2updateMsg(std::ostringstream &oss,
     const std::string& type,
@@ -108,6 +115,21 @@ inline void parseL2updateSs(const std::string& json) {
                 std::cout << std::endl;
 	    } 
     }  while ( ++idx <= len ); 
+}
+
+inline void parseL2updateSsOptm(const std::string& json) {
+    int start = json.find("{type");
+    int stop  = json.find("\",");
+    strpnt(json.c_str(), start, stop);
+    start = json.find("\"product_id");
+    stop  = json.find("\",", start);
+    strpnt(json.c_str(), start, stop);
+    start = json.find("\"changes");
+    stop  = json.find("],", start);
+    strpnt(json.c_str(), start, stop);
+    start = json.find("\"time");
+    stop  = json.find("}", start);
+    strpnt(json.c_str(), start, stop);
 }
 
 /*
@@ -221,6 +243,35 @@ inline void parseTickerSs(const std::string &json) {
     std::cout << "}" << std::endl;
 }
 
+inline void parseTickerSsOptm(const std::string &json) {
+	std::string token;
+    size_t pos1;
+    size_t pos2;
+    size_t pos3;
+    size_t pos4;
+    int count = 0;
+    while(count <= 2) {
+        if(count == 0) {
+            token = "type";
+            pos1 = json.find(token);
+        } 
+        else if(count == 1) {
+            token = "price";
+            pos1 = json.find(token);
+        } 
+        else if(count == 2) {
+            token = "last_size";
+            pos1 = json.find(token);
+        }
+    	pos2 = json.find(":", pos1+1);
+    	pos3 = json.find("\"", pos2+1);
+    	pos4 = json.find("\"", pos3+1);
+    	strpnt(json.c_str(), pos1, pos4);
+        pos2 = pos3 = pos4 = 0;
+        count ++;
+    }
+}
+
 // give all values in ticker in simple
 
 /* 
@@ -294,27 +345,27 @@ inline void parseHeartbeatMsg(const std::string& json) {
 
 */
 
-
-// inline void parseSubscriptionsMsg(const std::string& json) {
-//     Document document;
-//     document.Parse(json.c_str());
-//     std::cout << "type: " << document["type"].GetString() << std::endl;
-//     auto var = document["channels"].GetArray();
-//     for (int idx=0; idx<var.Size(); ++idx) {
-//         auto &arrVal = var[idx];
-//         if (arrVal.IsString()) {
-//             std::cout << arrVal.GetString() << std::endl;
-//         } 
-//         else if (arrVal.IsObject()) {
-//             std::cout << "name: " << arrVal["name"].GetString() << std::endl;
-//             auto jsonArr = arrVal["product_ids"].GetArray();
-//             for (int x=0; x<jsonArr.Size(); ++x) {
-//                 std::cout << jsonArr[x].GetString() << std::endl;
-//             }
-//         }
-//     }
-// }
-
+/*
+inline void parseSubscriptionsMsg(const std::string& json) {
+    Document document;
+    document.Parse(json.c_str());
+    std::cout << "type: " << document["type"].GetString() << std::endl;
+    auto var = document["channels"].GetArray();
+    for (int idx=0; idx<var.Size(); ++idx) {
+        auto &arrVal = var[idx];
+        if (arrVal.IsString()) {
+            std::cout << arrVal.GetString() << std::endl;
+        } 
+        else if (arrVal.IsObject()) {
+            std::cout << "name: " << arrVal["name"].GetString() << std::endl;
+            auto jsonArr = arrVal["product_ids"].GetArray();
+            for (int x=0; x<jsonArr.Size(); ++x) {
+                std::cout << jsonArr[x].GetString() << std::endl;
+            }
+        }
+    }
+}
+*/
 /*
 ----Subscription_Response
 
@@ -429,6 +480,21 @@ inline void parseSnapshotSs(const std::string& json) {
                 std::cout << std::endl;
         } 
     }  while ( ++idx <= len ); 
+}
+
+inline void parseSnapshotSsOptm(const std::string& json) { 
+    int start = json.find("{type");
+    int stop  = json.find("\",");
+    strpnt(json.c_str(), start, stop);
+    start = json.find("\"product_id");
+    stop  = json.find("\",", start);
+    strpnt(json.c_str(), start, stop);
+    start = json.find("\"asks");
+    stop  = json.find("]],", start);
+    strpnt(json.c_str(), start, ++stop);
+    start = json.find("\"bids");
+    stop  = json.find("]}", start);
+    strpnt(json.c_str(), start, ++stop);
 }
 
 
