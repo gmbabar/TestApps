@@ -10,7 +10,6 @@
 #include <sstream>
 
 using namespace rapidjson;
-using namespace std;
 
 /*
 -------------Subscribtion msg
@@ -33,25 +32,6 @@ using namespace std;
 {"type":"l2update","product_id":"ETHUSD","changes":[["buy","1550.16","0.80679000"]],"time":"2022-07-19T12:09:18.390473Z"}
 
 */
-
-
-/**
- * 
- * 
-        std::string type;
-        tokenPos = json.find("\"type\"");
-        if(tokenPos != std::string::npos) {
-            colonPos = json.find(":", tokenPos);
-            commaPos = json.find("\",", colonPos);
-            type = json.substr(colonPos+2, commaPos-colonPos-2);
-            std::cout << type << std::endl;
-        }
-        else {
-            std::cout << "Type Not Available" << std::endl;
-        }
- * 
- */
-
 
 inline void formatL2updateMsg(std::ostringstream &oss,
     const std::string& type,
@@ -103,7 +83,7 @@ inline void parseL2updateSs(const std::string& json) {
     while (true) {
         firstPos = arr.find("[", firstPos+1);
         secondPos = arr.find("]", secondPos+1);
-        if(firstPos == string::npos || secondPos == string::npos || secondPos == arr.size()-1) {
+        if(firstPos == std::string::npos || secondPos == std::string::npos || secondPos == arr.size()-1) {
             break;
         }
         std::string innerArr = arr.substr(firstPos, secondPos-firstPos+1);
@@ -119,7 +99,7 @@ inline void parseL2updateSs(const std::string& json) {
     }
 
 }
-    // std::cout << "}" << std::endl;
+
 
 
 
@@ -217,38 +197,11 @@ inline void parseTickerSs(const std::string &json) {
     start = json.find(":", start);
     stop = json.find("\"}", start);
     amt = json.substr(start+2, stop-start-2);
-    std::cout << amt << std::endl;
-    // std::cout << "}" << std::endl;
+    std::cout << "type: " << type << std::endl;
+    std::cout << "Price: " << px << std::endl;
+    std::cout << "last_size: " << amt << std::endl;
 }
 
-// give all values in ticker in simple
-
-/* 
-inline void parseTickerSs(const std::string &json) {
-	size_t len = json.length();
-	char ch;
-    int idx = 0;
-	int begin = idx;
-	do {
-		ch = json[idx];
-		if (::isspace(ch))
-            continue;
-		else if (ch == '[' || ch == '{') {
-			std::cout << json[idx] << std::endl;
-			begin = idx+1;
-		} 
-        else if (ch == ',' ) {
-			std::cout << json.substr(begin, idx-begin) << std::endl;
-			begin = idx+1;
-		} 
-        else if (ch == '}' || ch == ']') {
-			std::cout  << json.substr(begin, idx-begin) << std::endl;
-			std::cout << ch  << std::endl;
-			begin = idx+1;
-		} 
-    }  while ( ++idx <= len ); 
-}
-*/
 
 /*
 ----Heartbeat
@@ -315,6 +268,7 @@ inline void parseSubscriptionsMsg(const std::string& json) {
     }
 }
 */
+
 /*
 ----Subscription_Response
 
