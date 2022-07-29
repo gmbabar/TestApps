@@ -140,17 +140,16 @@ inline void parseL2updateSs(const std::string& json) {
 inline void parseL2updateSsOptm(const std::string& json) {
     int start = json.find("{type");
     int stop  = json.find("\",", start);
-    // strpnt(json.c_str(), start, stop);
-    std::cout << json.substr(start, stop-start) << std::endl;
-    // start = json.find("\"product_id");
-    // stop  = json.find("\",", start);
-    // strpnt(json.c_str(), start, stop);
-    // start = json.find("\"changes");
-    // stop  = json.find("],", start);
-    // strpnt(json.c_str(), start, stop);
-    // start = json.find("\"time");
-    // stop  = json.find("}", start);
-    // strpnt(json.c_str(), start, stop);
+    strpnt(json.c_str(), start, stop);
+    start = json.find("\"product_id");
+    stop  = json.find("\",", start);
+    strpnt(json.c_str(), start, stop);
+    start = json.find("\"changes");
+    stop  = json.find("],", start);
+    strpnt(json.c_str(), start, stop);
+    start = json.find("\"time");
+    stop  = json.find("}", start);
+    strpnt(json.c_str(), start, stop);
 }
 
 /*
