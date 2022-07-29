@@ -72,6 +72,11 @@ inline void parseL2updateSs(const std::string& json) {
     int start = json.find("\"changes\"");
     start = json.find(":", start);
     std::string arr = json.substr(start+1, json.find("]]")-start+1);
+    start = json.find("\"product_id\"");
+    start = json.find(":", start);
+    int stop = json.find("\",", start);
+    std::string symbol = json.substr(start+2, stop-start-2);
+    std::cout << symbol << std::endl;
 
     int firstPos = 0;
     int secondPos = 0;
