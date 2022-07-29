@@ -39,6 +39,23 @@ inline void strpnt(const char * str, int start, int stop) {
     std::cout << std::endl;
 }
 
+/**
+ * 
+ * 
+        std::string type;
+        tokenPos = json.find("\"type\"");
+        if(tokenPos != std::string::npos) {
+            colonPos = json.find(":", tokenPos);
+            commaPos = json.find("\",", colonPos);
+            type = json.substr(colonPos+2, commaPos-colonPos-2);
+            std::cout << type << std::endl;
+        }
+        else {
+            std::cout << "Type Not Available" << std::endl;
+        }
+ * 
+ */
+
 
 inline void arrayParse(std::string &arr) {
     int firstPos = 0;
