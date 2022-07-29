@@ -88,89 +88,45 @@ inline void parseL2update(const std::string& json) {
 }
 
 inline void parseL2updateSs(const std::string& json) {
-	std::string token;
-    int pos1;
-    int pos2;
-    int pos3;
-    int pos4;
-    int npos;
-    int lpos;
-    std::string type;
-    std::string pid;
-    std::string changes;
-    std::string time;
-    std::string side;
-    std::string px;
-    std::string amt;
-    int count = 0;
-    // std::cout << "{\n";
-    while (count <= 3) {
-        switch(count) {
-            case 0: 
-                token = "type";
-                pos1 = json.find(token);
-                pos2 = json.find(":", pos1+1);
-    	        pos3 = json.find("\"", pos2+1);
-    	        pos4 = json.find("\"", pos3+1);
-                type = json.substr(pos3, pos4-pos3+1);
-                std::cout << "type: " << type << std::endl;
-                break;
-            case 1: 
-                token = "product_id";
-                pos1 = json.find(token);
-                pos2 = json.find(":", pos1+1);
-    	        pos3 = json.find("\"", pos2+1);
-    	        pos4 = json.find("\"", pos3+1);
-                pid = json.substr(pos3, pos4-pos3+1);
-                std::cout << "product_id: " << pid << std::endl;
-                break;
-            case 2: 
-                token = "changes";
-                pos1 = json.find(token);
-                pos2 = json.find(":", ++pos1);
-    	        pos3 = json.find("[[", ++pos2);
-    	        pos4 = json.find("],", ++pos3);
-                changes = json.substr(pos3, pos4-pos3+2);
-                npos = changes.find ("\"");
-                lpos = changes.find ("\",", npos);
-                side = changes.substr (npos, lpos);
-                npos = changes.find (",");
-                lpos = changes.find (",", ++npos);
-                px = changes.substr (npos, lpos-npos);
-                npos = changes.find (",\"", npos+1);
-                lpos = changes.find_last_of ("\"");
-                amt = changes.substr (npos+1, (lpos-npos));
-                std::cout << "changes: " << changes << std::endl; 
-                break;
-            case 3: 
-                token = "time";
-                pos1 = json.find(token);
-                pos2 = json.find(":", pos1+1);
-    	        pos3 = json.find("\"", pos2+1);
-    	        pos4 = json.find("\"", pos3+1);
-                time = json.substr(pos3, pos4-pos3+1);
-                std::cout << "time: " << time << std::endl; 
-                break;                
-            default:
-                break; 
-        }
 
-        pos2 = pos3 = pos4 = 0;
-        count ++;
+    int start = json.find("\"changes\"");
+    start = json.find(":", start);
+    std::string arr = json.substr(start+1, json.find("]]")-start+1);
+
+    int firstPos = 0;
+    int secondPos = 0;
+    int comma = 0;
+    int comma2 = 0;
+    std::string side;
+    std::string price;
+    std::string amount;
+    while (true) {
+        firstPos = arr.find("[", firstPos+1);
+        secondPos = arr.find("]", secondPos+1);
+        if(firstPos == string::npos || secondPos == string::npos || secondPos == arr.size()-1) {
+            break;
+        }
+        std::string innerArr = arr.substr(firstPos, secondPos-firstPos+1);
+
+        comma = innerArr.find("\",", comma+1);
+        comma2 = innerArr.find("\",", comma+1);
+        side = innerArr.substr(2, comma-2);
+        price = innerArr.substr(comma+3, comma2-comma-3);
+        amount = innerArr.substr(comma2+3, (innerArr.size() - innerArr.find("\"", comma2+2))-3);
+        std::cout << side << ", " << price << ", " << amount << std::endl;
+        comma = 0;
+        comma2 = 0;
     }
-    // std::cout << "}" << std::endl;
 
 }
+    // std::cout << "}" << std::endl;
 
 
 
 /*
 ----Ticker
 
-{"type":"ticker","sequence":32589047814,"product_id":"ETH-USD","price":"1549.08","open_24h":"1485.35",
-"volume_24h":"589548.02768130","low_24h":"1450.45","high_24h":"1631.32","volume_30d":"8147557.57837948",
-"best_bid":"1548.81","best_ask":"1549.08","side":"buy","time":"2022-07-19T12:09:26.348930Z","trade_id":319738529,
-"last_size":"0.01803274"}
+{"type":"ticker","sequence":32589047814,"product_id":"ETH-USD","price":"1549.08","open_24h":"1485.35","volume_24h":"589548.02768130","low_24h":"1450.45","high_24h":"1631.32","volume_30d":"8147557.57837948","best_bid":"1548.81","best_ask":"1549.08","side":"buy","time":"2022-07-19T12:09:26.348930Z","trade_id":319738529,"last_size":"0.01803274"}
 
 */
 
@@ -245,52 +201,23 @@ inline void parseTicker(const char *json) {
 }
 
 inline void parseTickerSs(const std::string &json) {
-	std::string token;
-    size_t pos1;
-    size_t pos2;
-    size_t pos3;
-    size_t pos4;
     std::string type;
     std::string px;
     std::string amt;
-    int count = 0;
-    // std::cout << "{\n";
-    while (count <= 2) {
-        switch(count) {
-            case 0: 
-                token = "type";
-                pos1 = json.find(token);
-                pos2 = json.find(":", pos1+1);
-    	        pos3 = json.find("\"", pos2+1);
-    	        pos4 = json.find("\"", pos3+1);
-                type = json.substr(pos3, pos4-pos3+1);
-                // std::cout << "type: " << type << std::endl;
-                break;
-            case 1: 
-                token = "price";
-                pos1 = json.find(token);
-                pos2 = json.find(":", pos1+1);
-    	        pos3 = json.find("\"", pos2+1);
-    	        pos4 = json.find("\"", pos3+1);
-                px = json.substr(pos3, pos4-pos3+1);
-                // std::cout << "price: " << px << std::endl;
-                break;
-            case 2: 
-                token = "last_size";
-                pos1 = json.find(token);
-                pos2 = json.find(":", pos1+1);
-    	        pos3 = json.find("\"", pos2+1);
-    	        pos4 = json.find("\"", pos3+1);
-                amt = json.substr(pos3, pos4-pos3+1);
-                // std::cout << "last_price: " << amt << std::endl; 
-                break;            
-            default:
-                break; 
-        }
-
-        pos2 = pos3 = pos4 = 0;
-        count ++;
-    }
+    
+    int start = json.find("\"type\"");
+    start = json.find(":", start);
+    int stop = json.find("\",", start);
+    type = json.substr(start+2, stop-start-2);
+    start = json.find("\"price\"");
+    start = json.find(":", start);
+    stop = json.find("\",", start);
+    px = json.substr(start+2, stop-start-2);
+    start = json.find("\"last_size\"");
+    start = json.find(":", start);
+    stop = json.find("\"}", start);
+    amt = json.substr(start+2, stop-start-2);
+    std::cout << amt << std::endl;
     // std::cout << "}" << std::endl;
 }
 
