@@ -10,6 +10,7 @@
 #include <sstream>
 
 using namespace rapidjson;
+using namespace std;
 
 /*
 -------------Subscribtion msg
@@ -155,15 +156,18 @@ inline void parseL2updateSs(const std::string& json) {
 }
 
 inline void parseL2updateSsOptm(const std::string& json) {
+    
     int start = json.find("{type");
-    int stop  = json.find("\",", start);
+    int stop  = json.find("\",");
     strpnt(json.c_str(), start, stop);
     start = json.find("\"product_id");
     stop  = json.find("\",", start);
     strpnt(json.c_str(), start, stop);
     start = json.find("\"changes");
-    stop  = json.find("],", start);
-    strpnt(json.c_str(), start, stop);
+    start = json.find(":", start);
+    stop  = json.find("]],", start);
+    // strpnt(json.c_str(), start, stop);
+    std::string arr = json.substr(start+1, stop-start+1);
     start = json.find("\"time");
     stop  = json.find("}", start);
     strpnt(json.c_str(), start, stop);
@@ -437,8 +441,7 @@ inline void parseSubscriptions(const std::string& json) {
 
 /*
 ----Snapshot
-{"type":"snapshot","product_id":"ETH-USD","asks":[["89","0009.989"],["34","0.9879"],["69","0.699696"]],
-bids":[["89","0009.989"],["34","0.9879"],["69","0.699696"]]}
+{"type":"snapshot","product_id":"ETH-USD","asks":[["89","0009.989"],["34","0.9879"],["69","0.699696"]],bids":[["89","0009.989"],["34","0.9879"],["69","0.699696"]]}
 
 */
 
@@ -520,18 +523,54 @@ inline void parseSnapshotSs(const std::string& json) {
 }
 
 inline void parseSnapshotSsOptm(const std::string& json) { 
-    int start = json.find("{type");
-    int stop  = json.find("\",");
-    strpnt(json.c_str(), start, stop);
-    start = json.find("\"product_id");
+    int firstPos = 0;
+    int secondPos = 0;
+    std::string price;
+    std::string amount;
+    int start = json.find("\"type\"");
+    start = json.find(":", start);
+    int stop  = json.find("\",", start);
+    std::cout << json.substr(start+2, stop-start-2) << std::endl;
+    start = json.find("\"product_id\"");
+    start = json.find(":", start);
     stop  = json.find("\",", start);
-    strpnt(json.c_str(), start, stop);
-    start = json.find("\"asks");
+    std::cout << json.substr(start+2, stop-start-2) << std::endl;
+    start = json.find("\"asks\"");
+    start = json.find(":", start);
     stop  = json.find("]],", start);
-    strpnt(json.c_str(), start, ++stop);
-    start = json.find("\"bids");
-    stop  = json.find("]}", start);
-    strpnt(json.c_str(), start, ++stop);
+    std::string arr = json.substr(start+1, stop-start+1);
+    std::cout << "ASKS : " << arr << std::endl;
+    while (true) {
+        /* code */
+        firstPos = arr.find("[", firstPos+1);
+        secondPos = arr.find("]", secondPos+1);
+        if(firstPos == string::npos || secondPos == string::npos || secondPos == arr.size()-1) {
+            break;
+        }
+        std::string innerArr = arr.substr(firstPos, secondPos-firstPos+1);
+        int comma = innerArr.find("\",");
+        price = innerArr.substr(2, comma-2); 
+        amount = innerArr.substr(comma+3, (innerArr.size() - innerArr.find("\"", comma+2))-3);
+        std::cout << price << ", " << amount << std::endl;
+    }
+    firstPos = 0;
+    secondPos = 0;
+    start = json.find("\"bids\"");
+    start = json.find(":", start);
+    stop  = json.find("]]", start);
+    arr = json.substr(start+1, stop-start+1);
+    std::cout << "BIDS : " << arr << std::endl;
+    while (true) {
+        /* code */
+        firstPos = arr.find("[", firstPos+1);
+        secondPos = arr.find("]", secondPos+1);
+        if(firstPos == string::npos || secondPos == string::npos || secondPos == arr.size()-1) {
+            break;
+        }
+        std::string innerArr = arr.substr(firstPos, secondPos-firstPos+1);
+        int comma = innerArr.find("\",");
+        price = innerArr.substr(2, comma-2); 
+        amount = innerArr.substr(comma+3, (innerArr.size() - innerArr.find("\"", comma+2))-3);
+        std::cout << price << ", " << amount << std::endl;
+    }
 }
-
-
