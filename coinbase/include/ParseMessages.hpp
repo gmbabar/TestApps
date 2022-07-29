@@ -119,8 +119,8 @@ inline void parseL2updateSs(const std::string& json) {
                 token = "product_id";
                 pos1 = json.find(token);
                 pos2 = json.find(":", pos1+1);
-    	          pos3 = json.find("\"", pos2+1);
-    	          pos4 = json.find("\"", pos3+1);
+    	        pos3 = json.find("\"", pos2+1);
+    	        pos4 = json.find("\"", pos3+1);
                 pid = json.substr(pos3, pos4-pos3+1);
                 std::cout << "product_id: " << pid << std::endl;
                 break;
@@ -128,8 +128,8 @@ inline void parseL2updateSs(const std::string& json) {
                 token = "changes";
                 pos1 = json.find(token);
                 pos2 = json.find(":", ++pos1);
-    	          pos3 = json.find("[[", ++pos2);
-    	          pos4 = json.find("],", ++pos3);
+    	        pos3 = json.find("[[", ++pos2);
+    	        pos4 = json.find("],", ++pos3);
                 changes = json.substr(pos3, pos4-pos3+2);
                 npos = changes.find ("\"");
                 lpos = changes.find ("\",", npos);
@@ -146,8 +146,8 @@ inline void parseL2updateSs(const std::string& json) {
                 token = "time";
                 pos1 = json.find(token);
                 pos2 = json.find(":", pos1+1);
-    	          pos3 = json.find("\"", pos2+1);
-    	          pos4 = json.find("\"", pos3+1);
+    	        pos3 = json.find("\"", pos2+1);
+    	        pos4 = json.find("\"", pos3+1);
                 time = json.substr(pos3, pos4-pos3+1);
                 std::cout << "time: " << time << std::endl; 
                 break;                
@@ -162,23 +162,7 @@ inline void parseL2updateSs(const std::string& json) {
 
 }
 
-inline void parseL2updateSsOptm(const std::string& json) {
-    
-    int start = json.find("{type");
-    int stop  = json.find("\",");
-    strpnt(json.c_str(), start, stop);
-    start = json.find("\"product_id");
-    stop  = json.find("\",", start);
-    strpnt(json.c_str(), start, stop);
-    start = json.find("\"changes");
-    start = json.find(":", start);
-    stop  = json.find("]],", start);
-    // strpnt(json.c_str(), start, stop);
-    std::string arr = json.substr(start+1, stop-start+1);
-    start = json.find("\"time");
-    stop  = json.find("}", start);
-    strpnt(json.c_str(), start, stop);
-}
+
 
 /*
 ----Ticker
@@ -499,7 +483,7 @@ inline void parseSnapshotSs(const std::string& json) {
         /* code */
         firstPos = arr.find("[", firstPos+1);
         secondPos = arr.find("]", secondPos+1);
-        if(firstPos == string::npos || secondPos == string::npos || secondPos == arr.size()-1) {
+        if(firstPos == std::string::npos || secondPos == std::string::npos || secondPos == arr.size()-1) {
             break;
         }
         std::string innerArr = arr.substr(firstPos, secondPos-firstPos+1);
@@ -519,7 +503,7 @@ inline void parseSnapshotSs(const std::string& json) {
         /* code */
         firstPos = arr.find("[", firstPos+1);
         secondPos = arr.find("]", secondPos+1);
-        if(firstPos == string::npos || secondPos == string::npos || secondPos == arr.size()-1) {
+        if(firstPos == std::string::npos || secondPos == std::string::npos || secondPos == arr.size()-1) {
             break;
         }
         std::string innerArr = arr.substr(firstPos, secondPos-firstPos+1);
