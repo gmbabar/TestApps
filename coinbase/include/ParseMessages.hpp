@@ -39,6 +39,27 @@ inline void strpnt(const char * str, int start, int stop) {
     std::cout << std::endl;
 }
 
+
+inline void arrayParse(std::string &arr) {
+    int firstPos = 0;
+    int secondPos = 0;
+    std::string price;
+    std::string amount;
+    while (true) {
+        /* code */
+        firstPos = arr.find("[", firstPos+1);
+        secondPos = arr.find("]", secondPos+1);
+        if(firstPos == string::npos || secondPos == string::npos || secondPos == arr.size()-1) {
+            break;
+        }
+        std::string innerArr = arr.substr(firstPos, secondPos-firstPos+1);
+        int comma = innerArr.find("\",");
+        price = innerArr.substr(2, comma-2); 
+        amount = innerArr.substr(comma+3, (innerArr.size() - innerArr.find("\"", comma+2))-3);
+        std::cout << price << ", " << amount << std::endl;
+    }
+}
+
 inline void formatL2updateMsg(std::ostringstream &oss,
     const std::string& type,
     const std::string& product_id,
@@ -118,17 +139,18 @@ inline void parseL2updateSs(const std::string& json) {
 
 inline void parseL2updateSsOptm(const std::string& json) {
     int start = json.find("{type");
-    int stop  = json.find("\",");
-    strpnt(json.c_str(), start, stop);
-    start = json.find("\"product_id");
-    stop  = json.find("\",", start);
-    strpnt(json.c_str(), start, stop);
-    start = json.find("\"changes");
-    stop  = json.find("],", start);
-    strpnt(json.c_str(), start, stop);
-    start = json.find("\"time");
-    stop  = json.find("}", start);
-    strpnt(json.c_str(), start, stop);
+    int stop  = json.find("\",", start);
+    // strpnt(json.c_str(), start, stop);
+    std::cout << json.substr(start, stop-start) << std::endl;
+    // start = json.find("\"product_id");
+    // stop  = json.find("\",", start);
+    // strpnt(json.c_str(), start, stop);
+    // start = json.find("\"changes");
+    // stop  = json.find("],", start);
+    // strpnt(json.c_str(), start, stop);
+    // start = json.find("\"time");
+    // stop  = json.find("}", start);
+    // strpnt(json.c_str(), start, stop);
 }
 
 /*
