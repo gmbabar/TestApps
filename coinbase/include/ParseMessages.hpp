@@ -33,12 +33,7 @@ using namespace std;
 {"type":"l2update","product_id":"ETHUSD","changes":[["buy","1550.16","0.80679000"]],"time":"2022-07-19T12:09:18.390473Z"}
 
 */
-inline void strpnt(const char * str, int start, int stop) {
-    for (int i = start; i <= stop; i++) {
-        std::cout << str[i];
-    }
-    std::cout << std::endl;
-}
+
 
 /**
  * 
@@ -57,26 +52,6 @@ inline void strpnt(const char * str, int start, int stop) {
  * 
  */
 
-
-inline void arrayParse(std::string &arr) {
-    int firstPos = 0;
-    int secondPos = 0;
-    std::string price;
-    std::string amount;
-    while (true) {
-        /* code */
-        firstPos = arr.find("[", firstPos+1);
-        secondPos = arr.find("]", secondPos+1);
-        if(firstPos == string::npos || secondPos == string::npos || secondPos == arr.size()-1) {
-            break;
-        }
-        std::string innerArr = arr.substr(firstPos, secondPos-firstPos+1);
-        int comma = innerArr.find("\",");
-        price = innerArr.substr(2, comma-2); 
-        amount = innerArr.substr(comma+3, (innerArr.size() - innerArr.find("\"", comma+2))-3);
-        std::cout << price << ", " << amount << std::endl;
-    }
-}
 
 inline void formatL2updateMsg(std::ostringstream &oss,
     const std::string& type,
@@ -113,46 +88,78 @@ inline void parseL2update(const std::string& json) {
 }
 
 inline void parseL2updateSs(const std::string& json) {
-    size_t len = json.length();
-	char ch;
-    int idx = 0;
-	int begin = idx;
-	do {
-	    ch = json[idx];
-	    if (::isspace(ch)) 
-            continue; 
-	    else if (ch == '{') {
-	    	std::cout << json[idx] << std::endl;
-	    	begin = idx+1;
-	    } 
-        else if (ch == '[') {
-	    	std::cout << json.substr(begin, idx-begin);
-	    	std::cout << json[idx];
-	    	begin = idx+1;
-	    } 
-        else if (ch == ',' ) {
-            if(begin >= 53 && begin <= 70) {
-                std::cout << json.substr(begin, idx-begin) << " ";
-	    	    begin = idx+1;
-            } 
-            else {
-                std::cout << json.substr(begin, idx-begin) << std::endl;
-	    	    begin = idx+1;
-            }
-        } 
-        else if (ch == ']') {
-	    	std::cout  << json.substr(begin, idx-begin);
-	    	std::cout << ch;
-	    	begin = idx+1;
-	    } 
-        else if (ch == '}') {
-	    	std::cout  << json.substr(begin, idx-begin) << std::endl;
-	    	std::cout << ch;
-	    	begin = idx+1;
-            if(++idx >= len)
-                std::cout << std::endl;
-	    } 
-    }  while ( ++idx <= len ); 
+	std::string token;
+    int pos1;
+    int pos2;
+    int pos3;
+    int pos4;
+    int npos;
+    int lpos;
+    std::string type;
+    std::string pid;
+    std::string changes;
+    std::string time;
+    std::string side;
+    std::string px;
+    std::string amt;
+    int count = 0;
+    // std::cout << "{\n";
+    while (count <= 3) {
+        switch(count) {
+            case 0: 
+                token = "type";
+                pos1 = json.find(token);
+                pos2 = json.find(":", pos1+1);
+    	        pos3 = json.find("\"", pos2+1);
+    	        pos4 = json.find("\"", pos3+1);
+                type = json.substr(pos3, pos4-pos3+1);
+                std::cout << "type: " << type << std::endl;
+                break;
+            case 1: 
+                token = "product_id";
+                pos1 = json.find(token);
+                pos2 = json.find(":", pos1+1);
+    	          pos3 = json.find("\"", pos2+1);
+    	          pos4 = json.find("\"", pos3+1);
+                pid = json.substr(pos3, pos4-pos3+1);
+                std::cout << "product_id: " << pid << std::endl;
+                break;
+            case 2: 
+                token = "changes";
+                pos1 = json.find(token);
+                pos2 = json.find(":", ++pos1);
+    	          pos3 = json.find("[[", ++pos2);
+    	          pos4 = json.find("],", ++pos3);
+                changes = json.substr(pos3, pos4-pos3+2);
+                npos = changes.find ("\"");
+                lpos = changes.find ("\",", npos);
+                side = changes.substr (npos, lpos);
+                npos = changes.find (",");
+                lpos = changes.find (",", ++npos);
+                px = changes.substr (npos, lpos-npos);
+                npos = changes.find (",\"", npos+1);
+                lpos = changes.find_last_of ("\"");
+                amt = changes.substr (npos+1, (lpos-npos));
+                std::cout << "changes: " << changes << std::endl; 
+                break;
+            case 3: 
+                token = "time";
+                pos1 = json.find(token);
+                pos2 = json.find(":", pos1+1);
+    	          pos3 = json.find("\"", pos2+1);
+    	          pos4 = json.find("\"", pos3+1);
+                time = json.substr(pos3, pos4-pos3+1);
+                std::cout << "time: " << time << std::endl; 
+                break;                
+            default:
+                break; 
+        }
+
+        pos2 = pos3 = pos4 = 0;
+        count ++;
+    }
+    // std::cout << "}" << std::endl;
+
 }
 
 inline void parseL2updateSsOptm(const std::string& json) {
@@ -259,58 +266,48 @@ inline void parseTickerSs(const std::string &json) {
     size_t pos2;
     size_t pos3;
     size_t pos4;
+    std::string type;
+    std::string px;
+    std::string amt;
     int count = 0;
-    std::cout << "{\n";
-    while(count <= 2) {
-        if(count == 0) {
-            token = "type";
-            pos1 = json.find(token);
-        } 
-        else if(count == 1) {
-            token = "price";
-            pos1 = json.find(token);
-        } 
-        else if(count == 2) {
-            token = "last_size";
-            pos1 = json.find(token);
+    // std::cout << "{\n";
+    while (count <= 2) {
+        switch(count) {
+            case 0: 
+                token = "type";
+                pos1 = json.find(token);
+                pos2 = json.find(":", pos1+1);
+    	        pos3 = json.find("\"", pos2+1);
+    	        pos4 = json.find("\"", pos3+1);
+                type = json.substr(pos3, pos4-pos3+1);
+                // std::cout << "type: " << type << std::endl;
+                break;
+            case 1: 
+                token = "price";
+                pos1 = json.find(token);
+                pos2 = json.find(":", pos1+1);
+    	        pos3 = json.find("\"", pos2+1);
+    	        pos4 = json.find("\"", pos3+1);
+                px = json.substr(pos3, pos4-pos3+1);
+                // std::cout << "price: " << px << std::endl;
+                break;
+            case 2: 
+                token = "last_size";
+                pos1 = json.find(token);
+                pos2 = json.find(":", pos1+1);
+    	        pos3 = json.find("\"", pos2+1);
+    	        pos4 = json.find("\"", pos3+1);
+                amt = json.substr(pos3, pos4-pos3+1);
+                // std::cout << "last_price: " << amt << std::endl; 
+                break;            
+            default:
+                break; 
         }
-    	pos2 = json.find(":", pos1+1);
-    	pos3 = json.find("\"", pos2+1);
-    	pos4 = json.find("\"", pos3+1);
-    	std::cout << "    " << token << ": " << json.substr(pos3+1, (pos4 - pos3-1)) << std::endl;
-        pos2 = pos3 = pos4 = 0;
-        count ++;
-    }
-    std::cout << "}" << std::endl;
-}
 
-inline void parseTickerSsOptm(const std::string &json) {
-	std::string token;
-    size_t pos1;
-    size_t pos2;
-    size_t pos3;
-    size_t pos4;
-    int count = 0;
-    while(count <= 2) {
-        if(count == 0) {
-            token = "type";
-            pos1 = json.find(token);
-        } 
-        else if(count == 1) {
-            token = "price";
-            pos1 = json.find(token);
-        } 
-        else if(count == 2) {
-            token = "last_size";
-            pos1 = json.find(token);
-        }
-    	pos2 = json.find(":", pos1+1);
-    	pos3 = json.find("\"", pos2+1);
-    	pos4 = json.find("\"", pos3+1);
-    	strpnt(json.c_str(), pos1, pos4);
         pos2 = pos3 = pos4 = 0;
         count ++;
     }
+    // std::cout << "}" << std::endl;
 }
 
 // give all values in ticker in simple
@@ -479,50 +476,8 @@ inline void parseSnapshot(const char *json) {
     std::cout << "]" << std::endl;
 }
 
-inline void parseSnapshotSs(const std::string& json) {
-    size_t len = json.length();
-	char ch;
-    int idx = 0;
-	int begin = idx;
-	do {
-		ch = json[idx];
-		if (::isspace(ch)) 
-            continue; 
-		else if (ch == '{') {
-			std::cout << json[idx] << std::endl;
-			begin = idx+1;
-	    } 
-        else if (ch == '[') {
-	    	std::cout << json.substr(begin, idx-begin);
-	    	std::cout << json[idx];
-	    	begin = idx+1;
-	    } 
-        else if (ch == ',' ) {
-            if(begin >= 51) {
-                std::cout << json.substr(begin, idx-begin) << ",";
-	    	    begin = idx+1;
-            }
-            else {
-                std::cout << json.substr(begin, idx-begin) << std::endl;
-	    	    begin = idx+1;
-            }
-        } 
-        else if (ch == ']') {
-	    	std::cout  << json.substr(begin, idx-begin);
-	    	std::cout << ch  ;
-	    	begin = idx+1;
-	    } 
-        else if (ch == '}') {
-	    	std::cout  << json.substr(begin, idx-begin) << std::endl;
-	    	std::cout << ch  ;
-	    	begin = idx+1;
-            if(++idx >= len)
-                std::cout << std::endl;
-        } 
-    }  while ( ++idx <= len ); 
-}
 
-inline void parseSnapshotSsOptm(const std::string& json) { 
+inline void parseSnapshotSs(const std::string& json) { 
     int firstPos = 0;
     int secondPos = 0;
     std::string price;
