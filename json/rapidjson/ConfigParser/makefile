@@ -1,5 +1,5 @@
 CC = g++
-FLAGS =  -g -Wall -lboost_system
+FLAGS =  -g -Wall -I../include
 LIBS = -lboost_system
 
 objects = ParseConfig
