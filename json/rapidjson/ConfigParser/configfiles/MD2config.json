@@ -1,0 +1,58 @@
+{
+    "ROLE"   : "app",
+    "APP_ID" : "MD2-HUOBI",
+    "APP_CODE" : 12345,
+    "LOGGING": {
+        "log_level"             : "INFO",
+        "log_path"              : "/home/ubuntu/Crypto/Logs/md2",
+        "destinations"          : [
+            {
+                "log_type"      : "syslog",
+                "log_facility"  : "user",
+                "enabled"       : 1
+            }
+        ]
+    },
+    "SYMBOLS": {
+        "symbol_mapping"    : "/home/ubuntu/Crypto/MD2/StaticData/symbology.csv",
+        "secmaster_refdata_host" : "172.21.5.151",
+        "secmaster_refdata_port" : "8001",
+        "secmaster_refdata_path" : "/api/assetStores",
+        "secmaster_symbols_host" : "172.21.2.170",
+        "secmaster_symbols_port" : "9004",
+        "secmaster_symbols_path" : "/api/v1/aliases/",
+        "exchange_symbol_prefix" : "t"
+    },
+    "MD_SERVICE" : {
+        "listen_ip"   : "0.0.0.0",
+        "listen_port" : "9010",
+        "admin_listen_ip"   : "0.0.0.0",
+        "admin_listen_port" : "9110",
+        "exchange_fees": "/home/ubuntu/Crypto/gdqt-config/StaticData/exchange-fees.json"
+    },
+    "CONNECTORS" : {
+        "plugin_path" : "/home/ubuntu/Crypto/MD2/bin",
+        "log_rotation_size_mb" : 100,
+        "configs": [
+        {
+            "plugin_name": "MD2_HUOBI",
+            "enabled" : 1, 
+            "exchange_mnemonic": "HUOBI",
+            "host": "api-aws.huobi.pro",
+            "port": 443,
+            "endpoint": "/ws",
+            "https_host": "api-aws.huobi.pro",
+            "https_port": "443",
+            "https_endpoint_prefix":"/v1",
+            "enable_traffic_log": false,
+            "market_depth": ".depth.step0",
+            "orderbook_max_levels": 10,
+            "log_rotation_size_mb" : 100,
+            "traffic_log": "HUOBI.log.bz2",
+            "retry_interval_secs" : 5,
+            "symbol_check_interval_secs":120,
+            "use_sni_hostname_for_ssl": true,
+            "use_sni_hostname_for_ssl_ws": true
+        }]
+    }
+}
