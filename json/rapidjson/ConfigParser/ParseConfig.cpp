@@ -1,3 +1,5 @@
+// This code does not handle the exceptions
+
 #include <iostream>
 #include "rapidjson/stringbuffer.h"
 #include "rapidjson/document.h"
@@ -58,40 +60,13 @@ struct ConfigValue
         type = atype;
     }
     //returns the FNQ against the command from mapperfile
-    std::string getpath(std::string command) {
+    std::string getpath(const char *command) {
         std::ifstream ConfigMapperFile("./configfiles/Configmapper.json");
-        std::string line;
-        std::vector <std::string> tokens;
-        std::string intermediate;
+        rapidjson::IStreamWrapper json(ConfigMapperFile);
+        rapidjson::Document doc;
         std::string path;
-        int loopcount;
-        int value = 1;
-        int key = 0;
-        Mmap aMapperMap;
-        //reads data and store it in vector
-        while (getline(ConfigMapperFile, line)) {
-            std::stringstream check1(line);
-            while(getline(check1, intermediate, ':')) {
-                tokens.push_back(intermediate);
-                getline(check1, intermediate, ',');
-                tokens.push_back(intermediate); 
-            }
-        }
-        loopcount = tokens.size()/2;
-        // fill the map with key values from vector
-        for (int i = 0; i < loopcount; i++) {
-            aMapperMap.emplace(tokens[key],tokens[value]);
-            value+=2;
-            key+=2;    
-        }
-        //checks and load path for command from map
-        for (auto &itr : aMapperMap)
-        {
-            if(itr.first.find(command)!=std::string::npos)
-            {
-                path = itr.second;
-            }
-        }
+        doc.ParseStream(json);
+        path = doc[command].GetString();
         return path;
         
     }
@@ -131,7 +106,7 @@ void ParseConfigEx(rapidjson::Value val, ConfigMap &umap, std::string prefix) {
 }        
 
 
-void ParseConfig(std::string command) {
+void ParseConfig(const char* command) {
     ConfigValue obj;
     std::unordered_map<std::string, ConfigValue> umap;
     std::string fqn = obj.getpath(command);
@@ -172,7 +147,7 @@ int main(int argc, char* argv[])
             "Example:\n\t" << argv[0] << " pf.host\n";
         return EXIT_FAILURE;
     }
-    std::string command = argv[1];
+    const char *command = argv[1];
     ParseConfig(command);
     return 0;
 }
