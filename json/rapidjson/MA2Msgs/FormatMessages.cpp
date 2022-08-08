@@ -426,7 +426,7 @@ inline void formatErrorMsg(std::ostringstream &oss,
     bool once = true;
     oss << "{"
         << R"("id":")" << anId << R"(")"
-        << R"(,"type":"exst")"
+        << R"(,"type":"err")"
         << R"(,"ts":")" << getMicrosSinceEpoch() << R"(")"
         << R"(,"refid":")" << aRefId << R"(")"
         << R"(,"code":")" << aCode << R"(")"
@@ -687,8 +687,8 @@ inline void parsePairDataReport(const std::string& json) {
     if (document.HasMember("pairs") && document["pairs"].IsArray()) {
         for (auto& item : document["pairs"].GetArray()) {
             if (item.IsObject()) {
-              for (auto& m : item.GetObject())
-                std::cout << __func__ << "\t" << m.name.GetString() << ": " << m.value.GetString() << std::endl;
+                for (auto& m : item.GetObject())
+                    std::cout << __func__ << "\t" << m.name.GetString() << ": " << m.value.GetString() << std::endl;
             }
         }
     }

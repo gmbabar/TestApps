@@ -52,6 +52,7 @@ class session : public std::enable_shared_from_this<session>
         beast::ssl_stream<beast::tcp_stream>> ws_;
     beast::flat_buffer buffer_;
     std::string host_;
+    std::string target_;
     std::string text_;
     unsigned msg_count_ = 0;
 
@@ -69,11 +70,13 @@ public:
     run(
         char const* host,
         char const* port,
+        char const* target,
         char const* text)
     {
 std::cout << "Listener:" << __func__ << std::endl;
         // Save these for later
         host_ = host;
+        target_ = target;
         text_ = text;
 
         // Look up the domain name
@@ -164,7 +167,7 @@ std::cout << "Listener:" << __func__ << std::endl;
             }));
 
         // Perform the websocket handshake
-        ws_.async_handshake(host_, "/",
+        ws_.async_handshake(host_, target_,
             beast::bind_front_handler(
                 &session::on_handshake,
                 shared_from_this()));
@@ -298,17 +301,18 @@ std::cout << "Listener:" << __func__ << std::endl;
 int main(int argc, char** argv)
 {
     // Check command line arguments.
-    if(argc != 4)
+    if(argc != 5)
     {
         std::cerr <<
-            "Usage: " << argv[0] << " <host> <port> <text>\n" <<
+            "Usage: " << argv[0] << " <host> <port> <target> <text>\n" <<
             "Example:\n" <<
-            "    " << argv[0] << " echo.websocket.org 443 \"Hello, world!\"\n";
+            "    " << argv[0] << " echo.websocket.org 443 \"./\" \"Hello, world!\"\n";
         return EXIT_FAILURE;
     }
     auto const host = argv[1];
     auto const port = argv[2];
-    auto const text = argv[3];
+    auto const target = argv[3];
+    auto const text = argv[4];
 
     // The io_context is required for all I/O
     net::io_context ioc;
@@ -320,7 +324,7 @@ int main(int argc, char** argv)
     load_root_certificates(ctx);
 
     // Launch the asynchronous operation
-    std::make_shared<session>(ioc, ctx)->run(host, port, text);
+    std::make_shared<session>(ioc, ctx)->run(host, port, target, text);
 
     // Run the I/O service. The call will return when
     // the socket is closed.
