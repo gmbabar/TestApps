@@ -52,6 +52,17 @@ inline std::string bitfinexSignature (const std::string &key, const std::string 
     return cppcodec::hex_lower::encode(hash, len);
 }
 
+inline std::string bitfinexSubscribeChannel(
+        const std::string &aSym,
+        const std::string &aChannel,
+        const unsigned anID) {
+    std::stringstream ss;
+    ss << "{\"event\": \"subscribe\", "
+       << "\"channel\": \"" << aChannel 
+       << "\", \"symbol\": \"" << aSym
+       << "\", \"id\": " << anID << "}";
+    return ss.str();
+}
 
 int main(int argc, char** argv)
 {
@@ -125,8 +136,14 @@ int main(int argc, char** argv)
         ws.read(buffer);
         std::cout << "IN: " << beast::make_printable(buffer.data()) << std::endl;
 
-	// subscribe symbols.
-        msg = std::string("{ \"event\": \"os\", \"symbol\": \"tBTCUSD\", symbol: \"tBTCUSD\" }");
+	// subscribe symbols channels. 
+        // ORDERS: os: order snapshot, ou: order update, on: order new 
+        // POSITIONS: ps: position snapshot, pu: position update, pn: position new, pc: position close
+        // TRADES: te: trade execution, tu: trade exec update
+        // BALANCE: bu: balance update
+        //msg = std::string("{ \"event\": \"ou\", \"symbol\": \"tBTCUSD\", symbol: \"tBTCUSD\" }");
+        //msg = std::string("{ \"event\": \"os\", \"symbol\": \"tBTCUSD\", symbol: \"tBTCUSD\" }");
+        msg = std::string("{ \"event\": \"bu\", \"symbol\": \"tBTCUSD\", symbol: \"tBTCUSD\" }");
         ws.write(net::buffer(msg));
         std::cout << "OUT: " << msg <<std::endl;
         while(true){
