@@ -23,6 +23,7 @@
 #include <array>
 #include <iterator>
 #include <sstream>
+#include "./include/parse_balance.hpp"
 
 
 namespace beast = boost::beast;         // from <boost/beast.hpp>
@@ -133,6 +134,7 @@ int main(int argc, char** argv)
 
         // This buffer will hold the incoming message
         beast::flat_buffer buffer;
+        std::stringstream oss;
         ws.read(buffer);
         std::cout << "IN: " << beast::make_printable(buffer.data()) << std::endl;
 
@@ -155,6 +157,8 @@ int main(int argc, char** argv)
 
             // The make_printable() function helps print a ConstBufferSequence
             std::cout << "IN: " << beast::make_printable(buffer.data()) << std::endl;
+            oss << beast::make_printable(buffer.data());
+            parse_balance(oss);
        }
         ws.close(websocket::close_code::normal);
     }

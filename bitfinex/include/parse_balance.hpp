@@ -72,51 +72,59 @@ void PrintTop(boost::property_tree::ptree const& pt) {
 }
 
 
-inline  std::stringstream GetMsg(std::string_view& str, int &start, int &stop) {
+inline std::stringstream GetMsgWs(std::string_view str, int start, int stop) {
     std::stringstream oss;
     for (int i = start; i <= stop; i++) {
         oss << str[i]; 
-    }
+    } 
     return oss;
 }
 
-void parse_wu(std::stringstream& oss) {
-    ptree pt;
-    std::stringstream noss;
-    std::string_view sv;
-    sv = oss.str();
-    int start = oss.str().find(R"( [0,"wu")");
-    int stop = oss.str().find(R"(]])",start++);
-    noss = GetMsg(sv,start,stop);
-    for(int i=0;i<noss.str().size();i++) {
-    start = oss.str().find(R"( [0,"wu")",start++);
-    stop = oss.str().find(R"(]])",start++);
-    stop++;
-    noss = GetMsg(sv,start,stop);
-    std::cout << "Parsing wallet update: " << noss.str() << std::endl << std::endl;
-    // std::cout << "Parsing wallet snapshot: " << oss.str() << std::endl << std::endl;
-    if(!(noss.str()==" "))   {
-        boost::property_tree::read_json(noss, pt);
-        PrintTop(pt);
-        }
+inline std::stringstream GetMsgWu(std::string_view str, int &start ,int &stop) {
+    std::stringstream oss;
+    start = start-1;
+    for (int i = start; i <= stop; i++)  {
+        oss << str[i];
     }
+    return oss;
+    
 }
-void parse_ws(std::stringstream& oss) {
-    ptree pt;
-    std::stringstream noss;
-    std::string_view sv;
-    sv = oss.str();
+int GetItrs(std::stringstream& ss,std::string_view str) {
+    int count = 0;
+    for (int i = 0; (i = ss.str().find(str, i)) != std::string::npos; i++) {
+        count++;
+    }
+    return count;
+}
+void parse_balance(std::stringstream& ss) {
     int start;
     int stop;
-    start = oss.str().find(R"([0,"ws")");
-    stop = oss.str().find(R"(]]])",start);
-    stop = stop+2;
-    noss = GetMsg(sv,start,stop);
-    std::cout << "Parsing wallet snapshot: " << noss.str() << std::endl << std::endl;
-    boost::property_tree::read_json(noss, pt);
-    PrintTop(pt);
-}
-void parse_balance(std::stringstream& oss) {
-    parse_ws(oss);
-    parse_wu(oss);
+    int find_next = 0;
+    int count;
+    ptree pt;
+    std::stringstream noss;
+   std::string_view check =  R"([0,"wu")";
+    count = GetItrs(ss,check);
+    if(ss.str().find(R"([0,"wu")")!= std::string::npos) {
+        for (size_t i = 0; i < count; i++) {
+            start = ss.str().find(R"([0,"wu")",find_next);
+            find_next = start+1;
+            stop = ss.str().find(R"(]])",start++);
+            stop++;
+            noss = GetMsgWu(ss.str(), start, stop);
+            std::cout << "parsing wallet update: " << noss.str() << std::endl;
+            boost::property_tree::read_json(noss, pt);
+            PrintTop(pt);
+        }
+    }
+    if(ss.str().find(R"([0,"ws")")!= std::string::npos) {
+        start = ss.str().find(R"([0,"ws")");
+        stop = ss.str().find(R"(]]])",start);
+        stop = stop+2;
+        noss = GetMsgWs(ss.str(),start,stop);
+        std::cout << "Parsing wallet snapshot: " << noss.str() << std::endl << std::endl;
+        boost::property_tree::read_json(noss, pt);
+        PrintTop(pt);
+    }
+    
 }
