@@ -1,3 +1,5 @@
+
+
 #include <boost/beast/core.hpp>
 #include <boost/beast/ssl.hpp>
 #include <boost/beast/websocket.hpp>
@@ -9,8 +11,8 @@
 #include <iostream>
 #include <memory>
 #include <string>
-#include "../include/parser.hpp"
 
+// #include "ParseMessages.hpp"
 
 namespace beast = boost::beast;         // from <boost/beast.hpp>
 namespace http = beast::http;           // from <boost/beast/http.hpp>
@@ -18,32 +20,34 @@ namespace websocket = beast::websocket; // from <boost/beast/websocket.hpp>
 namespace net = boost::asio;            // from <boost/asio.hpp>
 namespace ssl = boost::asio::ssl;       // from <boost/asio/ssl.hpp>
 using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
+// using namespace rapidjson;   
+
+//------------------------------------------------------------------------------
 
 
-
-/*
-----------subscription msg
-{\"type\": \"subscribe\",\"subscriptions\":[{\"name\":\"l2\",\"symbols\":[\"BTCUSD\",\"ETHUSD\",\"ETHBTC\"]}]}
-*/
-
+// Report a failure
 void fail(beast::error_code ec, char const* what) {
-    std::cout << what << ":" << ec.message() << std::endl; 
+    std::cerr << what << ": " << ec.message() << "\n";
 }
 
+// Sends a WebSocket message and prints the response
 class Session : public std::enable_shared_from_this<Session> {
 
+
 public:
+    // Resolver and socket require an io_context
     explicit Session(net::io_context& ioc, ssl::context& ctx)
-        :m_resolver(net::make_strand(ioc)),
-        m_ws(net::make_strand(ioc), ctx) {
+        : m_resolver(net::make_strand(ioc))
+        , m_ws(net::make_strand(ioc), ctx) {
     }
 
-    
-    // void run( char const* host, char const* port, char const* target) {
-    void run( char const* host, char const* port, char const* msg) {
+    // Start the asynchronous operation
+    void run( char const* host, char const* port, char const* text) {
         std::cout << "Listener:" << __func__ << std::endl;
+        // Save these for later
         m_host = host;
-        m_text = msg;
+        m_text = text;
+
         // Look up the domain name
         m_resolver.async_resolve(host,port,beast::bind_front_handler(&Session::on_resolve, shared_from_this()));
     }
@@ -74,8 +78,11 @@ public:
             return fail(ec, "connect");
         }
 
+        // Update the m_host string. This will provide the value of the
+        // Host HTTP header during the WebSocket handshake.
+        // See https://tools.ietf.org/html/rfc7230#section-5.4
         m_host += ':' + std::to_string(ep.port());
-
+        
         // Perform the SSL handshake
         m_ws.next_layer().async_handshake(ssl::stream_base::client, beast::bind_front_handler(&Session::on_ssl_handshake, shared_from_this()));
     }
@@ -98,17 +105,10 @@ public:
         }));
 
         // Perform the websocket handshake
-        m_ws.async_handshake(m_host, "/v2/marketdata", beast::bind_front_handler(&Session::on_handshake, shared_from_this()));
+        m_ws.async_handshake(m_host, "/api/3/ws/public", beast::bind_front_handler(&Session::on_handshake, shared_from_this()));
     }
 
-    // void on_handshake(beast::error_code ec) {
-    //     std::cout << "Listener:" << __func__ << std::endl;
-    //     if(ec)
-    //         return fail(ec, "handshake");
-
-    //     m_ws.async_read(m_buffer, beast::bind_front_handler(&Session::on_read, shared_from_this()));
-    // }
-        void on_handshake(beast::error_code ec) {
+    void on_handshake(beast::error_code ec) {
         std::cout << "Listener:" << __func__ << std::endl;
         if(ec)
             return fail(ec, "handshake");
@@ -127,9 +127,9 @@ public:
         // Read a message into our buffer
         m_ws.async_read(m_buffer, beast::bind_front_handler(&Session::on_read, shared_from_this()));
     }
-    void on_read(beast::error_code ec,std::size_t bytes_transferred) {
-        // std::cout << __func__ << ": bytes: " << bytes_transferred << std::endl;
 
+    void on_read(beast::error_code ec,std::size_t bytes_transferred) {
+        //std::cout << __func__ << ": bytes: " << bytes_transferred << std::endl;
         boost::ignore_unused(bytes_transferred);
 
         if(ec)
@@ -138,32 +138,24 @@ public:
         // The make_printable() function helps print a ConstBufferSequence
         std::ostringstream oss;
         oss << beast::make_printable(m_buffer.data());
-        std::cout << __func__ << "-" << ": " << oss.str() << std::endl;
-        // Document doc;
-        // doc.Parse(oss.str().c_str());
-        // std::string type = doc["type"].GetString();
-        // if(strcmp(type.c_str(), "trade") == 0) {
-        //     ParseTrades(oss.str());
-        // } 
-        // else if(strcmp(type.c_str(), "l2update") == 0) {
-        //     ParseL2update(oss.str());
-        // }  
-        // else if(strcmp(type.c_str(), "auction_indicative") == 0) {
-        //     ParseEvents(oss.str());
-        // }
-        // ParseV2Marketdata(oss.str());
+        // std::cout << __func__ << "-" << m_msgCount + 1 << ": " << oss.str() << std::endl;
+
         // Clear the buffer
         m_buffer.consume(m_buffer.size());
-        m_ws.async_read(m_buffer, beast::bind_front_handler(&Session::on_read, shared_from_this()));
-        // Clear the buffer
-        // m_buffer.consume(m_buffer.size());
+
     }
+
     void on_close(beast::error_code ec) {
         std::cout << "Listener:" << __func__ << std::endl;
         if(ec)
             return fail(ec, "close");
+
+        // If we get here then the connection is closed gracefully
+
+        // The make_printable() function helps print a ConstBufferSequence
         std::cout << __func__ << std::endl;
     }
+
 private:
     tcp::resolver m_resolver;
     websocket::stream<beast::ssl_stream<beast::tcp_stream>> m_ws;
@@ -172,42 +164,38 @@ private:
     std::string m_text;
 };
 
-
+//------------------------------------------------------------------------------
 
 int main(int argc, char **argv) {
-    if(argc < 2 || argc > 2)
-    {
-        std::cout << "Invalid Arguements :";
-        std::cout << "\nExample:";
-        // std::cout << "\n\t" << argv[0] << " <target>";
-        std::cout << "\n\t" << argv[0] << " <symbols>";
-        // std::cout << "\n\t" << argv[0] << " /v1/marketdata/BTCUSD\n\t"<< argv[0] <<" /v1/marketdata/btcusd?top_of_book=true&bids=false\n";
-        std::cout << "\n\t" << argv[0] << " \\\"BTCUSD\\\",\\\"ETHUSD\\\",\\\"ETHBTC\\\"\n";
-        return -1;
-    }
+    // if(argc < 2 || argc > 2)
+    // {
+    //     std::cout << "Invalid Arguements :";
+    //     std::cout << "\nExample:";
+    //     std::cout << "\n\t" << argv[0] << " <Symbols>";
+    //     std::cout << "\n\t" << argv[0] << " \"\\\"BTC-USD\\\", \\\"ETH-USD\\\"\"\n";
+    //     return -1;
+    // }
     // Check command line arguments.
-    auto const host = "api.gemini.com";
+    auto const host = "api.hitbtc.com";
     auto const port = "443";
-    char const* symbol = argv[1];
     std::ostringstream oss;
-    /*
-    ----------subscription msg
-    {\"type\": \"subscribe\",\"subscriptions\":[{\"name\":\"l2\",\"symbols\":[\"BTCUSD\",\"ETHUSD\",\"ETHBTC\"]}]}
-    {"type":"subscribe","subscriptions":[{"name":"l2","symbols":["BTCUSD"]}]}
-    */
-    oss << "{\"type\":\"subscribe\",\"subscriptions\":[{\"name\":\"l2\",\"symbols\":[" << argv[1] << "]}]}";
+    oss << "{\"method\":\"subscribe\",\"ch\":\"trades\",\"params\":{\"symbols\":[\"ETHBTC\",\"BTCUSDT\"]},\"id\":123}";
+
     std::cout << __func__ << ": " << oss.str() << std::endl;
-  
+
+    // The io_context is required for all I/O
     net::io_context ioc;
 
     // The SSL context is required, and holds certificates
     ssl::context ctx{ssl::context::tlsv12_client};
 
-    // std::make_shared<Session>(ioc, ctx)->run(host, port, target);
+    // Launch the asynchronous operation
+    // std::cout << text << std::endl;
     std::make_shared<Session>(ioc, ctx)->run(host, port, oss.str().c_str());
 
+    // Run the I/O service. The call will return when
+    // the socket is closed.
     ioc.run();
-    
 
     return EXIT_SUCCESS;
 }

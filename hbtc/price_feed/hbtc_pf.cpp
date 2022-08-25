@@ -22,8 +22,11 @@ using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
 
 
 /*
+api.hitbtc.com/api/3/ws/public
+
 ----------subscription msg
-{\"type\": \"subscribe\",\"subscriptions\":[{\"name\":\"l2\",\"symbols\":[\"BTCUSD\",\"ETHUSD\",\"ETHBTC\"]}]}
+{\"method\":\"subscribe\",\"ch\":\"orderbook/top/1000ms\",\"params\":{\"symbols\":[\"ETHBTC\",\"BTCUSDT\"]},\"id\":123}
+{"method":"subscribe","ch":"orderbook/top/1000ms","params":{"symbols":["ETHBTC","BTCUSDT"]},"id":123}
 */
 
 void fail(beast::error_code ec, char const* what) {
@@ -37,13 +40,12 @@ public:
         :m_resolver(net::make_strand(ioc)),
         m_ws(net::make_strand(ioc), ctx) {
     }
-
-    
     // void run( char const* host, char const* port, char const* target) {
     void run( char const* host, char const* port, char const* msg) {
         std::cout << "Listener:" << __func__ << std::endl;
         m_host = host;
         m_text = msg;
+        // m_target = target;
         // Look up the domain name
         m_resolver.async_resolve(host,port,beast::bind_front_handler(&Session::on_resolve, shared_from_this()));
     }
@@ -98,14 +100,14 @@ public:
         }));
 
         // Perform the websocket handshake
-        m_ws.async_handshake(m_host, "/v2/marketdata", beast::bind_front_handler(&Session::on_handshake, shared_from_this()));
+        m_ws.async_handshake(m_host, "/api/3/ws/public", beast::bind_front_handler(&Session::on_handshake, shared_from_this()));
+        // m_ws.async_handshake(m_host, m_target, beast::bind_front_handler(&Session::on_handshake, shared_from_this()));
     }
 
     // void on_handshake(beast::error_code ec) {
     //     std::cout << "Listener:" << __func__ << std::endl;
     //     if(ec)
     //         return fail(ec, "handshake");
-
     //     m_ws.async_read(m_buffer, beast::bind_front_handler(&Session::on_read, shared_from_this()));
     // }
         void on_handshake(beast::error_code ec) {
@@ -114,49 +116,36 @@ public:
             return fail(ec, "handshake");
 
         // Send the message
-        m_ws.async_write(net::buffer(m_text), beast::bind_front_handler(&Session::on_write,shared_from_this()));
+        m_ws.async_write(net::buffer(m_text), beast::bind_front_handler(&Session::on_write, shared_from_this()));
     }
 
     void on_write(beast::error_code ec,std::size_t bytes_transferred) {
         std::cout << "Listener:" << __func__ << std::endl;
         boost::ignore_unused(bytes_transferred);
-
         if(ec)
             return fail(ec, "write");
-
         // Read a message into our buffer
         m_ws.async_read(m_buffer, beast::bind_front_handler(&Session::on_read, shared_from_this()));
     }
+
     void on_read(beast::error_code ec,std::size_t bytes_transferred) {
         // std::cout << __func__ << ": bytes: " << bytes_transferred << std::endl;
-
         boost::ignore_unused(bytes_transferred);
-
         if(ec)
             return fail(ec, "read");
-
-        // The make_printable() function helps print a ConstBufferSequence
         std::ostringstream oss;
         oss << beast::make_printable(m_buffer.data());
         std::cout << __func__ << "-" << ": " << oss.str() << std::endl;
-        // Document doc;
-        // doc.Parse(oss.str().c_str());
-        // std::string type = doc["type"].GetString();
-        // if(strcmp(type.c_str(), "trade") == 0) {
-        //     ParseTrades(oss.str());
-        // } 
-        // else if(strcmp(type.c_str(), "l2update") == 0) {
-        //     ParseL2update(oss.str());
-        // }  
-        // else if(strcmp(type.c_str(), "auction_indicative") == 0) {
-        //     ParseEvents(oss.str());
-        // }
-        // ParseV2Marketdata(oss.str());
+        Document doc;
+        doc.Parse(oss.str().c_str());
+        std::string type = doc["ch"].GetString();
+        if(strcmp(type.c_str(), "trades") == 0) {
+            parseTrade(oss.str());
+        } 
+
         // Clear the buffer
         m_buffer.consume(m_buffer.size());
         m_ws.async_read(m_buffer, beast::bind_front_handler(&Session::on_read, shared_from_this()));
-        // Clear the buffer
-        // m_buffer.consume(m_buffer.size());
     }
     void on_close(beast::error_code ec) {
         std::cout << "Listener:" << __func__ << std::endl;
@@ -170,32 +159,33 @@ private:
     beast::flat_buffer m_buffer;
     std::string m_host;
     std::string m_text;
+    // std::string m_target;
 };
 
 
 
 int main(int argc, char **argv) {
-    if(argc < 2 || argc > 2)
-    {
-        std::cout << "Invalid Arguements :";
-        std::cout << "\nExample:";
-        // std::cout << "\n\t" << argv[0] << " <target>";
-        std::cout << "\n\t" << argv[0] << " <symbols>";
-        // std::cout << "\n\t" << argv[0] << " /v1/marketdata/BTCUSD\n\t"<< argv[0] <<" /v1/marketdata/btcusd?top_of_book=true&bids=false\n";
-        std::cout << "\n\t" << argv[0] << " \\\"BTCUSD\\\",\\\"ETHUSD\\\",\\\"ETHBTC\\\"\n";
-        return -1;
-    }
+    // if(argc < 2 || argc > 2)
+    // {
+    //     std::cout << "Invalid Arguements :";
+    //     std::cout << "\nExample:";
+    //     // std::cout << "\n\t" << argv[0] << " <target>";
+    //     // std::cout << "\n\t" << argv[0] << " <symbols>";
+    //     // std::cout << "\n\t" << argv[0] << "";
+    //     // std::cout << "\n\t" << argv[0] << " \\\"BTCUSD\\\",\\\"ETHUSD\\\",\\\"ETHBTC\\\"\n";
+    //     return -1;
+    // }
     // Check command line arguments.
-    auto const host = "api.gemini.com";
+    auto const host = "api.hitbtc.com";
     auto const port = "443";
-    char const* symbol = argv[1];
+    // auto const target = argv[1];
+    // char const* symbol = argv[1];
     std::ostringstream oss;
     /*
     ----------subscription msg
-    {\"type\": \"subscribe\",\"subscriptions\":[{\"name\":\"l2\",\"symbols\":[\"BTCUSD\",\"ETHUSD\",\"ETHBTC\"]}]}
-    {"type":"subscribe","subscriptions":[{"name":"l2","symbols":["BTCUSD"]}]}
+    {\"method\":\"subscribe\",\"ch\":\"orderbook/top/1000ms\",\"params\":{\"symbols\":[\"ETHBTC\",\"BTCUSDT\"]},\"id\":123}
     */
-    oss << "{\"type\":\"subscribe\",\"subscriptions\":[{\"name\":\"l2\",\"symbols\":[" << argv[1] << "]}]}";
+    oss << "{\"method\":\"subscribe\",\"ch\":\"trades\",\"params\":{\"symbols\":[\"ETHBTC\",\"BTCUSDT\"]},\"id\":123}";
     std::cout << __func__ << ": " << oss.str() << std::endl;
   
     net::io_context ioc;

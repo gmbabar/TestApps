@@ -15,27 +15,27 @@ using namespace rapidjson;
 {"type":"change","reason":"initial","price":"24023.96","delta":"0.3","remaining":"0.3","side":"ask"}]}
 */
 
-void ParseV1MarketData(const char* json) {
+// void ParseV1MarketData(const char* json) {
 
-    Document doc;
-    doc.Parse(json);
-    std::cout << "type :" << doc["type"].GetString() << std::endl;
-    std::cout << "eventId :" << doc["eventId"].GetInt64() << std::endl;
-    std::cout << "socket_sequence :" << doc["socket_sequence"].GetInt() << std::endl;
-    std::cout << "events : [" ;
-    auto eventsArr = doc["events"].GetArray();
-    for (size_t idx = 0; idx < eventsArr.Size(); idx++) {   
-        auto &val = eventsArr[idx];
-        if (val.IsObject()) {
-            std::cout << "side :" << val["side"].GetString() << std::endl;
-            std::cout << "price :" << val["price"].GetString() << std::endl; 
-            std::cout << "delta :" << val["delta"].GetString() << std::endl;
-            std::cout << "reason :" << val["reason"].GetString() << std::endl;
-        }
-    }
-    std::cout << " ]" << std::endl;
+//     Document doc;
+//     doc.Parse(json);
+//     std::cout << "type :" << doc["type"].GetString() << std::endl;
+//     std::cout << "eventId :" << doc["eventId"].GetInt64() << std::endl;
+//     std::cout << "socket_sequence :" << doc["socket_sequence"].GetInt() << std::endl;
+//     std::cout << "events : [" ;
+//     auto eventsArr = doc["events"].GetArray();
+//     for (size_t idx = 0; idx < eventsArr.Size(); idx++) {   
+//         auto &val = eventsArr[idx];
+//         if (val.IsObject()) {
+//             std::cout << "side :" << val["side"].GetString() << std::endl;
+//             std::cout << "price :" << val["price"].GetString() << std::endl; 
+//             std::cout << "delta :" << val["delta"].GetString() << std::endl;
+//             std::cout << "reason :" << val["reason"].GetString() << std::endl;
+//         }
+//     }
+//     std::cout << " ]" << std::endl;
 
-}
+// }
 
 /*
 ----------------TradeV1
@@ -43,29 +43,29 @@ void ParseV1MarketData(const char* json) {
 "events": [{"type": "trade","tid": 5375547515,"price": "3632.54","amount": "0.1362819142","makerSide": "ask"}]}
 */
 
-void ParseTrade(const char* json) {
+// void ParseTrade(const char* json) {
 
-    Document doc;
-    doc.Parse(json);
-    std::cout << "type :" << doc["type"].GetString() << std::endl;
-    std::cout << "eventId :" << doc["eventId"].GetInt64() << std::endl;
-    std::cout << "timestamp :" << doc["timestamp"].GetInt64() << std::endl;
-    std::cout << "socket_sequence :" << doc["socket_sequence"].GetInt() << std::endl;
-    std::cout << "events : [" ;
-    auto eventsArr = doc["events"].GetArray();
-    for (size_t idx = 0; idx < eventsArr.Size(); idx++) {   
-        auto &val = eventsArr[idx];
-        if (val.IsObject()) {
-            std::cout << "type :" << val["type"].GetString() << std::endl;
-            std::cout << "tid :" << val["tid"].GetInt64() << std::endl;
-            std::cout << "price :" << val["price"].GetString() << std::endl;
-            std::cout << "amount :" << val["amount"].GetString() << std::endl;
-            std::cout << "makerSide :" << val["makerSide"].GetString() << std::endl;        
-        }
-    }
-    std::cout << " ]" ;
+//     Document doc;
+//     doc.Parse(json);
+//     std::cout << "type :" << doc["type"].GetString() << std::endl;
+//     std::cout << "eventId :" << doc["eventId"].GetInt64() << std::endl;
+//     std::cout << "timestamp :" << doc["timestamp"].GetInt64() << std::endl;
+//     std::cout << "socket_sequence :" << doc["socket_sequence"].GetInt() << std::endl;
+//     std::cout << "events : [" ;
+//     auto eventsArr = doc["events"].GetArray();
+//     for (size_t idx = 0; idx < eventsArr.Size(); idx++) {   
+//         auto &val = eventsArr[idx];
+//         if (val.IsObject()) {
+//             std::cout << "type :" << val["type"].GetString() << std::endl;
+//             std::cout << "tid :" << val["tid"].GetInt64() << std::endl;
+//             std::cout << "price :" << val["price"].GetString() << std::endl;
+//             std::cout << "amount :" << val["amount"].GetString() << std::endl;
+//             std::cout << "makerSide :" << val["makerSide"].GetString() << std::endl;        
+//         }
+//     }
+//     std::cout << " ]" ;
 
-}
+// }
 
 /*
 --------------Not in use currently
@@ -97,8 +97,7 @@ std::string GetType(const char* json) {
 
 */
 
-
-inline void ParseV2MarketData(const std::string& json) {
+inline void ParseL2update(const std::string& json) {
     Document document;
     document.Parse(json.c_str());
     std::cout << "type: " << document["type"].GetString() << std::endl;
@@ -116,7 +115,12 @@ inline void ParseV2MarketData(const std::string& json) {
         std::cout << "\b]" << std::endl;
     }
     std::cout << "]" << std::endl;
-    var = document["trades"].GetArray();
+}
+
+inline void ParseTrades(const std::string& json) {
+    Document document;
+    document.Parse(json.c_str());
+    auto var = document["trades"].GetArray();
     std::cout << "trades : [" << std::endl;
     for (int idx=0; idx<var.Size(); ++idx) {
         auto &arrVal = var[idx];
@@ -130,7 +134,12 @@ inline void ParseV2MarketData(const std::string& json) {
         }
     }
     std::cout << " ]" << std::endl;
-    var = document["auction_events"].GetArray();
+}
+
+inline void ParseEvents(const std::string& json) {
+    Document document;
+    document.Parse(json.c_str());
+    auto var = document["auction_events"].GetArray();
     std::cout << "auction_events : [" << std::endl;
     for (int idx=0; idx<var.Size(); ++idx) {
         auto &arrVal = var[idx];
@@ -146,7 +155,74 @@ inline void ParseV2MarketData(const std::string& json) {
     std::cout << " ]" << std::endl;
 }
 
+inline void ParseV2Marketdata(const std::string& json) {
+    Document document;
+    document.Parse(json.c_str());
+    if(document["type"].IsString()){
+        std::cout << "type: " << document["type"].GetString() << std::endl;
+        std::cout << "symbol: " << document["symbol"].GetString() << std::endl;
+        auto var = document["changes"].GetArray();
+        std::cout << "changes : [" << std::endl;
+        for (SizeType i = 0; i < var.Size(); i++) {
+            auto arrVal = var[i].GetArray();
+            std::cout << "[";
+            for(SizeType i = 0; i < arrVal.Size(); i++)
+            {
+                auto val = arrVal[i].GetString();
+                std::cout << val << ",";
+            }
+            std::cout << "\b]" << std::endl;
+        }
+        std::cout << "]" << std::endl;
+    }
+    if(document["trades"].IsArray()) {
+        auto var = document["trades"].GetArray();
+        std::cout << "trades : [" << std::endl;
+        for (int idx=0; idx<var.Size(); ++idx) {
+            auto &arrVal = var[idx];
+            if (arrVal.IsObject()) {
+                std::cout << "type: " << arrVal["type"].GetString() << std::endl;
+                std::cout << "symbol: " << arrVal["symbol"].GetString() << std::endl;
+                std::cout << "event_id: " << arrVal["event_id"].GetInt64() << std::endl;
+                std::cout << "side: " << arrVal["side"].GetString() << std::endl;
+                std::cout << "price: " << arrVal["price"].GetString() << std::endl;
+                std::cout << "quantity: " << arrVal["quantity"].GetString() << std::endl;
+            }
+        }
+        std::cout << " ]" << std::endl;
+    }
+    if(document["auction_events"].IsArray()) { 
+        auto var = document["auction_events"].GetArray();
+        std::cout << "auction_events : [" << std::endl;
+        for (int idx=0; idx<var.Size(); ++idx) {
+            auto &arrVal = var[idx];
+            if (arrVal.IsObject()) {
+                std::cout << "type: " << arrVal["type"].GetString() << std::endl;
+                std::cout << "symbol: " << arrVal["symbol"].GetString() << std::endl;
+                std::cout << "time_ms: " << arrVal["time_ms"].GetInt64() << std::endl;
+                std::cout << "result: " << arrVal["result"].GetString() << std::endl;
+                std::cout << "highest_bid_price: " << arrVal["highest_bid_price"].GetString() << std::endl;
+                std::cout << "lowest_ask_price: " << arrVal["lowest_ask_price"].GetString() << std::endl;
+            }
+        }
+        std::cout << " ]" << std::endl;
+    }
+    if(document["type"].IsString()){
+        std::cout << "type: " << document["type"].GetString() << std::endl;
+        std::cout << "symbol: " << document["symbol"].GetString() << std::endl;
+        auto var = document["changes"].GetArray();
+        std::cout << "changes : [" << std::endl;
+        for (SizeType i = 0; i < var.Size(); i++) {
+            auto arrVal = var[i].GetArray();
+            std::cout << "[";
+            for(SizeType i = 0; i < arrVal.Size(); i++)
+            {
+                auto val = arrVal[i].GetString();
+                std::cout << val << ",";
+            }
+            std::cout << "\b]" << std::endl;
+        }
+        std::cout << "]" << std::endl;
+    }
+}
 
-
-
-   
