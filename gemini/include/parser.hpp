@@ -268,11 +268,13 @@ inline void ParseL2updateSs(const std::string& json) {
             break;
         }
         std::string innerArr = arr.substr(firstPos, secondPos-firstPos+1);
+        int size = innerArr.size();
         int comma = innerArr.find("\",");
         int ncomma = innerArr.find("\",",comma+1);
         side = innerArr.substr(2, comma-2); 
-        price = innerArr.substr(comma+3, (innerArr.size() - innerArr.find("\"", ncomma))-3); 
-        amount = innerArr.substr(ncomma+3, (innerArr.size() - innerArr.find("\"", ncomma+2))-3);
+        // price = innerArr.substr(comma+3, (size-innerArr.find("\"", comma+1))); 
+        price = innerArr.substr(comma+3, (ncomma-comma)-3); 
+        amount = innerArr.substr(ncomma+3, (size - innerArr.find("\"", ncomma+2))-3);
         std::cout << side <<"|"<< price << "| " << amount << std::endl;
         // std::cout << side <<","<< price << ", " << amount << std::endl;
     }
