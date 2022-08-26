@@ -207,22 +207,73 @@ inline void ParseV2Marketdata(const std::string& json) {
         }
         std::cout << " ]" << std::endl;
     }
-    if(document["type"].IsString()){
-        std::cout << "type: " << document["type"].GetString() << std::endl;
-        std::cout << "symbol: " << document["symbol"].GetString() << std::endl;
-        auto var = document["changes"].GetArray();
-        std::cout << "changes : [" << std::endl;
-        for (SizeType i = 0; i < var.Size(); i++) {
-            auto arrVal = var[i].GetArray();
-            std::cout << "[";
-            for(SizeType i = 0; i < arrVal.Size(); i++)
-            {
-                auto val = arrVal[i].GetString();
-                std::cout << val << ",";
-            }
-            std::cout << "\b]" << std::endl;
-        }
-        std::cout << "]" << std::endl;
-    }
+    // if(document["type"].IsString()){
+    //     std::cout << "type: " << document["type"].GetString() << std::endl;
+    //     std::cout << "symbol: " << document["symbol"].GetString() << std::endl;
+    //     auto var = document["changes"].GetArray();
+    //     std::cout << "changes : [" << std::endl;
+    //     for (SizeType i = 0; i < var.Size(); i++) {
+    //         auto arrVal = var[i].GetArray();
+    //         std::cout << "[";
+    //         for(SizeType i = 0; i < arrVal.Size(); i++)
+    //         {
+    //             auto val = arrVal[i].GetString();
+    //             std::cout << val << ",";
+    //         }
+    //         std::cout << "\b]" << std::endl;
+    //     }
+    //     std::cout << "]" << std::endl;
+    // }
 }
 
+
+
+/*
+-------l2-update
+{"type":"l2_updates","symbol":"BTCUSD","changes":[["buy","21440.73","0"],["buy","21427.95","0.2"],["buy","21440.74","0.00402665"],
+["sell","21468.93","0"],["sell","40861.60","0"],["sell","21468.09","0"],["sell","21465.09","1"],["sell","21459.01","0.425"],
+["sell","21464.73","0"],["sell","21468.96","0.00311346"]]}
+*/
+/*
+------To-fix
+["buy","21423.42","0.11669471"]
+
+buy,21423.42","0.11669471, 1423.42","0.11669471
+*/
+
+inline void ParseL2updateSs(const std::string& json) {
+    int firstPos = 0;
+    int secondPos = 0;
+    std::string price;
+    std::string amount;
+    std::string side;
+    int start = json.find("\"type\"");
+    start = json.find(":", start);
+    int stop  = json.find("\",", start);
+    std::cout << json.substr(start+2, stop-start-2) << std::endl;
+    start = json.find("\"symbol\"");
+    start = json.find(":", start);
+    stop  = json.find("\",", start);
+    std::cout << json.substr(start+2, stop-start-2) << std::endl;
+    start = json.find("\"changes\"");
+    start = json.find(":", start);
+    stop  = json.find("]],", start);
+    std::string arr = json.substr(start+1, stop-start+1);
+    std::cout << "changes : " << arr << std::endl;
+    while (true) {
+        /* code */
+        firstPos = arr.find("[", firstPos+1);
+        secondPos = arr.find("]", secondPos+1);
+        if(firstPos == std::string::npos || secondPos == std::string::npos || secondPos == arr.size()-1) {
+            break;
+        }
+        std::string innerArr = arr.substr(firstPos, secondPos-firstPos+1);
+        int comma = innerArr.find("\",");
+        int ncomma = innerArr.find("\",",comma+1);
+        side = innerArr.substr(2, comma-2); 
+        price = innerArr.substr(comma+3, (innerArr.size() - innerArr.find("\"", ncomma))-3); 
+        amount = innerArr.substr(ncomma+3, (innerArr.size() - innerArr.find("\"", ncomma+2))-3);
+        std::cout << side <<"|"<< price << "| " << amount << std::endl;
+        // std::cout << side <<","<< price << ", " << amount << std::endl;
+    }
+}
