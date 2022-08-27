@@ -315,48 +315,48 @@ inline void ParseTradesSs(const std::string&json) {
             break;
         }
         std::string innerArr = arr.substr(firstPos, secondPos-firstPos+1);
-
         int size = innerArr.size();
-        start = json.find("\"type\"");
-        start = json.find(":\"trade\"", start);
-        stop  = json.find("\",", start);
-        std::cout << json.substr(start+2, stop-start-2) << std::endl;
+        std::cout << innerArr << std::endl;
+        start = innerArr.find("\"type\"");
+        start = innerArr.find(":\"trade\"", start);
+        stop  = innerArr.find("\",", start);
+        std::cout << innerArr.substr(start+2, stop-start-2) << std::endl;
         // type = json.substr(start+2, stop-start-2);
 
-        start = json.find("\"symbol\"");
-        start = json.find(":", start);
-        stop  = json.find("\",", start);
-        std::cout << json.substr(start+2, stop-start-2) << std::endl;
+        start = innerArr.find("\"symbol\"");
+        start = innerArr.find(":", start);
+        stop  = innerArr.find("\",", start);
+        std::cout << innerArr.substr(start+2, stop-start-2) << std::endl;
         // symbol = json.substr(start+2, stop-start-2);
 
-        start = json.find("\"event_id\"");
-        start = json.find(":", start);
-        stop  = json.find(",", start);
-        std::cout << json.substr(start+1, stop-start-1) << std::endl;
+        start = innerArr.find("\"event_id\"");
+        start = innerArr.find(":", start);
+        stop  = innerArr.find(",", start);
+        std::cout << innerArr.substr(start+1, stop-start-1) << std::endl;
         // event_id = json.substr(start+1, stop-start-1);
 
-        start = json.find("\"timestamp\"");
-        start = json.find(":", start);
-        stop  = json.find(",", start);
-        std::cout << json.substr(start+1, stop-start-1) << std::endl;
+        start = innerArr.find("\"timestamp\"");
+        start = innerArr.find(":", start);
+        stop  = innerArr.find(",", start);
+        std::cout << innerArr.substr(start+1, stop-start-1) << std::endl;
         // timestamp = json.substr(start+1, stop-start-1);
 
-        start = json.find("\"price\"");
-        start = json.find(":", start);
-        stop  = json.find("\",", start);
-        std::cout << json.substr(start+2, stop-start-2) << std::endl;
+        start = innerArr.find("\"price\"");
+        start = innerArr.find(":", start);
+        stop  = innerArr.find("\",", start);
+        std::cout << innerArr.substr(start+2, stop-start-2) << std::endl;
         // price = json.substr(start+2, stop-start-2);
 
-        start = json.find("\"quantity\"");
-        start = json.find(":", start);
-        stop  = json.find("\",", start);
-        std::cout << json.substr(start+2, stop-start-2) << std::endl;
+        start = innerArr.find("\"quantity\"");
+        start = innerArr.find(":", start);
+        stop  = innerArr.find("\",", start);
+        std::cout << innerArr.substr(start+2, stop-start-2) << std::endl;
         // quantity = json.substr(start+2, stop-start-2);
 
-        start = json.find("\"side\"");
-        start = json.find(":", start);
-        stop  = json.find("\"}", start);
-        std::cout << json.substr(start+2, stop-start-2) << std::endl;
+        start = innerArr.find("\"side\"");
+        start = innerArr.find(":", start);
+        stop  = innerArr.find("\"}", start);
+        std::cout << innerArr.substr(start+2, stop-start-2) << std::endl;
         // side = json.substr(start+2, stop-start-2);
         // std::cout << type <<"| "<< symbol<< "| " << event_id << "| " << timestamp <<"| "<< price << "| " << quantity <<"| "<< side << std::endl;
     }
@@ -388,46 +388,47 @@ inline void ParseEventsSs(const std::string&json) {
         }
         std::string innerArr = arr.substr(firstPos, secondPos-firstPos+1);
         int size = innerArr.size();
-        start = json.find("\"type\"");
-        start = json.find(":\"auction", start);
-        stop  = json.find("\",", start);
-        std::cout << json.substr(start+2, stop-start-2) << std::endl;
+        std::cout << innerArr << std::endl;
+        start = innerArr.find("\"type\"");
+        start = innerArr.find(":\"auction", start);
+        stop  = innerArr.find("\",", start);
+        std::cout << innerArr.substr(start+2, stop-start-2) << std::endl;
         // type = json.substr(start+2, stop-start-2);
 
-        start = json.find("\"symbol\"");
-        start = json.find(":", start);
-        stop  = json.find("\",", start);
-        std::cout << json.substr(start+2, stop-start-2) << std::endl;
+        start = innerArr.find("\"symbol\"");
+        start = innerArr.find(":", start);
+        stop  = innerArr.find("\",", start);
+        std::cout << innerArr.substr(start+2, stop-start-2) << std::endl;
         // symbol = json.substr(start+2, stop-start-2);
 
-        start = json.find("\"time_ms\"");
-        start = json.find(":", start);
-        stop  = json.find(",", start);
-        std::cout << json.substr(start+1, stop-start-1) << std::endl;
+        start = innerArr.find("\"time_ms\"");
+        start = innerArr.find(":", start);
+        stop  = innerArr.find(",", start);
+        std::cout << innerArr.substr(start+1, stop-start-1) << std::endl;
         // timestamp = json.substr(start+1, stop-start-1);
 
-        start = json.find("\"result\"");
-        start = json.find(":", start);
-        stop  = json.find("\",", start);
-        std::cout << json.substr(start+2, stop-start-2) << std::endl;
+        start = innerArr.find("\"result\"");
+        start = innerArr.find(":", start);
+        stop  = innerArr.find("\",", start);
+        std::cout << innerArr.substr(start+2, stop-start-2) << std::endl;
         // result = json.substr(start+2, stop-start-2);
 
-        start = json.find("\"highest_bid_price\"");
-        start = json.find(":", start);
-        stop  = json.find("\",", start);
-        std::cout << json.substr(start+2, stop-start-2) << std::endl;
+        start = innerArr.find("\"highest_bid_price\"");
+        start = innerArr.find(":", start);
+        stop  = innerArr.find("\",", start);
+        std::cout << innerArr.substr(start+2, stop-start-2) << std::endl;
         // highest_bid_price = json.substr(start+2, stop-start-2);
 
-        start = json.find("\"lowest_ask_price\"");
-        start = json.find(":", start);
-        stop  = json.find("\",", start);
-        std::cout << json.substr(start+2, stop-start-2) << std::endl;
+        start = innerArr.find("\"lowest_ask_price\"");
+        start = innerArr.find(":", start);
+        stop  = innerArr.find("\",", start);
+        std::cout << innerArr.substr(start+2, stop-start-2) << std::endl;
         // lowest_ask_price = json.substr(start+2, stop-start-2);
 
-        start = json.find("\"collar_price\"");
-        start = json.find(":", start);
-        stop  = json.find("\"}", start);
-        std::cout << json.substr(start+2, stop-start-2) << std::endl;
+        start = innerArr.find("\"collar_price\"");
+        start = innerArr.find(":", start);
+        stop  = innerArr.find("\"}", start);
+        std::cout << innerArr.substr(start+2, stop-start-2) << std::endl;
         // collar_price = json.substr(start+2, stop-start-2);
         // std::cout << type <<"| "<< symbol<< "| " << timestamp <<"| "<< result << "| " << highest_bid_price <<"| "<<lowest_ask_price <<"| "<< collar_price << std::endl;
     }
