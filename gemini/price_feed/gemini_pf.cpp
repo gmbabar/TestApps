@@ -10,6 +10,7 @@
 #include <memory>
 #include <string>
 #include "../include/parser.hpp"
+// #include "../include/bufrange.hpp"
 
 
 namespace beast = boost::beast;         // from <boost/beast.hpp>
@@ -139,19 +140,23 @@ public:
         std::ostringstream oss;
         oss << beast::make_printable(m_buffer.data());
         std::cout << __func__ << "-" << ": " << oss.str() << std::endl;
-        // Document doc;
-        // doc.Parse(oss.str().c_str());
-        // std::string type = doc["type"].GetString();
+        Document doc;
+        doc.Parse(oss.str().c_str());
+        std::string type = doc["type"].GetString();
         // if(strcmp(type.c_str(), "trade") == 0) {
         //     ParseTrades(oss.str());
         // } 
-        // else if(strcmp(type.c_str(), "l2update") == 0) {
-        //     ParseL2update(oss.str());
-        // }  
+        if(strcmp(type.c_str(), "l2_updates") == 0) {
+            // std::cout << "----if-----" << std::endl;
+            // ParseL2update(oss.str());
+            // ParseL2updateSs(oss.str());
+            ParseV2MarketdataSs(oss.str());
+
+        }  
         // else if(strcmp(type.c_str(), "auction_indicative") == 0) {
         //     ParseEvents(oss.str());
         // }
-        // ParseV2Marketdata(oss.str());
+        // ParseV2MarketdataSs(oss.str());
         // Clear the buffer
         m_buffer.consume(m_buffer.size());
         m_ws.async_read(m_buffer, beast::bind_front_handler(&Session::on_read, shared_from_this()));
