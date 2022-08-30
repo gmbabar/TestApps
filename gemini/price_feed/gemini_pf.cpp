@@ -143,20 +143,26 @@ public:
         Document doc;
         doc.Parse(oss.str().c_str());
         std::string type = doc["type"].GetString();
-        // if(strcmp(type.c_str(), "trade") == 0) {
-        //     ParseTrades(oss.str());
-        // } 
-        if(strcmp(type.c_str(), "l2_updates") == 0) {
-            // std::cout << "----if-----" << std::endl;
-            // ParseL2update(oss.str());
-            // ParseL2updateSs(oss.str());
-            ParseV2MarketdataSs(oss.str());
+        switch(count) {
+            case 0:
+                if(strcmp(type.c_str(), "l2_updates") == 0)
+                    ParseV2MarketdataSs(oss.str());
+                count++;
+                break;
+            case 1:
+                if(strcmp(type.c_str(), "trade") == 0)
+                    ParseTradeSs(oss.str()); 
+                if(strcmp(type.c_str(), "l2_updates") == 0) {
+                    ParseL2updateSs(oss.str());
+                }  
+                else if((strcmp(type.c_str(), "auction_indicative") == 0)||(strcmp(type.c_str(), "auction_result")) == 0) {
+                    ParseEventsSs(oss.str());
+                }
+                break;
+            default:
+                break;
+        }
 
-        }  
-        // else if(strcmp(type.c_str(), "auction_indicative") == 0) {
-        //     ParseEvents(oss.str());
-        // }
-        // ParseV2MarketdataSs(oss.str());
         // Clear the buffer
         m_buffer.consume(m_buffer.size());
         m_ws.async_read(m_buffer, beast::bind_front_handler(&Session::on_read, shared_from_this()));
@@ -175,6 +181,7 @@ private:
     beast::flat_buffer m_buffer;
     std::string m_host;
     std::string m_text;
+    int count = 0;
 };
 
 
