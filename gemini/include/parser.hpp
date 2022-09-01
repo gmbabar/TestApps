@@ -19,7 +19,7 @@ using namespace Parse::data;
 */
 
 
-inline void ParseL2update(const std::string& json) {
+inline void slowParseL2update(const std::string& json) {
     Document document;
     document.Parse(json.c_str());
     std::cout << "type: " << document["type"].GetString() << std::endl;
@@ -43,7 +43,7 @@ inline void ParseL2update(const std::string& json) {
 {"type": "trade","symbol": "BTCUSD","event_id": 3575573053,“timestamp”: 151231241,"price": "9004.21000000","quantity": "0.09110000","side": "buy"}
 */
 
-inline void ParseTrades(const std::string& json) {
+inline void slowParseTrade(const std::string& json) {
     Document document;
     document.Parse(json.c_str());
 
@@ -68,7 +68,7 @@ inline void ParseTrades(const std::string& json) {
 "highest_bid_price":"21228.83","lowest_ask_price":"21234.33","collar_price":"21231.58"}]}
 
 */
-inline void ParseV2Marketdata(const std::string& json) {
+inline void slowParseV2Marketdata(const std::string& json) {
     Document document;
     document.Parse(json.c_str());
     if(document["type"].IsString()){
@@ -88,7 +88,7 @@ inline void ParseV2Marketdata(const std::string& json) {
         }
         std::cout << "]" << std::endl;
     }
-    if(document["trades"].IsArray()) {
+    if(document.HasMember("trades")) {
         auto var = document["trades"].GetArray();
         std::cout << "trades : [" << std::endl;
         for (int idx=0; idx<var.Size(); ++idx) {
@@ -104,7 +104,7 @@ inline void ParseV2Marketdata(const std::string& json) {
         }
         std::cout << " ]" << std::endl;
     }
-    if(document["auction_events"].IsArray()) { 
+    if(document.HasMember("auction_events")) { 
         auto var = document["auction_events"].GetArray();
         std::cout << "auction_events : [" << std::endl;
         for (int idx=0; idx<var.Size(); ++idx) {
@@ -132,7 +132,7 @@ inline void ParseV2Marketdata(const std::string& json) {
 */
 
 
-inline void ParseL2updateSs(const std::string& json) {
+inline void fastParseL2update(const std::string& json) {
     int firstPos = 0;
     int secondPos = 0;
     const char *aBuf = json.c_str();
@@ -176,7 +176,7 @@ inline void ParseL2updateSs(const std::string& json) {
 }
 
 
-inline void ParseTradesSs(const std::string&json) {
+inline void fastParseTrades(const std::string&json) {
     int start = 0;
     int stop = 0;
     int firstPos = 0;
@@ -237,7 +237,7 @@ inline void ParseTradesSs(const std::string&json) {
     }
 }
 
-inline void ParseEventsSs(const std::string&json) {
+inline void fastParseAuction(const std::string&json) {
 
     int start = 0;
     int stop = 0;
@@ -303,7 +303,7 @@ inline void ParseEventsSs(const std::string&json) {
 {"type": "trade","symbol": "BTCUSD","event_id": 3575573053,“timestamp”: 151231241,"price": "9004.21000000","quantity": "0.09110000","side": "buy"}
 */
 
-inline void ParseTradeSs(const std::string& json) {
+inline void fastParseTrade(const std::string& json) {
     int start = 0;
     int stop = 0;
     int firstPos = 0;
@@ -360,12 +360,12 @@ inline void ParseTradeSs(const std::string& json) {
 "highest_bid_price":"21228.83","lowest_ask_price":"21234.33","collar_price":"21231.58"}]}
 */
 
-inline void ParseV2MarketdataSs(const std::string& json) {
+inline void fastParseV2Marketdata(const std::string& json) {
 
-    ParseL2updateSs(json);
+    fastParseL2update(json);
     if(json.find("trades")!=std::string::npos)
-        ParseTradesSs(json);
+        fastParseTrades(json);
     if(json.find("auction_events")!=std::string::npos)
-        ParseEventsSs(json);
+        fastParseAuction(json);
     
 }
