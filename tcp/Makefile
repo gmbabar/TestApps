@@ -4,7 +4,7 @@ CC = g++
 FLAGS = -g -I./ 
 LIBS = -lpthread
 
-objects = server client
+objects = server client jcx_md_simulator 
 
 all: $(objects)
 
