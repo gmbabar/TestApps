@@ -44,27 +44,51 @@ void PrintChild(boost::property_tree::ptree const& pt) {
     using boost::property_tree::ptree;
     ptree::const_iterator end = pt.end();
     int idx = 0;
+    std::string ccy;
+    std::string wType;
+    double avBalance;
     for (ptree::const_iterator it = pt.begin(); it != end; ++it) {
         if (it->second.begin() == it->second.end()) {
-            
-            std::cout << "values: " << it->second.get_value<std::string>() << std::endl;
-       
+            switch(idx) {
+                case 0:
+                    wType = it->second.get_value<std::string>();
+                    break;
+                case 1:
+                    ccy = it->second.get_value<std::string>();
+                    break;
+                case 4:
+                    avBalance = it->second.get_value<double>();
+                    break;
+                default:
+                    continue;
+            }
+            // std::cout << "values: " << it->second.get_value<std::string>() << std::endl;
             ++idx;
         } else {
             PrintChild(it->second);
         }
     }
     if (idx != 0) std::cout << std::endl;
+        std::cout << wType << " | " << ccy << " | " << avBalance << std::endl;
 
 } 
 
 void PrintTop(boost::property_tree::ptree const& pt) {
     using boost::property_tree::ptree;
     ptree::const_iterator end = pt.end();
+    std::string type;
+    int idx = 0;
     for (ptree::const_iterator it = pt.begin(); it != end; ++it) {
         if (it->second.begin() == it->second.end()) {
-            std::cout << "Channel: " << it->second.get_value<std::string>() << std::endl;
-            std::cout << std::endl;
+            switch(idx) {
+                case 1:
+                    type = it->second.get_value<std::string>();
+                    std::cout << type << std::endl;
+                    break;
+                default:
+                    continue;
+            }     
+            ++idx;       
         } else {
             PrintChild(it->second);
         }
