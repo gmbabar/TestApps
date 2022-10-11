@@ -3,9 +3,10 @@
 '''
 https://docs.python.org/3/library/asyncio-protocol.html
 '''
-import asyncio, json
-
+import asyncio
 import argparse
+import json
+import time
 
 # some helper functions.
 
@@ -49,13 +50,13 @@ def build_heartbeat(msgId) -> str:
 def build_helo(msgId) -> str:
     return json.dumps({"id":msgId,"type":"helo","clid":"clt123","exid":"DERI","init_data":"s"})
 
-def build_new_order(msgId) -> str:
-    return json.dumps({"id":msgId,"type":"ornw","ord_cl_id":"abcd1234","cl_account_id":"DERI","ord_type":"L",
+def build_new_order(msgId: str, clt_oid: str) -> str:
+    return json.dumps({"id":msgId,"type":"ornw","ord_cl_id":clt_oid,"cl_account_id":"DERI","ord_type":"L",
                       "symbol":"BTC-PERPETUAL","amount":100,"price":16500,"post_only":1,"hidden":0,
                       "trader_id":"trd123","strategy":"trex","tif":"GTC","min_amount":10})
 
-def build_cancel(msgId) -> str:
-    return json.dumps({"id":msgId,"type":"orcn","ord_cl_id":"abcd1234","ord_ex_id":"exchOid123","can_id":54321})
+def build_cancel(msgId: str, clt_oid: str) -> str:
+    return json.dumps({"id":msgId,"type":"orcn","ord_cl_id":clt_oid,"ord_ex_id":"exchOid123","can_id":54321})
 
 def build_pair_data(msgId) -> str:
     return json.dumps({"id":msgId,"type":"pdrq"})
@@ -86,10 +87,15 @@ class Ma2ClientProtocol(asyncio.Protocol):
     helo_recv = False
     pdrp_recv = False
     ornw_recv = False
+    orrj_recv = False
     oprp_recv = False
     blrp_recv = False
     orcn_recv = False
+    clrj_recv = False
+    orst_recv = False
     ack_recv = False
+    order_id = str(round(time.time()))
+    # order_id = 'fixed_1234'     # To test duplicate order_id, uncomment and run twice
 
     def __init__(self, on_con_lost):
         self.on_con_lost = on_con_lost
@@ -298,6 +304,10 @@ class Ma2ClientProtocol(asyncio.Protocol):
             error = "Missing 'ord_ex_id' in 'orcr' message"
             if error not in self.errors:
                 self.errors.append(error)
+        elif '@' not in json['ord_ex_id']:
+            error = "Invalid 'ord_ex_id' in 'orcr' message"
+            if error not in self.errors:
+                self.errors.append(error)
 
     # {
     #     "id"        	: <number>,
@@ -344,6 +354,10 @@ class Ma2ClientProtocol(asyncio.Protocol):
             error = "Missing 'ord_ex_id' in 'orst' message"
             if error not in self.errors:
                 self.errors.append(error)
+        elif '@' not in json['ord_ex_id']:
+            error = "Invalid 'ord_ex_id' in 'orst' message"
+            if error not in self.errors:
+                self.errors.append(error)
 
 
     # {
@@ -374,6 +388,10 @@ class Ma2ClientProtocol(asyncio.Protocol):
                 self.errors.append(error)
         if 'ord_ex_id' not in json:
             error = "Missing 'ord_ex_id' in 'ordn' message"
+            if error not in self.errors:
+                self.errors.append(error)
+        elif '@' not in json['ord_ex_id']:
+            error = "Invalid 'ord_ex_id' in 'ordn' message"
             if error not in self.errors:
                 self.errors.append(error)
         if 'can_id' not in json:
@@ -455,6 +473,10 @@ class Ma2ClientProtocol(asyncio.Protocol):
                 self.errors.append(error)
         if 'ord_ex_id' not in json:
             error = "Missing 'ord_ex_id' in 'clrj' message"
+            if error not in self.errors:
+                self.errors.append(error)
+        elif '@' not in json['ord_ex_id']:
+            error = "Invalid 'ord_ex_id' in 'clrj' message"
             if error not in self.errors:
                 self.errors.append(error)
         if 'reason' not in json:
@@ -564,6 +586,10 @@ class Ma2ClientProtocol(asyncio.Protocol):
                     error = "Missing 'ord_ex_id' in 'oprp' message"
                     if error not in self.errors:
                         self.errors.append(error)
+                elif '@' not in order['ord_ex_id']:
+                    error = "Invalid 'ord_ex_id' in 'oprp' message"
+                    if error not in self.errors:
+                        self.errors.append(error)
                 if 'cl_id' not in order:
                     error = "Missing 'cl_id' in 'oprp' message"
                     if error not in self.errors:
@@ -636,6 +662,10 @@ class Ma2ClientProtocol(asyncio.Protocol):
             error = "Missing 'ord_ex_id' in 'trex' message"
             if error not in self.errors:
                 self.errors.append(error)
+        elif '@' not in json['ord_ex_id']:
+            error = "Invalid 'ord_ex_id' in 'trex' message"
+            if error not in self.errors:
+                self.errors.append(error)
         if 'symbol' not in json:
             error = "Missing 'symbol' in 'trex' message"
             if error not in self.errors:
@@ -660,6 +690,14 @@ class Ma2ClientProtocol(asyncio.Protocol):
             error = "Missing 'fee_currency' in 'trex' message"
             if error not in self.errors:
                 self.errors.append(error)
+        if 'bals' not in json:
+            error = "Missing 'bals' in 'trex' message"
+            if error not in self.errors:
+                self.errors.append(error)
+        if 'bals_ex' not in json:
+            error = "Missing 'bals_ex' in 'trex' message"
+            if error not in self.errors:
+                self.errors.append(error)
 
 
     def connection_made(self, transport):
@@ -677,14 +715,16 @@ class Ma2ClientProtocol(asyncio.Protocol):
                 self.errors.append(newline_error)
         if msg_str.find('}{'):
             msg_str = msg_str.replace('}{', '}\n{')
-        msgs = msg_str.split('\n')
+        msgs = msg_str.strip().split('\n')
         for msg in msgs:
             print(f'Received: {msg}')
 
             try:
                 json_data = json.loads(msg)
             except:
-                self.errors.append(f"_Critical: Malformed json msg received {msg}")                
+                error = f"_Critical: Malformed json msg received {msg}"
+                if error not in self.errors:
+                    self.errors.append(error)
                 return
 
             if 'type' not in json_data:
@@ -754,20 +794,42 @@ class Ma2ClientProtocol(asyncio.Protocol):
             
             if self.ornw_sent:
                 if json_data['type'] == 'ack':
-                    self.ornw_recv = True
                     self.ack_recv = True
                     self.parse_ack(json_data)
-                elif json_data['type'] and not self.ack_recv:
-                    self.errors.append("No Ack Received For New Order")
                 elif json_data['type'] == 'orcr':
                     self.ornw_recv = True
                     self.parse_order_created(json_data)
                 elif json_data['type'] == 'orrj':
+                    self.orrj_recv = True
                     self.parse_order_reject(json_data)
                 else:
                     self.errors.append("No Order Creation Message Received For New Order")
-            elif not self.ornw_sent and (json_data['type'] == 'ack' or json_data['type'] == 'orrj'):
-                self.errors.append("Received New Order Without Request")
+            elif json_data['type'] == 'orcr':
+                self.warnings.append("Received New Order (orcr) For Unknown Order")
+            elif json_data['type'] == 'orrj':
+                self.warnings.append("Received Order Reject (orrj) For Unknown Order")
+
+            if self.orcn_sent:
+                if json_data['type'] == 'ack':
+                    self.ack_recv = True
+                    self.parse_ack(json_data)
+                elif json_data['type'] == 'orst':
+                    self.orst_recv = True
+                    self.parse_order_status(json_data)
+                elif json_data['type'] == 'ordn':
+                    self.orcn_recv = True
+                    self.parse_order_done(json_data)
+                elif json_data['type'] == 'clrj':
+                    self.clrj_recv = True
+                    self.parse_order_done(json_data)
+                else:
+                    self.errors.append("No Cancel Order Response Received")
+            elif json_data['type'] == 'orst':
+                self.warnings.append("Received Order State (orst) For Unknown Order")
+            elif json_data['type'] == 'ordn':
+                self.warnings.append("Received Order Done (ordn) For Unknown Order")
+            elif json_data['type'] == 'clrj':
+                self.warnings.append("Received Cancel Reject (clrj) For Unknown Order")
 
 
     def connection_lost(self, exc):
@@ -806,14 +868,19 @@ class Ma2ClientProtocol(asyncio.Protocol):
             self.pdrq_sent = True
         elif self.pdrq_sent:
             self.pdrq_sent = False
-            self.message = build_new_order(self.msgId)
             if not self.pdrp_recv:
                 self.errors.append("No Pair Data Report Received")
+            self.message = build_new_order(self.msgId, self.order_id)
             self.ornw_sent = True
         elif self.ornw_sent:
             self.ornw_sent = False
-            if not self.ornw_recv:
-                self.errors.append("No New Order Created")
+            if self.orrj_recv:
+                self.warnings.append("New order got rejected.")
+            else:
+                if not self.ack_recv:
+                    self.errors.append("No Ack Received For New Order")
+                if not self.ornw_recv:
+                    self.errors.append("No New Order Created")
             self.message = build_open_orders(self.msgId)
             self.oprq_sent = True
         elif self.oprq_sent:
@@ -821,15 +888,23 @@ class Ma2ClientProtocol(asyncio.Protocol):
             if not self.oprp_recv:
                 self.errors.append("No Open Order Report Received")
             if self.ornw_recv:
-                self.message = build_cancel(self.msgId)
+                self.message = build_cancel(self.msgId, self.order_id)
                 self.orcn_sent = True
+                self.ack_recv = False
             else:   # cancel n/a, so move next to balance request
                 self.message = build_balance_req(self.msgId)
                 self.blrq_sent = True
         elif self.orcn_sent:
             self.orcn_sent = False
-            if not self.orcn_recv:
-                self.errors.append("No Order Cancel Message Received For orcn")
+            if self.clrj_recv:
+                self.warnings.append("Cancel order got rejected.")
+            else:
+                if not self.ack_recv:
+                    self.errors.append("No Ack Received For Cancel (orcn)")
+                if not self.orst_recv:
+                    self.errors.append("No Order State Received For Cancel (orcn)")
+                if not self.orcn_recv:
+                    self.errors.append("No Order Done Received For Cancel (orcn)")
             self.message = build_balance_req(self.msgId)
             self.blrq_sent = True
         elif self.blrq_sent:
