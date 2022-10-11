@@ -7,27 +7,63 @@ import asyncio, json
 
 import argparse
 
-def build_heartbeat(msgId):
+# some helper functions.
+
+def check_type_int(json_data, value) -> bool:
+    if value not in json_data:
+        return False
+    if type(json_data[value]) != int:
+        return False
+    return True
+
+def check_type_str(json_data, value) -> bool:
+    if value not in json_data:
+        return False
+    if type(json_data[value]) != str:
+        return False
+    return True
+
+def check_type_number_in_string(json_data, value) -> bool:
+    if not check_type_str(json_data, value):
+        return False
+    try:
+        int(json_data[value])
+    except:
+        return False
+    return True
+
+def validate_number_range(number, min, max) -> bool:
+    if number < min or number > max:
+        return False
+    return True
+
+def validate_string_values(token, acceptable_values) -> bool:
+    if token not in acceptable_values:
+        return False
+    return True
+
+
+def build_heartbeat(msgId) -> str:
     return json.dumps({"id":msgId,"type":"hrbt"})
 
-def build_helo(msgId):
+def build_helo(msgId) -> str:
     return json.dumps({"id":msgId,"type":"helo","clid":"clt123","exid":"DERI","init_data":"s"})
 
-def build_new_order(msgId):
+def build_new_order(msgId) -> str:
     return json.dumps({"id":msgId,"type":"ornw","ord_cl_id":"abcd1234","cl_account_id":"DERI","ord_type":"L",
                       "symbol":"BTC-PERPETUAL","amount":100,"price":16500,"post_only":1,"hidden":0,
                       "trader_id":"trd123","strategy":"trex","tif":"GTC","min_amount":10})
 
-def build_cancel(msgId):
+def build_cancel(msgId) -> str:
     return json.dumps({"id":msgId,"type":"orcn","ord_cl_id":"abcd1234","ord_ex_id":"exchOid123","can_id":54321})
 
-def build_pair_data(msgId):
+def build_pair_data(msgId) -> str:
     return json.dumps({"id":msgId,"type":"pdrq"})
 
-def build_open_orders(msgId):
+def build_open_orders(msgId) -> str:
     return json.dumps({"id":msgId,"type":"oprq"})
 
-def build_balance_req(msgId):
+def build_balance_req(msgId) -> str:
     return json.dumps({"id": msgId,"type":"blrq"})
 
 TIMEOUT = 1 #seconds.
@@ -35,6 +71,7 @@ TIMEOUT = 1 #seconds.
 class Ma2ClientProtocol(asyncio.Protocol):
     msgId = 0
     errors = []
+    warnings = []
     appl_init = True
     helo_sent = False
     hrbt_sent = False
@@ -55,14 +92,11 @@ class Ma2ClientProtocol(asyncio.Protocol):
     ack_recv = False
 
     def __init__(self, on_con_lost):
-        # self.message = build_helo(self.msgId)
-        # self.helo_sent = True
         self.on_con_lost = on_con_lost
         self.loop = asyncio.get_running_loop()
         self.timeout_handle = self.loop.call_later(
             TIMEOUT, self._timeout,
         )
-
 
     # {
     #   "id"    : <number>,
@@ -75,10 +109,16 @@ class Ma2ClientProtocol(asyncio.Protocol):
     def parse_exch_status(self, json):
         exid = json['exid']
         if exid.upper() != "DERI":
-            self.errors.append("Invalid Exchange ID Received In 'exid' (hello reponse)")
+            self.errors.append(f"Invalid Exchange ID Received In 'exid', expected 'DERI', received '{exid}'")
         code = json['code']
-        if int(code) > 3 or int(code) < 0:
-            self.errors.append("Invalid Code Received In 'exid' (hello response)")
+        if check_type_number_in_string(json, 'code'):
+            code = int(code)
+        else:
+            self.errors.append(f"Invalid 'code' type In 'exid', expected type: number-in-string, received: {type(code)} - {code}")
+            if not check_type_int(json, 'code'):
+                return
+        if code > 3 or code < 0:
+            self.errors.append(f"Invalid 'code' Received In 'exid', expected: 0 - 3, received: {code}")
 
     # {
     #   "id"              : <number>,
@@ -105,32 +145,528 @@ class Ma2ClientProtocol(asyncio.Protocol):
     #     ]
     # }
     def parse_pair_data(self, json):
+        if 'id' not in json:
+            error = "Missing 'id' in pairs data (pdrp)"
+            if error not in self.errors:
+                self.errors.append(error)
+        if 'exid' not in json:
+            error = "Missing 'exid' in pairs data (pdrp)"
+            if error not in self.errors:
+                self.errors.append(error)
+        if 'pairs' not in json:
+            error = "Missing 'pairs' in pairs data (pdrp)"
+            if error not in self.errors:
+                self.errors.append(error)
+        if not check_type_number_in_string(json, 'id'):
+            error = f"Invalid 'id' type in pairs data (pdrp), expected: number-in-string, received: {type(json['id'])}"
+            if error not in self.errors:
+                self.errors.append(error)
         exid = json['exid']
         pairs = json['pairs']
         if exid.upper() != "DERI":
-            self.errors.append("Invalid Exchange ID Received In Helo")
+            self.errors.append(f"Invalid exchange ID {exid} received in pairs data (pdrp)")
+        symbols = set()
+        for pair_data in pairs:
+            if 'base_curr' not in pair_data:
+                error = "Missing 'base_curr' in pairs data (pdrp)"
+                if error not in self.errors:
+                    self.errors.append(error)
+            if 'quote_curr' not in pair_data:
+                error = "Missing 'quote_curr' in pairs data (pdrp)"
+                if error not in self.errors:
+                    self.errors.append(error)
+            if 'tick_size' not in pair_data:
+                error = "Missing 'tick_size' in pairs data (pdrp)"
+                if error not in self.errors:
+                    self.errors.append(error)
+            if 'mult' not in pair_data:
+                error = "Missing 'mult' in pairs data (pdrp)"
+                if error not in self.errors:
+                    self.errors.append(error)
+            if 'trading_symbol' not in pair_data:
+                error = "Missing 'trading_symbol' in pairs data (pdrp)"
+                if error not in self.errors:
+                    self.errors.append(error)
+                continue
+            trading_symbol = pair_data['trading_symbol']
+            if not check_type_str(pair_data, 'trading_symbol'):
+                error = f"Invalid 'trading_symbol' type {type(trading_symbol)} in pairs data (pdrp)"
+                if error not in self.errors:
+                    self.errors.append(error)
+                continue
+            if trading_symbol in symbols:
+                error = 'Duplicate symbol ' + trading_symbol
+                if error not in self.errors:
+                    self.errors.append(error)
+            symbols.add(pair_data['trading_symbol'])
         print(f'Received {len(pairs)} Pairs In PairData Report')
 
 
+    # {
+    #     "id"    : <number>,
+    #     "type"  : "ack",
+    #     "ts"    : <number>,
+    #     "refid" : <number>
+    # }
     def parse_ack(self, json):
-        pass
+        if 'id' not in json:
+            error = "Missing 'id' in 'ack' message"
+            if error not in self.errors:
+                self.errors.append(error)
+        if not check_type_number_in_string(json, 'id'):
+            error = f"Invalid 'id' type in 'ack', expected: number-in-string, received: {type(json['id'])}"
+            if error not in self.errors:
+                self.errors.append(error)
+        if 'ts' not in json:
+            error = "Missing 'ts' in 'ack' message"
+            if error not in self.errors:
+                self.errors.append(error)
+        if 'refid' not in json:
+            error = "Missing 'id' in 'ack' message"
+            if error not in self.errors:
+                self.errors.append(error)
 
+
+    # {
+    #     "id"    : <number>,
+    #     "type"  : "err",
+    #     "ts"    : <number>,
+    #     "refid" : <number>,
+    #     "code"  : <number>,
+    #     "msg"   : <string>
+    # }
+    def parse_error(self, json):
+        if 'id' not in json:
+            error = "Missing 'id' in 'err' message"
+            if error not in self.errors:
+                self.errors.append(error)
+        if not check_type_number_in_string(json, 'id'):
+            error = f"Invalid 'id' type in 'err' msg, expected: number-in-string, received: {type(json['id'])}"
+            if error not in self.errors:
+                self.errors.append(error)
+        if 'ts' not in json:
+            error = "Missing 'ts' in 'err' message"
+            if error not in self.errors:
+                self.errors.append(error)
+        if 'refid' not in json:
+            error = "Missing 'id' in 'err' message"
+            if error not in self.errors:
+                self.errors.append(error)
+
+
+    # {
+    #     "id"        	: <number>,
+    #     "type"      	: "orcr",
+    #     "ts"          : <number>,
+    #     "ord_cl_id" 	: <string>,
+    #     "ord_ex_id" 	: <string>,
+    #     "cl_id"       : <string>,
+    #     "symbol"      : <string>,
+    #     "amount"    	: <number>,
+    #     "price"     	: <number>
+    # }
     def parse_order_created(self, json):
-        pass
+        if 'id' not in json:
+            error = "Missing 'id' in 'orcr' message"
+            if error not in self.errors:
+                self.errors.append(error)
+        if not check_type_number_in_string(json, 'id'):
+            error = f"Invalid 'id' type in 'orcr' msg, expected: number-in-string, received: {type(json['id'])}"
+            if error not in self.errors:
+                self.errors.append(error)
+        if 'ts' not in json:
+            error = "Missing 'ts' in 'orcr' message"
+            if error not in self.errors:
+                self.errors.append(error)
+        if 'symbol' not in json:
+            error = "Missing 'symbol' in 'orcr' message"
+            if error not in self.errors:
+                self.errors.append(error)
+        if 'amount' not in json:
+            error = "Missing 'amount' in 'orcr' message"
+            if error not in self.errors:
+                self.errors.append(error)
+        if 'price' not in json:
+            error = "Missing 'price' in 'orcr' message"
+            if error not in self.errors:
+                self.errors.append(error)
+        if 'ord_cl_id' not in json:
+            error = "Missing 'ord_cl_id' in 'orcr' message"
+            if error not in self.errors:
+                self.errors.append(error)
+        if 'ord_ex_id' not in json:
+            error = "Missing 'ord_ex_id' in 'orcr' message"
+            if error not in self.errors:
+                self.errors.append(error)
 
+    # {
+    #     "id"        	: <number>,
+    #     "type"      	: "orst",
+    #     "ts"          : <number>,
+    #     "ord_cl_id" 	: <string>,
+    #     "ord_ex_id" 	: <string>,
+    #     "status"    	: <string>,
+    #     "symbol"      : <string>,
+    #     "amount"    	: <number>,
+    #     "price"     	: <number>,
+    #     "status_text"	: <string>
+    # }
+    def parse_order_status(self, json):
+        if 'id' not in json:
+            error = "Missing 'id' in 'orst' message"
+            if error not in self.errors:
+                self.errors.append(error)
+        if not check_type_number_in_string(json, 'id'):
+            error = f"Invalid 'id' type in 'orst' msg, expected: number-in-string, received: {type(json['id'])}"
+            if error not in self.errors:
+                self.errors.append(error)
+        if 'ts' not in json:
+            error = "Missing 'ts' in 'orst' message"
+            if error not in self.errors:
+                self.errors.append(error)
+        if 'symbol' not in json:
+            error = "Missing 'symbol' in 'orst' message"
+            if error not in self.errors:
+                self.errors.append(error)
+        if 'amount' not in json:
+            error = "Missing 'amount' in 'orst' message"
+            if error not in self.errors:
+                self.errors.append(error)
+        if 'price' not in json:
+            error = "Missing 'price' in 'orst' message"
+            if error not in self.errors:
+                self.errors.append(error)
+        if 'ord_cl_id' not in json:
+            error = "Missing 'ord_cl_id' in 'orst' message"
+            if error not in self.errors:
+                self.errors.append(error)
+        if 'ord_ex_id' not in json:
+            error = "Missing 'ord_ex_id' in 'orst' message"
+            if error not in self.errors:
+                self.errors.append(error)
+
+
+    # {
+    #     "id"        	: <number>,
+    #     "type"      	: "ordn",
+    #     "ts"          : <number>,
+    #     "ord_cl_id" 	: <string>,
+    #     "ord_ex_id" 	: <string>,
+    #     "symbol"      : <string>,
+    #     "can_id"      : <number>
+    # }
+    def parse_order_done(self, json):
+        if 'id' not in json:
+            error = "Missing 'id' in 'ordn' message"
+            if error not in self.errors:
+                self.errors.append(error)
+        if not check_type_number_in_string(json, 'id'):
+            error = f"Invalid 'id' type in 'ordn' msg, expected: number-in-string, received: {type(json['id'])}"
+            if error not in self.errors:
+                self.errors.append(error)
+        if 'ts' not in json:
+            error = "Missing 'ts' in 'ordn' message"
+            if error not in self.errors:
+                self.errors.append(error)
+        if 'ord_cl_id' not in json:
+            error = "Missing 'ord_cl_id' in 'ordn' message"
+            if error not in self.errors:
+                self.errors.append(error)
+        if 'ord_ex_id' not in json:
+            error = "Missing 'ord_ex_id' in 'ordn' message"
+            if error not in self.errors:
+                self.errors.append(error)
+        if 'can_id' not in json:
+            error = "Missing 'can_id' in 'ordn' message"
+            if error not in self.errors:
+                self.errors.append(error)
+
+
+    # {
+    #     "id"        	: <number>,
+    #     "type"      	: "orrj",
+    #     "ts"          : <number>,
+    #     "ord_cl_id" 	: <number>,
+    #     "symbol"      : <string>,
+    #     "reason"      : <string>,
+    #     "code"        : <string>
+    # }
     def parse_order_reject(self, json):
-        pass
+        if 'id' not in json:
+            error = "Missing 'id' in 'orrj' message"
+            if error not in self.errors:
+                self.errors.append(error)
+        if not check_type_number_in_string(json, 'id'):
+            error = f"Invalid 'id' type in 'orrj' msg, expected: number-in-string, received: {type(json['id'])}"
+            if error not in self.errors:
+                self.errors.append(error)
+        if 'ts' not in json:
+            error = "Missing 'ts' in 'orrj' message"
+            if error not in self.errors:
+                self.errors.append(error)
+        if 'ord_cl_id' not in json:
+            error = "Missing 'ord_cl_id' in 'orrj' message"
+            if error not in self.errors:
+                self.errors.append(error)
+        if 'symbol' not in json:
+            error = "Missing 'symbol' in 'orrj' message"
+            if error not in self.errors:
+                self.errors.append(error)
+        if 'reason' not in json:
+            error = "Missing 'reason' in 'orrj' message"
+            if error not in self.errors:
+                self.errors.append(error)
+        if 'reason' not in json:
+            error = "Missing 'reason' in 'orrj' message"
+            if error not in self.errors:
+                self.errors.append(error)
+        if 'code' not in json:
+            error = "Missing 'code' in 'orrj' message"
+            if error not in self.errors:
+                self.errors.append(error)
 
+
+    # {
+    #     "id"        	: <number>,
+    #     "type"      	: "clrj",
+    #     "ts"          : <number>,
+    #     "ord_cl_id" 	: <string>,
+    #     "ord_ex_id" 	: <string>,
+    #     "reason"      : <string>,
+    #     "can_id"      : <number>,
+    #     "code"        : <string>
+    # }
+    def parse_cancel_reject(self, json):
+        if 'id' not in json:
+            error = "Missing 'id' in 'clrj' message"
+            if error not in self.errors:
+                self.errors.append(error)
+        if not check_type_number_in_string(json, 'id'):
+            error = f"Invalid 'id' type in 'clrj' msg, expected: number-in-string, received: {type(json['id'])}"
+            if error not in self.errors:
+                self.errors.append(error)
+        if 'ts' not in json:
+            error = "Missing 'ts' in 'clrj' message"
+            if error not in self.errors:
+                self.errors.append(error)
+        if 'ord_cl_id' not in json:
+            error = "Missing 'ord_cl_id' in 'clrj' message"
+            if error not in self.errors:
+                self.errors.append(error)
+        if 'ord_ex_id' not in json:
+            error = "Missing 'ord_ex_id' in 'clrj' message"
+            if error not in self.errors:
+                self.errors.append(error)
+        if 'reason' not in json:
+            error = "Missing 'reason' in 'clrj' message"
+            if error not in self.errors:
+                self.errors.append(error)
+        if 'can_id' not in json:
+            error = "Missing 'can_id' in 'clrj' message"
+            if error not in self.errors:
+                self.errors.append(error)
+        if 'code' not in json:
+            error = "Missing 'code' in 'clrj' message"
+            if error not in self.errors:
+                self.errors.append(error)
+
+
+    # {
+    #     "id"         : <number>,
+    #     "type"       : "blrp",
+    #     "ts"         : <number>,
+    #     "account_id" : <number>,
+    #     "bals"    : [{ <curr1> : <number> },...],
+    #     "bals_ex" : { { <curr1> : {<name1> : <value1>,...}, ...}, ...}
+    # }
     def parse_balance_report(self, json):
-        pass
+        if 'id' not in json:
+            error = "Missing 'id' in 'blrp' message"
+            if error not in self.errors:
+                self.errors.append(error)
+        if not check_type_number_in_string(json, 'id'):
+            error = f"Invalid 'id' type in 'blrp' msg, expected: number-in-string, received: {type(json['id'])}"
+            if error not in self.errors:
+                self.errors.append(error)
+        if 'ts' not in json:
+            error = "Missing 'ts' in 'blrp' message"
+            if error not in self.errors:
+                self.errors.append(error)
+        if 'account_id' not in json:
+            error = "Missing 'account_id' in 'blrp' message"
+            if error not in self.errors:
+                self.errors.append(error)
+        if 'bals' not in json:
+            error = "Missing 'bals' in 'blrp' message"
+            if error not in self.errors:
+                self.errors.append(error)
 
+
+    # {
+    #     "id"              : <number>,
+    #     "type"            : "oprp",
+    #     "ts"              : <number>,
+    #     "exid"            : <string>,
+    #     "account_id"      : <number>,
+    #     "open_orders"     : <number>,
+    #     "orders"          :
+    #     [
+    #     {
+    #         "ord_ex_id"      : <string>,
+    #         "cl_id"          : <string>,
+    #         "symbol"         : <string>,
+    #         "status"         : <string>,
+    #         "orig_amount"    : <string>,
+    #         "curr_amount"    : <string>,
+    #         "price"          : <string>,
+    #         "client_id"      : <string>
+    #     },
+    #     ...
+    #     ]
+    # }
     def parse_open_order_report(self, json):
-        pass
+        if 'id' not in json:
+            error = "Missing 'id' in 'oprp' message"
+            if error not in self.errors:
+                self.errors.append(error)
+        if not check_type_number_in_string(json, 'id'):
+            error = f"Invalid 'id' type in 'oprp' msg, expected: number-in-string, received: {type(json['id'])}"
+            if error not in self.errors:
+                self.errors.append(error)
+        if 'ts' not in json:
+            error = "Missing 'ts' in 'oprp' message"
+            if error not in self.errors:
+                self.errors.append(error)
+        if 'account_id' not in json:
+            error = "Missing 'account_id' in 'oprp' message"
+            if error not in self.errors:
+                self.errors.append(error)
+        if 'orders' not in json:
+            error = "Missing 'orders' in 'oprp' message"
+            if error not in self.errors:
+                self.errors.append(error)
+        if 'open_orders' not in json:
+            error = "Missing 'open_orders' in 'oprp' message"
+            if error not in self.errors:
+                self.errors.append(error)
+        elif not check_type_number_in_string(json, 'open_orders'):
+            error = f"Invalid 'open_orders' type in 'oprp' msg, expected: number-in-string, received: {type(json['open_orders'])}"
+            if error not in self.errors:
+                self.errors.append(error)
+        elif int(json['open_orders']) > 0:
+            orders = json['orders']
+            if int(json['open_orders']) != len(orders):
+                error = "Mismatched 'open_orders' count with 'order' array in 'oprp' message"
+                if error not in self.errors:
+                    self.errors.append(error)
+            for order in orders:
+                if 'ord_ex_id' not in order:
+                    error = "Missing 'ord_ex_id' in 'oprp' message"
+                    if error not in self.errors:
+                        self.errors.append(error)
+                if 'cl_id' not in order:
+                    error = "Missing 'cl_id' in 'oprp' message"
+                    if error not in self.errors:
+                        self.errors.append(error)
+                if 'symbol' not in order:
+                    error = "Missing 'symbol' in 'oprp' message"
+                    if error not in self.errors:
+                        self.errors.append(error)
+                if 'status' not in order:
+                    error = "Missing 'status' in 'oprp' message"
+                    if error not in self.errors:
+                        self.errors.append(error)
+                if 'orig_amount' not in order:
+                    error = "Missing 'orig_amount' in 'oprp' message"
+                    if error not in self.errors:
+                        self.errors.append(error)
+                if 'curr_amount' not in order:
+                    error = "Missing 'curr_amount' in 'oprp' message"
+                    if error not in self.errors:
+                        self.errors.append(error)
+                if 'price' not in order:
+                    error = "Missing 'price' in 'oprp' message"
+                    if error not in self.errors:
+                        self.errors.append(error)
+                if 'client_id' not in order:
+                    warning = "Missing 'client_id' in 'oprp' message"
+                    if warning not in self.warnings:
+                        self.warnings.append(warning)
+
+
+
+    # {
+    #     "id"            : <number>,
+    #     "type"          : "trex",
+    #     "ts"            : <number>,
+    #     "exec_id"       : <number>,
+    #     "ord_cl_id"     : <string>,
+    #     "ord_ex_id"     : <string>,
+    #     "symbol"        : <string>,
+    #     "amount"        : <number>,
+    #     "price"         : <number>,
+    #     "liquidity"     : <string>,
+    #     "fee"           : <string>,
+    #     "fee_currency"  : <string>,
+    #     "bals"    : [{ <curr1> : <number> },...],
+    #     "bals_ex" : { { <curr1> : {<name1> : <value1>,...}, ...}, ...}
+    # }
+    def parse_trace_execution(self, json):
+        if 'id' not in json:
+            error = "Missing 'id' in 'trex' message"
+            if error not in self.errors:
+                self.errors.append(error)
+        if not check_type_number_in_string(json, 'id'):
+            error = f"Invalid 'id' type in 'trex' msg, expected: number-in-string, received: {type(json['id'])}"
+            if error not in self.errors:
+                self.errors.append(error)
+        if 'ts' not in json:
+            error = "Missing 'ts' in 'trex' message"
+            if error not in self.errors:
+                self.errors.append(error)
+        if 'exec_id' not in json:
+            error = "Missing 'exec_id' in 'trex' message"
+            if error not in self.errors:
+                self.errors.append(error)
+        if 'ord_cl_id' not in json:
+            error = "Missing 'ord_cl_id' in 'trex' message"
+            if error not in self.errors:
+                self.errors.append(error)
+        if 'ord_ex_id' not in json:
+            error = "Missing 'ord_ex_id' in 'trex' message"
+            if error not in self.errors:
+                self.errors.append(error)
+        if 'symbol' not in json:
+            error = "Missing 'symbol' in 'trex' message"
+            if error not in self.errors:
+                self.errors.append(error)
+        if 'amount' not in json:
+            error = "Missing 'amount' in 'trex' message"
+            if error not in self.errors:
+                self.errors.append(error)
+        if 'price' not in json:
+            error = "Missing 'price' in 'trex' message"
+            if error not in self.errors:
+                self.errors.append(error)
+        if 'liquidity' not in json:
+            error = "Missing 'liquidity' in 'trex' message"
+            if error not in self.errors:
+                self.errors.append(error)
+        if 'fee' not in json:
+            error = "Missing 'fee' in 'trex' message"
+            if error not in self.errors:
+                self.errors.append(error)
+        if 'fee_currency' not in json:
+            error = "Missing 'fee_currency' in 'trex' message"
+            if error not in self.errors:
+                self.errors.append(error)
+
 
     def connection_made(self, transport):
         print('Connection made.')
         self.transport = transport
         # self._send_msg()
+
 
     def data_received(self, data):
         msg_str = data.decode()
@@ -141,13 +677,44 @@ class Ma2ClientProtocol(asyncio.Protocol):
                 self.errors.append(newline_error)
         if msg_str.find('}{'):
             msg_str = msg_str.replace('}{', '}\n{')
-        msgs = (msg_str.strip()).split('\n')
-        for ele in msgs:
-            print(f'Received: {ele}')
+        msgs = msg_str.split('\n')
+        for msg in msgs:
+            print(f'Received: {msg}')
 
-            json_data = json.loads(ele)
+            try:
+                json_data = json.loads(msg)
+            except:
+                self.errors.append(f"_Critical: Malformed json msg received {msg}")                
+                return
+
+            if 'type' not in json_data:
+                self.errors.append("_Critical: Missing 'type' in received MA2 message.")                
+                return
+
             if self.appl_init:
-                self.errors.append("'" + json_data['type'] + "' received even before 'helo' message")
+                self.errors.append("Message '" + json_data['type'] + "' received even before 'helo' message")
+                if json_data['type'] == 'exst':
+                    self.parse_exch_status(json_data)
+                elif json_data['type'] == 'blrp':
+                    self.parse_balance_report(json_data)
+                elif json_data['type'] == 'pdrp':
+                    self.parse_pair_data(json_data)
+                elif json_data['type'] == 'ack':
+                    self.parse_ack(json_data)
+                elif json_data['type'] == 'orcr':
+                    self.parse_order_created(json_data)
+                elif json_data['type'] == 'orst':
+                    self.parse_order_status(json_data)
+                elif json_data['type'] == 'ordn':
+                    self.parse_order_done(json_data)
+                elif json_data['type'] == 'orrj':
+                    self.parse_order_reject(json_data)
+                elif json_data['type'] == 'clrj':
+                    self.parse_cancel_reject(json_data)
+                elif json_data['type'] == 'oprp':
+                    self.parse_open_order_report(json_data)
+                elif json_data['type'] == 'trex':
+                    self.parse_trace_execution(json_data)
                 return
 
             if json_data['type'] == 'exst':
@@ -208,13 +775,20 @@ class Ma2ClientProtocol(asyncio.Protocol):
         self.on_con_lost.set_result(True)
         if len(self.errors) != 0:
             print(f"-> \33[31mFound {len(self.errors)} Errors \U0001F61F")
+            self.errors.sort()
             for errors in self.errors:
                 print(f'\t{errors}')
+        if len(self.warnings) != 0:
+            print(f"-> \33[33mFound {len(self.warnings)} Warnings \U0001F61F")
+            self.warnings.sort()
+            for warning in self.warnings:
+                print(f'\t{warning}')
         else:
             print("-> \33[32mNo Errors Were Found \U0001F60A")
 
+
     def _timeout(self):
-        print('Timeout invoked.')
+        print('Timeout invoked, sending next mesg.')
         self.msgId +=1
         if self.appl_init:  # first message.
             self.message = build_helo(self.msgId)
@@ -286,7 +860,7 @@ class Ma2ClientProtocol(asyncio.Protocol):
 def init_argparse() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description='Test client for MA2 deribit implementation')
     # '-h' is reserved for help by argparse package, so '-s' is forced choice for host/server
-    parser.add_argument('-s', '--host', help='server (host) name or ip address of MA2 server', required=True)
+    parser.add_argument('-s', '--host', help='server (host) name or ip address for MA2 server', required=True)
     parser.add_argument('-p', '--port', help='port number for MA2 server', required=True, type=int)
     # args = vars(parser.parse_args())
     return parser
@@ -315,5 +889,7 @@ async def main() -> None:
     finally:
         transport.close()
 
-asyncio.run(main())
+
+if __name__ == '__main__':
+    asyncio.run(main())
 
