@@ -73,6 +73,7 @@ class Ma2ClientProtocol(asyncio.Protocol):
     msgId = 0
     errors = []
     warnings = []
+    # poor man's state-machine
     appl_init = True
     helo_sent = False
     hrbt_sent = False
@@ -81,7 +82,6 @@ class Ma2ClientProtocol(asyncio.Protocol):
     oprq_sent = False
     blrq_sent = False
     orcn_sent = False
-
     all_sent = False
 
     helo_recv = False
@@ -101,7 +101,7 @@ class Ma2ClientProtocol(asyncio.Protocol):
         self.on_con_lost = on_con_lost
         self.loop = asyncio.get_running_loop()
         self.timeout_handle = self.loop.call_later(
-            TIMEOUT, self._timeout,
+            TIMEOUT, self._send_next,
         )
 
     # {
@@ -849,7 +849,7 @@ class Ma2ClientProtocol(asyncio.Protocol):
             print("-> \33[32mNo Errors Were Found \U0001F60A")
 
 
-    def _timeout(self):
+    def _send_next(self):
         print('Timeout invoked, sending next mesg.')
         self.msgId +=1
         if self.appl_init:  # first message.
@@ -922,7 +922,7 @@ class Ma2ClientProtocol(asyncio.Protocol):
         self._send_msg()
         # setup timeout
         self.timeout_handle = self.loop.call_later(
-            TIMEOUT, self._timeout,
+            TIMEOUT, self._send_next,
         )
 
     def _send_msg(self) -> None:
