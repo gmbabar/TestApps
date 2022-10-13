@@ -46,4 +46,5 @@ order = {
 }
 r = requests.post(api_url + 'orders', json=order, auth=auth)
 data = r.json()
-print(f"Created A {data['side']} Order Of {data['price']}@{data['size']}, ID = {data['id']}")
+# print(f"Created A {data['side']} Order Of {data['price']}@{data['size']}, ID = {data['id']}")
+print (f'data: {data}')

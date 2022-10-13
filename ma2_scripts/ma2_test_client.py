@@ -113,18 +113,35 @@ class Ma2ClientProtocol(asyncio.Protocol):
     #   "msg"   : <string>
     # }
     def parse_exch_status(self, json):
-        exid = json['exid']
-        if exid.upper() != "DERI":
-            self.errors.append(f"Invalid Exchange ID Received In 'exid', expected 'DERI', received '{exid}'")
+        if 'id' not in json:
+            error = "Missing 'id' in exchange state (exst)"
+            if error not in self.errors:
+                self.errors.append(error)
+        if 'exid' not in json:
+            error = "Missing 'exid' in exchange state (exst)"
+            if error not in self.errors:
+                self.errors.append(error)
+        else:
+            exid = json['exid']
+            if exid.upper() != "DERI":
+                self.errors.append(f"Invalid Exchange ID 'exid' exchange state (exst)', expected 'DERI', received '{exid}'")
+        if not check_type_number_in_string(json, 'id'):
+            error = f"Invalid 'id' type in exchange state (exst), expected: number-in-string, received: {type(json['id'])}"
+            if error not in self.errors:
+                self.errors.append(error)
+        if 'code' not in json:
+            error = "Missing 'code' in exchange state (exst)"
+            if error not in self.errors:
+                self.errors.append(error)
         code = json['code']
         if check_type_number_in_string(json, 'code'):
             code = int(code)
         else:
-            self.errors.append(f"Invalid 'code' type In 'exid', expected type: number-in-string, received: {type(code)} - {code}")
+            self.errors.append(f"Invalid 'code' type In 'exst', expected type: number-in-string, received: {type(code)} - {code}")
             if not check_type_int(json, 'code'):
                 return
         if code > 3 or code < 0:
-            self.errors.append(f"Invalid 'code' Received In 'exid', expected: 0 - 3, received: {code}")
+            self.errors.append(f"Invalid 'code' Received In 'exst', expected: 0 - 3, received: {code}")
 
     # {
     #   "id"              : <number>,
@@ -132,7 +149,7 @@ class Ma2ClientProtocol(asyncio.Protocol):
     #   "ts"              : <number>,
     #   "exid"            : <string>,
     #   "pairs"           :
-    #     [
+    #    [
     #       {
     #         "base_curr"      : <string>,
     #         "quote_curr"     : <string>,
@@ -148,7 +165,7 @@ class Ma2ClientProtocol(asyncio.Protocol):
     #         "exp_date"       : <string>
     #       },
     #       ...
-    #     ]
+    #    ]
     # }
     def parse_pair_data(self, json):
         if 'id' not in json:
@@ -308,6 +325,7 @@ class Ma2ClientProtocol(asyncio.Protocol):
             error = "Invalid 'ord_ex_id' in 'orcr' message"
             if error not in self.errors:
                 self.errors.append(error)
+
 
     # {
     #     "id"        	: <number>,
