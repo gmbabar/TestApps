@@ -71,9 +71,9 @@ if __name__=="__main__":
         for i in range(len(availableSymbols)):
             print(f"{bcolors.YELLOW}{i+1}: {availableSymbols[i]}{bcolors.ENDC}")
         
-        size = float(input(f"{bcolors.OKCYAN}Enter The Size Of Order: "))
-        price = float(input(f"Enter The Price Of Order: "))
-        SymbolIdx = int(input(f"Enter The Symbol Idx: {bcolors.ENDC}")) #Tested With Symbols BTC-GBP, ETH-BTC, BTC-EUR
+        size = float(input(f"{bcolors.OKCYAN}Enter The Size Of Order: {bcolors.ENDC}"))
+        price = float(input(f"{bcolors.OKCYAN}Enter The Price Of Order: {bcolors.ENDC}"))
+        SymbolIdx = int(input(f"{bcolors.OKCYAN}Enter The Symbol Idx: {bcolors.ENDC}")) #Tested With Symbols BTC-GBP, ETH-BTC, BTC-EUR
         order = {
             'size': size,
             'price': price,
