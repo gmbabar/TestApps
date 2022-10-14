@@ -55,9 +55,12 @@ def build_new_order(msgId: str, clt_oid: str) -> str:
                       "symbol":"BTC-PERPETUAL","amount":100,"price":16500,"post_only":1,"hidden":0,
                       "trader_id":"trd123","strategy":"trex","tif":"GTC","min_amount":10})
 
-def build_cancel(msgId: str, clt_oid: str) -> str:
-    return json.dumps({"id":msgId,"type":"orcn","ord_cl_id":clt_oid,"ord_ex_id":"exchOid123","can_id":54321})
-
+def build_cancel(msgId: str, oid: str, cancelType = "C") -> str:
+    if cancelType.upper() == "C":
+        return json.dumps({"id":msgId,"type":"orcn","ord_cl_id":oid,"ord_ex_id":"exchOid123","can_id":54321})
+    else:
+        return json.dumps({"id":msgId,"type":"orcn","ord_cl_id":"cliOid1234","ord_ex_id":oid,"can_id":54321})
+    
 def build_pair_data(msgId) -> str:
     return json.dumps({"id":msgId,"type":"pdrq"})
 
@@ -94,7 +97,12 @@ class Ma2ClientProtocol(asyncio.Protocol):
     clrj_recv = False
     orst_recv = False
     ack_recv = False
+    err_recv = False
+    ack_counter = 0
+    orst_counter = 0
+    ornw_counter = 0
     order_id = str(round(time.time()))
+    exchId = ""
     # order_id = 'fixed_1234'     # To test duplicate order_id, uncomment and run twice
 
     def __init__(self, on_con_lost):
@@ -125,10 +133,10 @@ class Ma2ClientProtocol(asyncio.Protocol):
             exid = json['exid']
             if exid.upper() != "DERI":
                 self.errors.append(f"Invalid Exchange ID 'exid' exchange state (exst)', expected 'DERI', received '{exid}'")
-        if not check_type_number_in_string(json, 'id'):
-            error = f"Invalid 'id' type in exchange state (exst), expected: number-in-string, received: {type(json['id'])}"
-            if error not in self.errors:
-                self.errors.append(error)
+        # if not check_type_number_in_string(json, 'id'):
+        #     error = f"Invalid 'id' type in exchange state (exst), expected: number-in-string, received: {type(json['id'])}"
+        #     if error not in self.errors:
+        #         self.errors.append(error)
         if 'code' not in json:
             error = "Missing 'code' in exchange state (exst)"
             if error not in self.errors:
@@ -136,12 +144,12 @@ class Ma2ClientProtocol(asyncio.Protocol):
         code = json['code']
         if check_type_number_in_string(json, 'code'):
             code = int(code)
-        else:
-            self.errors.append(f"Invalid 'code' type In 'exst', expected type: number-in-string, received: {type(code)} - {code}")
-            if not check_type_int(json, 'code'):
-                return
-        if code > 3 or code < 0:
-            self.errors.append(f"Invalid 'code' Received In 'exst', expected: 0 - 3, received: {code}")
+        # else:
+            # self.errors.append(f"Invalid 'code' type In 'exst', expected type: number-in-string, received: {type(code)} - {code}")
+            # if not check_type_int(json, 'code'):
+                # return
+        # if code > 3 or code < 0:
+            # self.errors.append(f"Invalid 'code' Received In 'exst', expected: 0 - 3, received: {code}")
 
     # {
     #   "id"              : <number>,
@@ -180,10 +188,10 @@ class Ma2ClientProtocol(asyncio.Protocol):
             error = "Missing 'pairs' in pairs data (pdrp)"
             if error not in self.errors:
                 self.errors.append(error)
-        if not check_type_number_in_string(json, 'id'):
-            error = f"Invalid 'id' type in pairs data (pdrp), expected: number-in-string, received: {type(json['id'])}"
-            if error not in self.errors:
-                self.errors.append(error)
+        # if not check_type_number_in_string(json, 'id'):
+        #     error = f"Invalid 'id' type in pairs data (pdrp), expected: number-in-string, received: {type(json['id'])}"
+        #     if error not in self.errors:
+        #         self.errors.append(error)
         exid = json['exid']
         pairs = json['pairs']
         if exid.upper() != "DERI":
@@ -236,10 +244,10 @@ class Ma2ClientProtocol(asyncio.Protocol):
             error = "Missing 'id' in 'ack' message"
             if error not in self.errors:
                 self.errors.append(error)
-        if not check_type_number_in_string(json, 'id'):
-            error = f"Invalid 'id' type in 'ack', expected: number-in-string, received: {type(json['id'])}"
-            if error not in self.errors:
-                self.errors.append(error)
+        # if not check_type_number_in_string(json, 'id'):
+        #     error = f"Invalid 'id' type in 'ack', expected: number-in-string, received: {type(json['id'])}"
+        #     if error not in self.errors:
+        #         self.errors.append(error)
         if 'ts' not in json:
             error = "Missing 'ts' in 'ack' message"
             if error not in self.errors:
@@ -248,6 +256,7 @@ class Ma2ClientProtocol(asyncio.Protocol):
             error = "Missing 'id' in 'ack' message"
             if error not in self.errors:
                 self.errors.append(error)
+        
 
 
     # {
@@ -263,10 +272,10 @@ class Ma2ClientProtocol(asyncio.Protocol):
             error = "Missing 'id' in 'err' message"
             if error not in self.errors:
                 self.errors.append(error)
-        if not check_type_number_in_string(json, 'id'):
-            error = f"Invalid 'id' type in 'err' msg, expected: number-in-string, received: {type(json['id'])}"
-            if error not in self.errors:
-                self.errors.append(error)
+        # if not check_type_number_in_string(json, 'id'):
+        #     error = f"Invalid 'id' type in 'err' msg, expected: number-in-string, received: {type(json['id'])}"
+        #     if error not in self.errors:
+        #         self.errors.append(error)
         if 'ts' not in json:
             error = "Missing 'ts' in 'err' message"
             if error not in self.errors:
@@ -275,6 +284,13 @@ class Ma2ClientProtocol(asyncio.Protocol):
             error = "Missing 'id' in 'err' message"
             if error not in self.errors:
                 self.errors.append(error)
+        if 'msg' not in json:
+            error = "Message Not Received in Err"
+            if error not in self.errors:
+                self.errors.append(error)
+            else:
+                self.errors.append("Multiple Error Message Received For Same Message")
+        self.errors.append(f"Error Message: {json['msg']}")        
 
 
     # {
@@ -293,10 +309,10 @@ class Ma2ClientProtocol(asyncio.Protocol):
             error = "Missing 'id' in 'orcr' message"
             if error not in self.errors:
                 self.errors.append(error)
-        if not check_type_number_in_string(json, 'id'):
-            error = f"Invalid 'id' type in 'orcr' msg, expected: number-in-string, received: {type(json['id'])}"
-            if error not in self.errors:
-                self.errors.append(error)
+        # if not check_type_number_in_string(json, 'id'):
+        #     error = f"Invalid 'id' type in 'orcr' msg, expected: number-in-string, received: {type(json['id'])}"
+        #     if error not in self.errors:
+        #         self.errors.append(error)
         if 'ts' not in json:
             error = "Missing 'ts' in 'orcr' message"
             if error not in self.errors:
@@ -321,10 +337,11 @@ class Ma2ClientProtocol(asyncio.Protocol):
             error = "Missing 'ord_ex_id' in 'orcr' message"
             if error not in self.errors:
                 self.errors.append(error)
-        elif '@' not in json['ord_ex_id']:
-            error = "Invalid 'ord_ex_id' in 'orcr' message"
-            if error not in self.errors:
-                self.errors.append(error)
+        self.exchId = json['ord_ex_id']
+        # elif '@' not in json['ord_ex_id']:
+        #     error = "Invalid 'ord_ex_id' in 'orcr' message"
+        #     if error not in self.errors:
+        #         self.errors.append(error)
 
 
     # {
@@ -344,10 +361,10 @@ class Ma2ClientProtocol(asyncio.Protocol):
             error = "Missing 'id' in 'orst' message"
             if error not in self.errors:
                 self.errors.append(error)
-        if not check_type_number_in_string(json, 'id'):
-            error = f"Invalid 'id' type in 'orst' msg, expected: number-in-string, received: {type(json['id'])}"
-            if error not in self.errors:
-                self.errors.append(error)
+        # if not check_type_number_in_string(json, 'id'):
+        #     error = f"Invalid 'id' type in 'orst' msg, expected: number-in-string, received: {type(json['id'])}"
+        #     if error not in self.errors:
+        #         self.errors.append(error)
         if 'ts' not in json:
             error = "Missing 'ts' in 'orst' message"
             if error not in self.errors:
@@ -372,10 +389,10 @@ class Ma2ClientProtocol(asyncio.Protocol):
             error = "Missing 'ord_ex_id' in 'orst' message"
             if error not in self.errors:
                 self.errors.append(error)
-        elif '@' not in json['ord_ex_id']:
-            error = "Invalid 'ord_ex_id' in 'orst' message"
-            if error not in self.errors:
-                self.errors.append(error)
+        # elif '@' not in json['ord_ex_id']:
+        #     error = "Invalid 'ord_ex_id' in 'orst' message"
+        #     if error not in self.errors:
+        #         self.errors.append(error)
 
 
     # {
@@ -392,10 +409,10 @@ class Ma2ClientProtocol(asyncio.Protocol):
             error = "Missing 'id' in 'ordn' message"
             if error not in self.errors:
                 self.errors.append(error)
-        if not check_type_number_in_string(json, 'id'):
-            error = f"Invalid 'id' type in 'ordn' msg, expected: number-in-string, received: {type(json['id'])}"
-            if error not in self.errors:
-                self.errors.append(error)
+        # if not check_type_number_in_string(json, 'id'):
+        #     error = f"Invalid 'id' type in 'ordn' msg, expected: number-in-string, received: {type(json['id'])}"
+        #     if error not in self.errors:
+        #         self.errors.append(error)
         if 'ts' not in json:
             error = "Missing 'ts' in 'ordn' message"
             if error not in self.errors:
@@ -408,10 +425,10 @@ class Ma2ClientProtocol(asyncio.Protocol):
             error = "Missing 'ord_ex_id' in 'ordn' message"
             if error not in self.errors:
                 self.errors.append(error)
-        elif '@' not in json['ord_ex_id']:
-            error = "Invalid 'ord_ex_id' in 'ordn' message"
-            if error not in self.errors:
-                self.errors.append(error)
+        # elif '@' not in json['ord_ex_id']:
+        #     error = "Invalid 'ord_ex_id' in 'ordn' message"
+        #     if error not in self.errors:
+        #         self.errors.append(error)
         if 'can_id' not in json:
             error = "Missing 'can_id' in 'ordn' message"
             if error not in self.errors:
@@ -432,10 +449,10 @@ class Ma2ClientProtocol(asyncio.Protocol):
             error = "Missing 'id' in 'orrj' message"
             if error not in self.errors:
                 self.errors.append(error)
-        if not check_type_number_in_string(json, 'id'):
-            error = f"Invalid 'id' type in 'orrj' msg, expected: number-in-string, received: {type(json['id'])}"
-            if error not in self.errors:
-                self.errors.append(error)
+        # if not check_type_number_in_string(json, 'id'):
+        #     error = f"Invalid 'id' type in 'orrj' msg, expected: number-in-string, received: {type(json['id'])}"
+        #     if error not in self.errors:
+        #         self.errors.append(error)
         if 'ts' not in json:
             error = "Missing 'ts' in 'orrj' message"
             if error not in self.errors:
@@ -524,10 +541,10 @@ class Ma2ClientProtocol(asyncio.Protocol):
             error = "Missing 'id' in 'blrp' message"
             if error not in self.errors:
                 self.errors.append(error)
-        if not check_type_number_in_string(json, 'id'):
-            error = f"Invalid 'id' type in 'blrp' msg, expected: number-in-string, received: {type(json['id'])}"
-            if error not in self.errors:
-                self.errors.append(error)
+        # if not check_type_number_in_string(json, 'id'):
+        #     error = f"Invalid 'id' type in 'blrp' msg, expected: number-in-string, received: {type(json['id'])}"
+        #     if error not in self.errors:
+        #         self.errors.append(error)
         if 'ts' not in json:
             error = "Missing 'ts' in 'blrp' message"
             if error not in self.errors:
@@ -569,10 +586,10 @@ class Ma2ClientProtocol(asyncio.Protocol):
             error = "Missing 'id' in 'oprp' message"
             if error not in self.errors:
                 self.errors.append(error)
-        if not check_type_number_in_string(json, 'id'):
-            error = f"Invalid 'id' type in 'oprp' msg, expected: number-in-string, received: {type(json['id'])}"
-            if error not in self.errors:
-                self.errors.append(error)
+        # if not check_type_number_in_string(json, 'id'):
+        #     error = f"Invalid 'id' type in 'oprp' msg, expected: number-in-string, received: {type(json['id'])}"
+        #     if error not in self.errors:
+        #         self.errors.append(error)
         if 'ts' not in json:
             error = "Missing 'ts' in 'oprp' message"
             if error not in self.errors:
@@ -604,10 +621,10 @@ class Ma2ClientProtocol(asyncio.Protocol):
                     error = "Missing 'ord_ex_id' in 'oprp' message"
                     if error not in self.errors:
                         self.errors.append(error)
-                elif '@' not in order['ord_ex_id']:
-                    error = "Invalid 'ord_ex_id' in 'oprp' message"
-                    if error not in self.errors:
-                        self.errors.append(error)
+                # elif '@' not in order['ord_ex_id']:
+                #     error = "Invalid 'ord_ex_id' in 'oprp' message"
+                #     if error not in self.errors:
+                #         self.errors.append(error)
                 if 'cl_id' not in order:
                     error = "Missing 'cl_id' in 'oprp' message"
                     if error not in self.errors:
@@ -748,7 +765,6 @@ class Ma2ClientProtocol(asyncio.Protocol):
             if 'type' not in json_data:
                 self.errors.append("_Critical: Missing 'type' in received MA2 message.")                
                 return
-
             if self.appl_init:
                 self.errors.append("Message '" + json_data['type'] + "' received even before 'helo' message")
                 if json_data['type'] == 'exst':
@@ -773,8 +789,13 @@ class Ma2ClientProtocol(asyncio.Protocol):
                     self.parse_open_order_report(json_data)
                 elif json_data['type'] == 'trex':
                     self.parse_trace_execution(json_data)
+                
                 return
-
+            if json_data['type'] == 'err':
+                self.parse_error(json_data)
+                self.err_recv = True
+                return
+            self.err_recv = False
             if json_data['type'] == 'exst':
                 if self.helo_sent:
                     self.helo_recv = True
@@ -841,7 +862,7 @@ class Ma2ClientProtocol(asyncio.Protocol):
                     self.clrj_recv = True
                     self.parse_order_done(json_data)
                 else:
-                    self.errors.append("No Cancel Order Response Received")
+                    self.errors.append("No Cancel Order Response Received"+json_data['type'])
             elif json_data['type'] == 'orst':
                 self.warnings.append("Received Order State (orst) For Unknown Order")
             elif json_data['type'] == 'ordn':
@@ -899,13 +920,18 @@ class Ma2ClientProtocol(asyncio.Protocol):
                     self.errors.append("No Ack Received For New Order")
                 if not self.ornw_recv:
                     self.errors.append("No New Order Created")
+            self.ornw_counter +=1
             self.message = build_open_orders(self.msgId)
             self.oprq_sent = True
         elif self.oprq_sent:
             self.oprq_sent = False
             if not self.oprp_recv:
                 self.errors.append("No Open Order Report Received")
-            if self.ornw_recv:
+            if self.ornw_recv and self.ornw_counter != 1:
+                self.message = build_cancel(self.msgId, self.exchId, "E")
+                self.orcn_sent = True
+                self.ack_recv = False
+            elif self.ornw_recv:
                 self.message = build_cancel(self.msgId, self.order_id)
                 self.orcn_sent = True
                 self.ack_recv = False
@@ -918,18 +944,23 @@ class Ma2ClientProtocol(asyncio.Protocol):
                 self.warnings.append("Cancel order got rejected.")
             else:
                 if not self.ack_recv:
-                    self.errors.append("No Ack Received For Cancel (orcn)")
+                    if not self.err_recv:
+                        self.errors.append("No Ack Received For Cancel (orcn)")
                 if not self.orst_recv:
-                    self.errors.append("No Order State Received For Cancel (orcn)")
+                    if not self.err_recv:
+                        self.errors.append("No Order State Received For Cancel (orcn)")
                 if not self.orcn_recv:
-                    self.errors.append("No Order Done Received For Cancel (orcn)")
+                    if not self.err_recv:
+                        self.errors.append("No Order Done Received For Cancel (orcn)")
             self.message = build_balance_req(self.msgId)
             self.blrq_sent = True
         elif self.blrq_sent:
             self.blrq_sent = False
             if not self.blrp_recv:
                 self.errors.append("No Balance Report Received")
-            self.message = build_heartbeat(self.msgId)
+            self.message = build_new_order(self.msgId, self.order_id+"0")
+            if self.ornw_counter < 2:
+                self.ornw_sent = True
             self.all_sent = True
         elif self.all_sent:
             print('All test messages are done. closing connection...')
