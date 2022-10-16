@@ -30,7 +30,7 @@ namespace http = boost::beast::http;    // from <boost/beast/http.hpp>
 const std::string aPubKey = "47dfc129c1135efb2348d443297aaa0c";
 const std::string aPriKey = "igIjLcJHQaBCMaYpGoexS2/HQ5jdKjXX7i4qsSAJkdcjb+deOkNHf0LfD9VDg9lGM+jfK5B6zSmyEASB0PYz1A==";
 const std::string aPassPhrase = "47dfc129c1135efb2348d443297aaa0c";
-const std::string aApiHost="public.sandbox.pro.coinbase.com";
+const std::string aApiHost="api-public.sandbox.exchange.coinbase.com";
 const std::string aApiPort="443";
 
 
@@ -44,7 +44,6 @@ inline uint64_t gdaxTimestamp() {
 inline std::string coinbaseSignature(
         const std::string &aPriKey,
         const std::string &aPayload) {
-    // DMA: Gateways/Coinbase/rest_api.cpp
     // Calculate signature
 	unsigned int len = SHA256_DIGEST_LENGTH;
 	unsigned char hash[SHA256_DIGEST_LENGTH];
@@ -153,20 +152,18 @@ public:
     void
     run()
     {
-        // // Set SNI Hostname (many hosts need this to handshake successfully)
-        // if(! SSL_set_tlsext_host_name(stream_.native_handle(), host))
-        // {
-        //     boost::system::error_code ec{static_cast<int>(::ERR_get_error()), boost::asio::error::get_ssl_category()};
-        //     std::cerr << ec.message() << "\n";
-        //     return;
-        // }
+        // Set SNI Hostname (many hosts need this to handshake successfully)
+        if(! SSL_set_tlsext_host_name(stream_.native_handle(), aApiHost.c_str()))
+        {
+            boost::system::error_code ec{static_cast<int>(::ERR_get_error()), boost::asio::error::get_ssl_category()};
+            std::cerr << __func__ << ": " << ec.message() << "\n";
+            return;
+        }
 
         // Set up an HTTP GET request message
         // req_.version(version);
-        // req_.method(http::verb::get);
-        // req_.target(target);
-        // req_.set(http::field::host, host);
-        // req_.set(http::field::user_agent, BOOST_BEAST_VERSION_STRING);
+        req_.method(http::verb::get);
+        req_.set(http::field::user_agent, BOOST_BEAST_VERSION_STRING);
 
         // Look up the domain name
         resolver_.async_resolve(
@@ -291,34 +288,18 @@ public:
 
 int main(int argc, char** argv)
 {
-    // Check command line arguments.
-    // if(argc != 4 && argc != 5)
-    // {
-    //     std::cerr <<
-    //         "Usage: http-client-async-ssl <host> <port> <target> [<HTTP version: 1.0 or \n" <<
-    //         "Example:\n" <<
-    //         "    http-client-async-ssl www.example.com 443 /\n" <<
-    //         "    http-client-async-ssl www.example.com 443 / 1.0\n";
-    //     return EXIT_FAILURE;
-    // }
-    // auto const host = argv[1];
-    // auto const port = argv[2];
-    // auto const target = argv[3];
-    // int version = argc == 5 && !std::strcmp("1.0", argv[4]) ? 10 : 11;
-
     // The io_context is required for all I/O
     boost::asio::io_context ioc;
 
     // The SSL context is required, and holds certificates
-    // ssl::context ctx{ssl::context::tlsv12_client};
-    // ssl::context ctx{ssl::context::sslv23_client};
-    ssl::context ctx{ssl::context::sslv3_client};
+    ssl::context ctx{ssl::context::sslv23_client};
 
     // This holds the root certificate used for verification
     // load_root_certificates(ctx);
     
     // Verify the remote server's certificate
-    ctx.set_verify_mode(ssl::verify_peer);
+    // ctx.set_verify_mode(ssl::verify_peer);
+    ctx.set_verify_mode(boost::asio::ssl::verify_none);
 
     // Launch the asynchronous operation
     // std::make_shared<session>(ioc, ctx)->run(host, port, target, version);
