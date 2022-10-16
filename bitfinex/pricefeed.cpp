@@ -6,6 +6,7 @@
 #include <boost/asio/connect.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ssl/stream.hpp>
+#include <boost/bind/bind.hpp>
 #include <fstream>
 #include <cstdlib>
 #include <iostream>

@@ -36,7 +36,12 @@ class CoinbaseExchangeAuth(AuthBase):
 
     def __call__(self, request):
         timestamp = str(time.time())
+        print('__call__', str(timestamp))
+        print('__call__', str(request.method))
+        print('__call__', str(request.path_url))
+        print('__call__', str(request.body))
         message = timestamp + request.method + request.path_url + (request.body or b'').decode()
+        print('__call__', str(message))
         hmac_key = base64.b64decode(self.secret_key)
         signature = hmac.new(hmac_key, message.encode(), hashlib.sha256)
         signature_b64 = base64.b64encode(signature.digest()).decode()
@@ -83,7 +88,7 @@ if __name__=="__main__":
         response = requests.post(api_url + 'orders', json=order, auth=auth)
         data = response.json()
         if 'side' in data and 'price' in data and 'size' in data:
-            print(data)
+            print('response:', data)
             print(f"{bcolors.OKGREEN}Created A {data['side']} Order Of {data['price']}@{data['size']}, ID = {data['id']}, Symbol = {data['product_id']}{bcolors.ENDC}")
         else:
             print(f"{bcolors.FAIL}{data}{bcolors.ENDC}")
