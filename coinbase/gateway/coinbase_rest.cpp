@@ -258,7 +258,10 @@ public:
             return fail(ec, "read");
 
         // Write the message to standard out
-        std::cout << res_ << std::endl;
+        // std::cout << "Result(str): " << res_.result() << std::endl;
+        // std::cout << "Result(int): " << res_.result_int() << std::endl;
+        // std::cout << "Reason: " << res_.reason() << std::endl;
+        std::cout << "Body: " << res_.body() << std::endl;
 
         // Gracefully close the stream
         stream_.async_shutdown(
