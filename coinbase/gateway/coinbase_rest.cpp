@@ -18,8 +18,11 @@
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ssl/error.hpp>
 #include <boost/asio/ssl/stream.hpp>
+#include <boost/json.hpp>
+#include <boost/json/src.hpp>
 #include <cppcodec/hex_lower.hpp>
 #include "root_certificates.hpp"
+#include <boost/beast/core/detail/base64.hpp>
 
 using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
 namespace ssl = boost::asio::ssl;       // from <boost/asio/ssl.hpp>
@@ -29,27 +32,33 @@ namespace http = boost::beast::http;    // from <boost/beast/http.hpp>
 
 const std::string aPubKey = "47dfc129c1135efb2348d443297aaa0c";
 const std::string aPriKey = "igIjLcJHQaBCMaYpGoexS2/HQ5jdKjXX7i4qsSAJkdcjb+deOkNHf0LfD9VDg9lGM+jfK5B6zSmyEASB0PYz1A==";
-const std::string aPassPhrase = "47dfc129c1135efb2348d443297aaa0c";
+const std::string aPassPhrase = "bdtvyfvpyu9";
 const std::string aApiHost="api-public.sandbox.exchange.coinbase.com";
 const std::string aApiPort="443";
 
 
 inline uint64_t gdaxTimestamp() {
-    timespec now = { 0, 0 };
-    if(clock_gettime(CLOCK_REALTIME, &now) < 0) 
-        return -1;
-    return now.tv_sec*1000000 + (now.tv_nsec/1000);
+    // timespec now = { 0, 0 };
+    // if(clock_gettime(CLOCK_REALTIME, &now) < 0) 
+    //     return -1;
+    // std::cout << now.tv_sec + (now.tv_nsec/1000) << std::endl;
+    // return now.tv_sec/*1000000*/ + (now.tv_nsec/1000);
+    const auto p1 = std::chrono::system_clock::now();
+    return std::chrono::duration_cast<std::chrono::seconds>(p1.time_since_epoch()).count();
+
 }
 
 inline std::string coinbaseSignature(
         const std::string &aPriKey,
         const std::string &aPayload) {
     // Calculate signature
+    char buffer[1024];
+    auto aSize = boost::beast::detail::base64::decode(buffer, aPriKey.c_str(), aPriKey.length()).first;
 	unsigned int len = SHA256_DIGEST_LENGTH;
 	unsigned char hash[SHA256_DIGEST_LENGTH];
 #if OPENSSL_VERSION_NUMBER >= 0x1010100fL
     HMAC_CTX * hmac = HMAC_CTX_new();
-    HMAC_Init_ex(hmac, reinterpret_cast<const unsigned char*>(aPriKey.c_str()), aPriKey.length(), EVP_sha256(), NULL);
+    HMAC_Init_ex(hmac, reinterpret_cast<const unsigned char*>(buffer), aSize, EVP_sha256(), NULL);
     HMAC_Update(hmac, reinterpret_cast<const unsigned char*>(aPayload.c_str()), aPayload.length());
     HMAC_Final(hmac, hash, &len);
     HMAC_CTX_free(hmac);
@@ -63,7 +72,11 @@ inline std::string coinbaseSignature(
 #endif
 
     // Format into string
-    return cppcodec::hex_lower::encode(hash, len);
+    auto signature = cppcodec::hex_lower::encode(hash, len);
+    char encoded[1024];
+    boost::beast::detail::base64::encode(encoded, hash, len);
+    return std::string(encoded);
+    // return signature;
 }
 
 template <typename BodyT>
@@ -107,6 +120,35 @@ void signCoinbaseRestRequest(
     // std::cout << "DEBUG: signCoinbaseRestRequest: Request: \n" << aRequest << std::endl;
 }
 
+inline bool fmtCoinbaseSpotRestApiOrder(
+        boost::beast::http::request<boost::beast::http::string_body> &aRequest,
+        boost::json::value &data) {
+    namespace beast = boost::beast;
+    namespace http = beast::http;
+
+    aRequest.method(http::verb::post);
+    aRequest.set(http::field::host, aApiHost);
+    aRequest.target("/orders");
+    aRequest.body() = boost::json::serialize(data);
+    signCoinbaseRestRequest(aRequest);
+    return true;
+
+}
+
+inline bool fmtCoinbaseSpotRestApiCancel(
+        boost::beast::http::request<boost::beast::http::string_body> &aRequest,
+        std::string id) {
+
+    namespace beast = boost::beast;
+    namespace http = beast::http;
+
+    aRequest.method(http::verb::delete_);
+    aRequest.set(http::field::host, aApiHost);
+    aRequest.target("/orders/"+id);
+    signCoinbaseRestRequest(aRequest);
+    return true;
+}
+
 inline bool fmtCoinbaseSpotRestApiProducts(
         boost::beast::http::request<boost::beast::http::string_body> &aRequest) {
     namespace beast = boost::beast;
@@ -138,6 +180,7 @@ class session : public std::enable_shared_from_this<session>
     // http::request<http::empty_body> req_;
     http::request<http::string_body> req_;
     http::response<http::string_body> res_;
+    bool orderCreated = false;
 
 public:
     // Resolver and stream require an io_context
@@ -217,7 +260,16 @@ public:
             return fail(ec, "handshake");
 
         // format product list request.
-        fmtCoinbaseSpotRestApiProducts(req_);
+        // fmtCoinbaseSpotRestApiProducts(req_);
+        // exit(0);
+        boost::json::value data = {
+            {"size", 0.001},
+            {"price", 9500},
+            {"side", "buy"},
+            {"product_id", "BTC-GBP"},
+            {"time_in_force", "IOC"}
+        };
+        fmtCoinbaseSpotRestApiOrder(req_, data);
 
         // Send the HTTP request to the remote host
         http::async_write(stream_, req_,
@@ -261,14 +313,34 @@ public:
         // std::cout << "Result(str): " << res_.result() << std::endl;
         // std::cout << "Result(int): " << res_.result_int() << std::endl;
         // std::cout << "Reason: " << res_.reason() << std::endl;
-        std::cout << "Body: " << res_.body() << std::endl;
+        auto data = res_.body();
+        std::cout << "Body: " << data << std::endl << std::endl << std::endl;
+        int pos = data.find("\"id\"");
+        if (pos != std::string::npos && orderCreated == false) {
 
-        // Gracefully close the stream
-        stream_.async_shutdown(
+            auto start = data.find(':', pos);
+            start = data.find('\"', start);
+            auto end = data.find('\"', start+1);
+            auto id = data.substr(start+1, end-start-1);
+            std::cout << id << std::endl;
+            fmtCoinbaseSpotRestApiCancel(req_, id);
+            orderCreated = true;
+            http::async_write(stream_, req_,
+            std::bind(
+                &session::on_write,
+                shared_from_this(),
+                std::placeholders::_1,
+                std::placeholders::_2));
+
+        }
+
+        if(orderCreated) {
+            stream_.async_shutdown(
             std::bind(
                 &session::on_shutdown,
                 shared_from_this(),
                 std::placeholders::_1));
+        }
     }
 
     void
