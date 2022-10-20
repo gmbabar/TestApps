@@ -122,14 +122,14 @@ void signCoinbaseRestRequest(
 
 inline bool fmtCoinbaseSpotRestApiOrder(
         boost::beast::http::request<boost::beast::http::string_body> &aRequest,
-        boost::json::value &data) {
+        std::string order) {
     namespace beast = boost::beast;
     namespace http = beast::http;
 
     aRequest.method(http::verb::post);
     aRequest.set(http::field::host, aApiHost);
     aRequest.target("/orders");
-    aRequest.body() = boost::json::serialize(data);
+    aRequest.body() = order;
     signCoinbaseRestRequest(aRequest);
     return true;
 
@@ -269,7 +269,17 @@ public:
             {"product_id", "BTC-GBP"},
             {"time_in_force", "IOC"}
         };
-        fmtCoinbaseSpotRestApiOrder(req_, data);
+
+        std::ostringstream oss;
+        oss << R"({"size":)" << 1E-3 << ","
+        << R"("price":)" << 9500 << ","
+        << R"("side":")" << "buy" << "\","
+        << R"("product_id":")" << "BTC-GBP" << "\","
+        << R"("time_in_force":")" << "IOC" << "\"}";
+
+        std::cout << oss.str() << std::endl;
+        std::cout << boost::json::serialize(data) << std::endl;
+        fmtCoinbaseSpotRestApiOrder(req_, oss.str());
 
         // Send the HTTP request to the remote host
         http::async_write(stream_, req_,
