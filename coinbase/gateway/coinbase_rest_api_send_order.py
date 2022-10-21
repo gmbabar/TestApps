@@ -2,10 +2,13 @@
 import json, hmac, hashlib, time, requests, base64
 from requests.auth import AuthBase
 
-#sandbox api keys and url
-API_KEY='47dfc129c1135efb2348d443297aaa0c'
-API_PASS='bdtvyfvpyu9'
-API_SECRET='igIjLcJHQaBCMaYpGoexS2/HQ5jdKjXX7i4qsSAJkdcjb+deOkNHf0LfD9VDg9lGM+jfK5B6zSmyEASB0PYz1A=='
+# #sandbox api keys and url
+# API_KEY='47dfc129c1135efb2348d443297aaa0c'
+# API_PASS='bdtvyfvpyu9'
+# API_SECRET='igIjLcJHQaBCMaYpGoexS2/HQ5jdKjXX7i4qsSAJkdcjb+deOkNHf0LfD9VDg9lGM+jfK5B6zSmyEASB0PYz1A=='
+API_KEY='c636bc5e6a36f1089f90e1c05ccc4d18'
+API_PASS='ncz86pr00bh'
+API_SECRET='a1e3BCpqDv7V7MfFaFbuWzB3DJtQBjhgRHEe0WTP9D5TdRoKEo5TIRywA1YKS4eGnarjcNCUWs1oneGBasxY+g=='
 api_url='https://public.sandbox.pro.coinbase.com/'
 
 class bcolors:
@@ -76,9 +79,9 @@ if __name__=="__main__":
         for i in range(len(availableSymbols)):
             print(f"{bcolors.YELLOW}{i+1}: {availableSymbols[i]}{bcolors.ENDC}")
         
+        SymbolIdx = int(input(f"{bcolors.OKCYAN}Enter The Symbol Idx: {bcolors.ENDC}")) #Tested With Symbols BTC-GBP, ETH-BTC, BTC-EUR
         size = float(input(f"{bcolors.OKCYAN}Enter The Size Of Order: {bcolors.ENDC}"))
         price = float(input(f"{bcolors.OKCYAN}Enter The Price Of Order: {bcolors.ENDC}"))
-        SymbolIdx = int(input(f"{bcolors.OKCYAN}Enter The Symbol Idx: {bcolors.ENDC}")) #Tested With Symbols BTC-GBP, ETH-BTC, BTC-EUR
         order = {
             'size': size,
             'price': price,
