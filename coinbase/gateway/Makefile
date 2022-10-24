@@ -4,7 +4,7 @@ CC = g++
 FLAGS = -g -std=c++17 -I./  -I../../include
 LIBS = -lboost_system -lssl -lcrypto -lpthread 
 
-objects = coinbase_rest
+objects = coinbase_get_products coinbase_send_order
 
 all: $(objects)
 
