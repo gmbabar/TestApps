@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 import base64
 import time
 import json
@@ -47,13 +48,15 @@ def getHeader(apiSecret, apiKey, base64Payload):
         'X-GEMINI-SIGNATURE': signature,
         'Cache-Control': "no-cache"
     }
+    # print(signature)
     return request_headers
 
 
 def newOrder(symbol, amount, price, side, type, options)->str:
     payload_nonce = time.time()
     # payload = {"request": "/v1/order/new", "nonce": payload_nonce, "symbol":"btcusd", "amount":"1", "price":"9454.75", "side":"buy", "type":"exchange limit", "options":["maker-or-cancel"]}
-    payload = {"request": "/v1/order/new", "nonce": payload_nonce, "symbol":symbol, "amount":amount, "price":price, "side":side, "type":type, "options":options}
+    payload = {"request": "/v1/order/new", "nonce": int(payload_nonce), "symbol":symbol, "amount":amount, "price":price, "side":side, "type":type, "options":options}
+    print(json.dumps(payload))
     encodedPayload = json.dumps(payload).encode()
     b64 = base64.b64encode(encodedPayload)
     return b64
@@ -81,17 +84,19 @@ if __name__=="__main__":
     apiSecret = "mXob3f85YcHu2KEQDxXeVSMtabL".encode()
 
     payload = newOrder("btcusd", "1", "9459.15", "buy", "exchange limit", ["maker-or-cancel"])
+    print(payload.decode())
+    # print("-------------------------------------------")
     header = getHeader(apiSecret, apiKey, payload)
-    endpoint = "v1/order/new"
-    response = requests.post(url+endpoint, headers=header)
-    data = response.json()
-    print(data)
+    # endpoint = "v1/order/new"
+    # response = requests.post(url+endpoint, headers=header)
+    # data = response.json()
+    # print(data)
 
-    orderId = int(data["order_id"])
-    payload = orderCancel(2141908063)
-    header = getHeader(apiSecret, apiKey, payload)
-    time.sleep(3)
-    endpoint = "/v1/order/cancel"
-    response = requests.post(url+endpoint, headers=header)
-    print(response.json())
+    # orderId = int(data["order_id"])
+    # payload = orderCancel(2141908063)
+    # header = getHeader(apiSecret, apiKey, payload)
+    # time.sleep(3)
+    # endpoint = "/v1/order/cancel"
+    # response = requests.post(url+endpoint, headers=header)
+    # print(response.json())
 

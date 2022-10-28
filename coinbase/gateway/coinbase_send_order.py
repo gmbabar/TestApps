@@ -74,3 +74,7 @@ if __name__=="__main__":
         print(f"{bcolors.OKGREEN}Created A {data['side']} Order Of {data['price']}@{data['size']}, ID = {data['id']}, Symbol = {data['product_id']}{bcolors.ENDC}")
     else:
         print(f"{bcolors.FAIL}{data}{bcolors.ENDC}")
+    
+    # response = requests.get(api_url + 'fills', auth=auth)
+    # data = response.json()
+    # print(data)
