@@ -33,6 +33,7 @@ namespace http = boost::beast::http;    // from <boost/beast/http.hpp>
 const std::string aPubKey = "account-8BDIOhP2VnBAzQHAn6DT";
 const std::string aPriKey = "mXob3f85YcHu2KEQDxXeVSMtabL";
 const std::string aApiHost="api.sandbox.gemini.com";
+// api.sandbox.gemini.com/v1
 const std::string aApiPort="443";
 
 
@@ -233,7 +234,7 @@ public:
         // std::cout << aApiHost << std::endl;
         // std::cout << req_.method() << std::endl;
         req_.method(http::verb::get);
-        req_.target("/symbols");
+        req_.target("/v1/symbols");
         // Send the HTTP request to the remote host
         http::async_write(stream_, req_,
             std::bind(
