@@ -9,7 +9,7 @@ def gdax_instrument_loader():
     response = requests.get('https://api-public.sandbox.exchange.coinbase.com/products')
     if response.status_code != 200:
         raise Exception("Failed To Fetch Data From Exchange")
-    
+
     instruments = []
     for symbols in response.json():
         if(symbols['status'] == 'online'):
@@ -17,7 +17,7 @@ def gdax_instrument_loader():
             exchSymbol = symbols['id']
             # rootSymbol = qptContract.replace('USD', '')
             baseCcy = symbols['base_currency']
-            quoteCcy = symbols['quote_currency']    
+            quoteCcy = symbols['quote_currency']
             tickSize = symbols['quote_increment']
             final_data = {
                 "Exchange-Symbol":exchSymbol,
