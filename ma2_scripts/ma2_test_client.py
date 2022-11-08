@@ -8,6 +8,8 @@ import argparse
 import json
 import time
 
+from tomlkit import string
+
 # some helper functions.
 
 def check_type_int(json_data, value) -> bool:
@@ -47,19 +49,19 @@ def validate_string_values(token, acceptable_values) -> bool:
 def build_heartbeat(msgId) -> str:
     return json.dumps({"id":msgId,"type":"hrbt"})
 
-def build_helo(msgId) -> str:
-    return json.dumps({"id":msgId,"type":"helo","clid":"clt123","exid":"DERI","init_data":"s"})
+def build_helo(msgId: str, endpoint: str) -> str:
+    return json.dumps({"id":msgId,"type":"helo","clid":"clt123","exid":endpoint,"init_data":"s"})
 
-def build_new_order(msgId: str, clt_oid: str) -> str:
-    return json.dumps({"id":msgId,"type":"ornw","ord_cl_id":clt_oid,"cl_account_id":"DERI","ord_type":"L",
-                      "symbol":"BTC-PERPETUAL","amount":100,"price":16500,"post_only":1,"hidden":0,
+def build_new_order(msgId: str, clt_oid: str, endpoint: str, symbol: str) -> str:
+    return json.dumps({"id":msgId,"type":"ornw","ord_cl_id":clt_oid,"cl_account_id":endpoint,"ord_type":"L",
+                      "symbol":symbol,"amount":1,"price":16500,"post_only":1,"hidden":0,
                       "trader_id":"trd123","strategy":"trex","tif":"GTC","min_amount":10})
 
 def build_cancel(msgId: str, oid: str, cancelType = "C") -> str:
     if cancelType.upper() == "C":
         return json.dumps({"id":msgId,"type":"orcn","ord_cl_id":oid,"ord_ex_id":"exchOid123","can_id":54321})
     else:
-        return json.dumps({"id":msgId,"type":"orcn","ord_cl_id":"cliOid1234","ord_ex_id":oid,"can_id":54321})
+        return json.dumps({"id":msgId,"type":"orcn","ord_ex_id":oid,"can_id":54322})
     
 def build_pair_data(msgId) -> str:
     return json.dumps({"id":msgId,"type":"pdrq"})
@@ -101,16 +103,18 @@ class Ma2ClientProtocol(asyncio.Protocol):
     ack_counter = 0
     orst_counter = 0
     ornw_counter = 0
-    order_id = str(round(time.time()))
+    order_id = round(time.time())
     exchId = ""
     # order_id = 'fixed_1234'     # To test duplicate order_id, uncomment and run twice
 
-    def __init__(self, on_con_lost):
+    def __init__(self, on_con_lost, endpoint, symbol):
         self.on_con_lost = on_con_lost
         self.loop = asyncio.get_running_loop()
         self.timeout_handle = self.loop.call_later(
             TIMEOUT, self._send_next,
         )
+        self.endpoint = endpoint
+        self.symbol = symbol
 
     # {
     #   "id"    : <number>,
@@ -131,8 +135,8 @@ class Ma2ClientProtocol(asyncio.Protocol):
                 self.errors.append(error)
         else:
             exid = json['exid']
-            if exid.upper() != "DERI":
-                self.errors.append(f"Invalid Exchange ID 'exid' exchange state (exst)', expected 'DERI', received '{exid}'")
+            if exid.upper() != self.endpoint:
+                self.errors.append(f"Invalid Exchange ID 'exid' exchange state (exst)', expected '{self.endpoint}', received '{exid}'")
         # if not check_type_number_in_string(json, 'id'):
         #     error = f"Invalid 'id' type in exchange state (exst), expected: number-in-string, received: {type(json['id'])}"
         #     if error not in self.errors:
@@ -194,7 +198,7 @@ class Ma2ClientProtocol(asyncio.Protocol):
         #         self.errors.append(error)
         exid = json['exid']
         pairs = json['pairs']
-        if exid.upper() != "DERI":
+        if exid.upper() != self.endpoint:
             self.errors.append(f"Invalid exchange ID {exid} received in pairs data (pdrp)")
         symbols = set()
         for pair_data in pairs:
@@ -225,7 +229,7 @@ class Ma2ClientProtocol(asyncio.Protocol):
                 if error not in self.errors:
                     self.errors.append(error)
                 continue
-            if trading_symbol in symbols:
+            if trading_symbol in symbols and trading_symbol.find:
                 error = 'Duplicate symbol ' + trading_symbol
                 if error not in self.errors:
                     self.errors.append(error)
@@ -892,7 +896,7 @@ class Ma2ClientProtocol(asyncio.Protocol):
         print('Timeout invoked, sending next mesg.')
         self.msgId +=1
         if self.appl_init:  # first message.
-            self.message = build_helo(self.msgId)
+            self.message = build_helo(self.msgId, self.endpoint)
             self.appl_init = False
             self.helo_sent = True
         elif self.helo_sent:
@@ -909,9 +913,9 @@ class Ma2ClientProtocol(asyncio.Protocol):
             self.pdrq_sent = False
             if not self.pdrp_recv:
                 self.errors.append("No Pair Data Report Received")
-            self.message = build_new_order(self.msgId, self.order_id)
+            self.message = build_new_order(self.msgId, str(self.order_id), self.endpoint, self.symbol)
             self.ornw_sent = True
-        elif self.ornw_sent:
+        elif self.ornw_sent and self.ornw_counter < 2:
             self.ornw_sent = False
             if self.orrj_recv:
                 self.warnings.append("New order got rejected.")
@@ -932,7 +936,7 @@ class Ma2ClientProtocol(asyncio.Protocol):
                 self.orcn_sent = True
                 self.ack_recv = False
             elif self.ornw_recv:
-                self.message = build_cancel(self.msgId, self.order_id)
+                self.message = build_cancel(self.msgId, str(self.order_id))
                 self.orcn_sent = True
                 self.ack_recv = False
             else:   # cancel n/a, so move next to balance request
@@ -958,13 +962,14 @@ class Ma2ClientProtocol(asyncio.Protocol):
             self.blrq_sent = False
             if not self.blrp_recv:
                 self.errors.append("No Balance Report Received")
-            self.message = build_new_order(self.msgId, self.order_id+"0")
-            if self.ornw_counter < 2:
-                self.ornw_sent = True
+            self.order_id += 1
+            self.message = build_new_order(self.msgId, str(self.order_id), self.endpoint, self.symbol)
+            self.ornw_sent = True
             self.all_sent = True
         elif self.all_sent:
             print('All test messages are done. closing connection...')
             self.transport.close()
+            return
         else:
             self.message = build_heartbeat(self.msgId)
             self.all_sent = True
@@ -986,6 +991,8 @@ def init_argparse() -> argparse.ArgumentParser:
     # '-h' is reserved for help by argparse package, so '-s' is forced choice for host/server
     parser.add_argument('-s', '--host', help='server (host) name or ip address for MA2 server', required=True)
     parser.add_argument('-p', '--port', help='port number for MA2 server', required=True, type=int)
+    parser.add_argument('-e', '--endpoint', help='Endpoint/exchID for MA2 exchange [DERI, GDAX]', required=True, type=str)
+    parser.add_argument('-i', '--instrument', help='Instrument for MA2 exchange [BTC-PERPETUAL, BTC-USD]', required=True, type=str)
     # args = vars(parser.parse_args())
     return parser
 
@@ -996,6 +1003,8 @@ async def main() -> None:
     args = parser.parse_args()
     host = args.host
     port = args.port
+    endpoint = args.endpoint
+    symbol = args.instrument
 
     # Get a reference to the event loop for low-level APIs.
     loop = asyncio.get_running_loop()
@@ -1003,7 +1012,7 @@ async def main() -> None:
 
     print ('Connecting client to ', host, ':', port)
     transport, protocol = await loop.create_connection(
-        lambda: Ma2ClientProtocol(on_con_lost),
+        lambda: Ma2ClientProtocol(on_con_lost, endpoint, symbol),
         host, port)
 
     # Wait until the protocol signals that the connection

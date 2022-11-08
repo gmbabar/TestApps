@@ -12,7 +12,7 @@ def printInstruments(instruments:list):
         print(f"\t{instrument}")
     print("]")
 
-def gemini_instrument_loader():
+def gemini_instrument_loader(params):
     instruments = []
     response = requests.get(api_url)
     symbols = response.json()
