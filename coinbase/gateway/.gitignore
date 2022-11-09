@@ -1,0 +1,3 @@
+coinbase_get_balance
+coinbase_get_products
+coinbase_send_order

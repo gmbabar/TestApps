@@ -4,25 +4,48 @@
 #include <cppcodec/hex_lower.hpp>
 #include <boost/beast/core/detail/base64.hpp>
 #include "load_cert.hpp"
+#include <chrono>
+#include <iomanip>
+#include <sstream>
+#include <boost/bind/bind.hpp>
+
 using boost::asio::ip::tcp;
-// namespace ssl = boost::asio::ssl;
+
 typedef ssl::stream<tcp::socket> sslSocket;
 
 const std::string aApiHost="fix-public.sandbox.exchange.coinbase.com";
 const std::string aApiPort="4198";
-const std::string aPubKey = "47dfc129c1135efb2348d443297aaa0c";
-const std::string aPriKey = "igIjLcJHQaBCMaYpGoexS2/HQ5jdKjXX7i4qsSAJkdcjb+deOkNHf0LfD9VDg9lGM+jfK5B6zSmyEASB0PYz1A==";
-const std::string aPassPhrase = "bdtvyfvpyu9";
+const std::string aPubKey = "c636bc5e6a36f1089f90e1c05ccc4d18";
+const std::string aPriKey = "a1e3BCpqDv7V7MfFaFbuWzB3DJtQBjhgRHEe0WTP9D5TdRoKEo5TIRywA1YKS4eGnarjcNCUWs1oneGBasxY+g==";
+const std::string aPassPhrase = "ncz86pr00bh";
+const char delim = '\x01';
 
 inline uint64_t gdaxTimestamp() {
     const auto p1 = std::chrono::system_clock::now();
     return std::chrono::duration_cast<std::chrono::seconds>(p1.time_since_epoch()).count();
 }
 
+inline std::string fmtSendTime() {
+    const auto &tp = std::chrono::system_clock::now();
+    const std::string &format = "%Y%m%d-%H:%M:%S";
+    std::chrono::system_clock::time_point::duration tt = tp.time_since_epoch();
+    const time_t durS = std::chrono::duration_cast<std::chrono::seconds>(tt).count();
+    std::ostringstream ss;
+    if (const std::tm *tm = std::gmtime(&durS)) {
+        ss << std::put_time(tm, format.c_str());
+        // Add milliseconds.
+        const long long durMs = std::chrono::duration_cast<std::chrono::milliseconds>(tt).count();
+        ss << '.' << std::setw(3) << std::setfill('0') << int(durMs - durS * 1000);
+    }
+    else {
+        ss << "<FORMAT ERROR>";
+    }
+    return ss.str();
+}
+
 inline std::string coinbaseSignature(
         const std::string &aPriKey,
         const std::string &aPayload) {
-    // DMA: Gateways/Coinbase/rest_api.cpp
     // Calculate signature
     char buffer[1024];
     auto msgSize = boost::beast::detail::base64::decode(buffer, aPriKey.c_str(), aPriKey.length()).first;
@@ -48,7 +71,10 @@ auto signature = cppcodec::hex_lower::encode(hash, len);
     // std::memset(buffer, 0, sizeof(buffer));
     msgSize = boost::beast::detail::base64::encode(buffer, hash, len);
 
-std::cout << "Payload: " << aPayload << std::endl;
+std::cout << "Payload: ";
+for ( const auto &ch : aPayload)
+    std::cout << (int(ch) == 1 ? '|' : ch);
+std::cout << std::endl;
 std::cout << "signature: " << signature << std::endl;
 std::cout << "signature: " << std::string(buffer, msgSize) << std::endl;
 
@@ -57,8 +83,47 @@ std::cout << "signature: " << std::string(buffer, msgSize) << std::endl;
 
 std::string orderStatus(){
     std::ostringstream oss;
-    oss << "37=12381203" << '\x01' << "11=3123123" << '\x01' << "55=btc-usd";
+    oss << "37=12381203" << delim << "11=3123123" << delim << "55=btc-usd";
     return oss.str();
+}
+
+unsigned int generateCheckSum(const char *buf, long bufLen) {
+    unsigned int cks = 0;
+    for(long idx = 0L; idx < bufLen; idx++)
+            cks += (unsigned int)buf[idx];
+    return cks % 256;
+}
+
+
+std::string loginRequest() {
+    std::ostringstream pre;
+    std::ostringstream hdr;
+    std::ostringstream msg;
+    auto sendTime = fmtSendTime();
+    // SendingTime, MsgType, MsgSeqNum, SenderCompID, TargetCompID, Password
+    pre << sendTime << delim << "A" << delim << "1" << delim << aPubKey << delim << "Coinbase" << delim << aPassPhrase;
+
+    // Fix message
+    msg << "35=A" << delim << "34=1" << delim << "49=" << aPubKey << delim << "56=Coinbase" << delim
+        << "98=0" << delim << "108=30" << delim << "141=Y" << delim << "52=" << sendTime << delim
+        << "554=" << aPassPhrase << delim << "96=" << coinbaseSignature(aPriKey, pre.str()) << delim << "8013=Y" << delim;
+
+    // Fix Header
+    hdr << "8=FIX.4.2" << delim << "9=" << msg.str().size() << delim;
+    hdr << msg.str();
+
+    // Fix checksum
+    const auto buffer = hdr.str();
+    hdr << "10=" << std::setw(3) << std::setfill('0') << generateCheckSum(buffer.c_str(), buffer.size()) << delim;
+
+    // DEBUG.
+    const std::string aMsg = hdr.str();
+    std::cout << __func__ << ": ";
+    for ( const auto &ch : aMsg)
+        std::cout << (int(ch) == 1 ? '|' : ch);
+    std::cout << std::endl;
+
+    return hdr.str();
 }
 
 void
@@ -72,6 +137,8 @@ class session : public std::enable_shared_from_this<session>
     tcp::resolver resolver_;
     sslSocket stream;
     boost::asio::streambuf buffer;
+    boost::asio::streambuf response_;
+    char input_buffer_[10 * 1024];
 
 public:
     // Resolver and stream require an io_context
@@ -84,20 +151,13 @@ public:
 
     // Start the asynchronous operation
     void
-    run()
-    {
+    run() {
         // Set SNI Hostname (many hosts need this to handshake successfully)
-        // if(! SSL_set_tlsext_host_name(stream_.native_handle(), aApiHost.c_str()))
-        // {
-        //     boost::system::error_code ec{static_cast<int>(::ERR_get_error()), boost::asio::error::get_ssl_category()};
-        //     std::cerr << __func__ << ": " << ec.message() << "\n";
-        //     return;
-        // }
-
-        // Set up an HTTP GET request message
-        // req_.version(version);
-        // req_.method(http::verb::get);
-        // req_.set(http::field::user_agent, BOOST_BEAST_VERSION_STRING);
+        if(! SSL_set_tlsext_host_name(stream.native_handle(), aApiHost.c_str())) {
+            boost::system::error_code ec{static_cast<int>(::ERR_get_error()), boost::asio::error::get_ssl_category()};
+            std::cerr << __func__ << ": " << ec.message() << "\n";
+            return;
+        }
 
         // Look up the domain name
         resolver_.async_resolve(
@@ -113,8 +173,7 @@ public:
     void
     on_resolve(
         boost::system::error_code ec,
-        tcp::resolver::results_type results)
-    {
+        tcp::resolver::results_type results) {
         if(ec)
             return fail(ec, "resolve");
 
@@ -130,13 +189,16 @@ public:
     }
 
     void
-    on_connect(boost::system::error_code ec)
-    {
+    on_connect(boost::system::error_code ec) {
         if(ec)
             return fail(ec, "connect");
 
         // Perform the SSL handshake
         std::cout << "-------------->Connect Successfull<--------------" << std::endl;
+
+        // Set TCP_NODELAY
+        stream.next_layer().set_option(boost::asio::ip::tcp::no_delay(true));
+
         stream.async_handshake(
             ssl::stream_base::client,
             std::bind(
@@ -146,13 +208,13 @@ public:
     }
 
     void
-    on_handshake(boost::system::error_code ec)
-    {
+    on_handshake(boost::system::error_code ec) {
         if(ec)
             return fail(ec, "handshake");
         std::cout << "-------------->Handshake Successfull<--------------" << std::endl;
-        std::string msg = orderStatus();
+        // std::string msg = orderStatus();
         std::ostream reqStream(&buffer);
+        auto const msg = loginRequest();
         reqStream << msg;
         // boost::asio::streambuf()
         boost::asio::async_write(stream, buffer,
@@ -166,16 +228,21 @@ public:
     void
     on_write(
         boost::system::error_code ec,
-        std::size_t bytes_transferred)
-    {
+        std::size_t bytes) {
 
         if(ec)
             return fail(ec, "write");
         std::cout << "-------------->Write Successfull<--------------" << std::endl;
         std::string dataWrote;
         std::istream(&buffer) >> dataWrote;
-        std::cout << "[DataSent]: " << dataWrote << std::endl;
-        boost::asio::async_read(stream, buffer,
+        std::cout << "[DataSent (" << bytes << ")]: " << dataWrote << std::endl;
+        // boost::asio::async_read(stream, response_,
+        //     std::bind(
+        //         &session::on_read,
+        //         shared_from_this(),
+        //         std::placeholders::_1,
+        //         std::placeholders::_2));
+        boost::asio::async_read_until(stream, response_, delim,
             std::bind(
                 &session::on_read,
                 shared_from_this(),
@@ -184,15 +251,25 @@ public:
     }
 
     void
-    on_read(
-        boost::system::error_code ec,
-        std::size_t bytes_transferred)
-    {;
+    on_read(boost::system::error_code ec,
+            std::size_t bytes) {
         if(ec)
-            return fail(ec, "read");
+            return fail(ec, "read error");
+
         std::string data;
-        std::istream(&buffer) >> data;
-        std::cout << data << std::endl;
+        std::istream(&response_) >> data;
+        std::cout << __func__ << ": ";
+        for ( const auto &ch : data) {
+            std::cout << (int(ch) == 1 ? '|' : ch);
+        }
+        std::cout << std::endl;
+
+        boost::asio::async_read_until(stream, response_, delim,
+            std::bind(
+                &session::on_read,
+                shared_from_this(),
+                std::placeholders::_1,
+                std::placeholders::_2));
     }
 };
 
@@ -204,14 +281,13 @@ int main() {
     ssl::context ctx{ssl::context::sslv23_client};
 
     // This holds the root certificate used for verification
-    load_root_certificates(ctx);
+    // load_root_certificates(ctx);
 
     // Verify the remote server's certificate
-    ctx.set_verify_mode(ssl::verify_peer);
+    // ctx.set_verify_mode(ssl::verify_peer);
     // ctx.set_verify_mode(boost::asio::ssl::verify_none);
 
     // Launch the asynchronous operation
-    // std::make_shared<session>(ioc, ctx)->run(host, port, target, version);
     std::make_shared<session>(ioc, ctx)->run();
 
     // Run the I/O service. The call will return when
