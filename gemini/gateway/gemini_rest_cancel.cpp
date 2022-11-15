@@ -33,6 +33,7 @@ namespace http = boost::beast::http;    // from <boost/beast/http.hpp>
 const std::string aPubKey = "account-8BDIOhP2VnBAzQHAn6DT";
 const std::string aPriKey = "mXob3f85YcHu2KEQDxXeVSMtabL";
 const std::string aApiHost="api.sandbox.gemini.com";
+// api.sandbox.gemini.com/v1
 const std::string aApiPort="443";
 
 
@@ -78,8 +79,8 @@ void signGeminiRestRequest(
         boost::beast::http::request<BodyT> &aRequest, const char *payload) {
 
     // Fill common headers
-    aRequest.method(http::verb::post);   // caller knows and should set it.
-    aRequest.version(10);
+    // aRequest.method(http::verb::get);   // caller knows and should set it.
+    aRequest.version(11);
     aRequest.keep_alive(true);
     aRequest.set(http::field::content_type, "Application/JSON");
 
@@ -109,26 +110,21 @@ void signGeminiRestRequest(
     aRequest.set("X-GEMINI-PAYLOAD", payload);
 }
 template <typename BodyT>
-inline bool fmtGeminiSpotRestApiOrder(
+inline bool fmtGeminiSpotRestApiCancel(
         boost::beast::http::request<BodyT> &aRequest,
-        std::string symbol, std::string amount, std::string price,
-        std::string side, std::string type, std::string options) {
+        std::string &orderId) {
         std::ostringstream oss;
-        aRequest.target("/v1/order/new");
+        aRequest.target("/v1/order/cancel");
         oss << "{"
-            << R"("request": "/v1/order/new")"
+            << R"("request": "/v1/order/cancel")"
             << R"(, "nonce": )" << std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count()
-            << R"(, "symbol": ")" << symbol << '"'
-            << R"(, "amount": ")" << amount << '"'
-            << R"(, "price": ")" << price << '"'
-            << R"(, "side": ")" << side << '"'
-            << R"(, "type": ")" << type << '"'
-            << R"(, "options": [")" << options << "\"]"
+            << R"(, "order_id": )" << orderId
             << "}";
         auto sPayload = oss.str();
         char payload[1024];
         auto size = boost::beast::detail::base64::encode(payload, sPayload.c_str(), sPayload.length());
         payload[size] = '\0';
+        aRequest.method(http::verb::post);
         signGeminiRestRequest(aRequest, payload);
         return true;
 }
@@ -154,6 +150,7 @@ class session : public std::enable_shared_from_this<session>
     bool orderCreated = false;
 
 public:
+    std::string m_orderId = "2224168876";
     // Resolver and stream require an io_context
     explicit
     session(boost::asio::io_context& ioc, ssl::context& ctx)
@@ -230,10 +227,11 @@ public:
         if(ec)
             return fail(ec, "handshake");
 
-        fmtGeminiSpotRestApiOrder(req_, "btcusd", "1", "9459.15", "buy", "exchange limit", "maker-or-cancel");
-        std::cout << req_.target() << std::endl;
-        std::cout << aApiHost << std::endl;
-        std::cout << req_.method() << std::endl;
+        // fmtGeminiSpotRestApiOrder(req_, "btcusd", "1", "9459.15", "buy", "exchange limit", "maker-or-cancel");
+        // std::cout << req_.target() << std::endl;
+        // std::cout << aApiHost << std::endl;
+        // std::cout << req_.method() << std::endl;
+        fmtGeminiSpotRestApiCancel(req_, m_orderId);
         // Send the HTTP request to the remote host
         http::async_write(stream_, req_,
             std::bind(

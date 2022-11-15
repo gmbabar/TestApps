@@ -79,8 +79,8 @@ void signGeminiRestRequest(
         boost::beast::http::request<BodyT> &aRequest, const char *payload) {
 
     // Fill common headers
-    aRequest.method(http::verb::post);   // caller knows and should set it.
-    aRequest.version(10);
+    // aRequest.method(http::verb::get);   // caller knows and should set it.
+    aRequest.version(11);
     aRequest.keep_alive(true);
     aRequest.set(http::field::content_type, "Application/JSON");
 
@@ -128,6 +128,7 @@ inline bool fmtGeminiSpotRestApiOrder(
         char payload[1024];
         auto size = boost::beast::detail::base64::encode(payload, sPayload.c_str(), sPayload.length());
         payload[size] = '\0';
+        aRequest.method(http::verb::post);
         signGeminiRestRequest(aRequest, payload);
         return true;
 }
@@ -233,6 +234,11 @@ public:
         // std::cout << req_.target() << std::endl;
         // std::cout << aApiHost << std::endl;
         // std::cout << req_.method() << std::endl;
+        req_.version(11);
+        req_.keep_alive(true);
+        req_.set(http::field::content_type, "Application/JSON");
+        req_.set(http::field::host, aApiHost);
+        req_.set(http::field::user_agent, BOOST_BEAST_VERSION_STRING);
         req_.method(http::verb::get);
         req_.target("/v1/symbols");
         // Send the HTTP request to the remote host
