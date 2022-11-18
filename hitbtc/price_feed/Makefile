@@ -4,7 +4,7 @@ CC = g++
 FLAGS = -g -std=c++11 -I./ -I/usr/local/opt/openssl/include -I../include
 LIBS = -lboost_system -lpthread -lcrypto -lssl
 
-objects = hbtc_pf 
+objects = hitbtc_pf
 
 all: $(objects)
 

@@ -30,7 +30,7 @@ api.hitbtc.com/api/3/ws/public
 */
 
 void fail(beast::error_code ec, char const* what) {
-    std::cout << what << ":" << ec.message() << std::endl; 
+    std::cout << what << ":" << ec.message() << std::endl;
 }
 
 class Session : public std::enable_shared_from_this<Session> {
@@ -136,12 +136,12 @@ public:
         std::ostringstream oss;
         oss << beast::make_printable(m_buffer.data());
         std::cout << __func__ << "-" << ": " << oss.str() << std::endl;
-        Document doc;
-        doc.Parse(oss.str().c_str());
-        std::string type = doc["ch"].GetString();
-        if(strcmp(type.c_str(), "trades") == 0) {
-            parseTrade(oss.str());
-        } 
+        // Document doc;
+        // doc.Parse(oss.str().c_str());
+        // std::string type = doc["ch"].GetString();
+        // if(strcmp(type.c_str(), "trades") == 0) {
+        //     parseTrade(oss.str());
+        // }
 
         // Clear the buffer
         m_buffer.consume(m_buffer.size());
@@ -187,7 +187,7 @@ int main(int argc, char **argv) {
     */
     oss << "{\"method\":\"subscribe\",\"ch\":\"trades\",\"params\":{\"symbols\":[\"ETHBTC\",\"BTCUSDT\"]},\"id\":123}";
     std::cout << __func__ << ": " << oss.str() << std::endl;
-  
+
     net::io_context ioc;
 
     // The SSL context is required, and holds certificates
@@ -197,7 +197,7 @@ int main(int argc, char **argv) {
     std::make_shared<Session>(ioc, ctx)->run(host, port, oss.str().c_str());
 
     ioc.run();
-    
+
 
     return EXIT_SUCCESS;
 }
