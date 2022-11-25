@@ -26,7 +26,7 @@ struct MD2ConfigParser {
         return defaultVal;
     }
 
-    int asInt(const std::string &key, const int &defaultVal=1) {
+    int asInt(const std::string &key, const int &defaultVal=0) {
         auto itr = m_values.find(key);
         if (itr != m_values.end() && itr->second.GetType() == ConfigValue::TypeString) {
             return boost::any_cast<int>(itr->second.GetValue());
@@ -49,8 +49,8 @@ struct MD2ConfigParser {
         }
         return defaultVal;
     }
-private:
 
+private:
     void ParseConfigEx(rapidjson::Value val, std::string prefix) {
         if (!prefix.empty())
             prefix += ".";
@@ -96,6 +96,7 @@ private:
 
         // default ctor
         ConfigValue() = default;
+        ConfigValue(const ConfigValue &other) = default;
 
         // ctor
         explicit ConfigValue(const rapidjson::Value &aVal) : m_type(TypeNull) {
@@ -121,19 +122,13 @@ private:
             }
         }
 
-        // copy ctor
-        ConfigValue(const ConfigValue &other) {
-            m_type = other.m_type;
-            m_value = other.m_value;
-        }
-
-        // assignment operator
+        // assignment
         void operator=(const ConfigValue &other) {
             m_type = other.m_type;
             m_value = other.m_value;
         }
 
-    // getters
+        // getters
         boost::any GetValue() {
             return m_value;
         }
@@ -148,7 +143,6 @@ private:
     };
 
 private:
-
     std::unordered_map<std::string, ConfigValue> m_values;
 };
 
