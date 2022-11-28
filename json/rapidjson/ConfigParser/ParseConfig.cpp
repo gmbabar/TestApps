@@ -13,9 +13,9 @@
 
 using namespace rapidjson;
 
-struct MD2ConfigParser {
+struct MD2ConfigParser {    // Fix coding style/guide
     MD2ConfigParser(std::string &configFile) {
-        this->ParseConfig(configFile);
+        this->parseConfig(configFile);
     }
 
     std::string asStr(const std::string &key, const std::string &defaultVal="") {
@@ -51,19 +51,19 @@ struct MD2ConfigParser {
     }
 
 private:
-    void ParseConfigEx(rapidjson::Value val, std::string prefix) {
+    void parseConfigObject(rapidjson::Value val, std::string prefix) {
         if (!prefix.empty())
             prefix += ".";
         for (auto& vitr : val.GetObject()) {
             // int type = vitr.value.GetType();
             if (vitr.value.IsObject()) {
-                ParseConfigEx(vitr.value.GetObject(), prefix + vitr.name.GetString());
+                parseConfigObject(vitr.value.GetObject(), prefix + vitr.name.GetString());
             }
             if (vitr.value.IsArray()) {
                 auto arr = vitr.value.GetArray();
                 for (SizeType i = 0; i < arr.Size(); i++) {
                     if(arr[i].IsObject()) {
-                        ParseConfigEx(arr[i].GetObject(), prefix + vitr.name.GetString());
+                        parseConfigObject(arr[i].GetObject(), prefix + vitr.name.GetString());
                     }
                 }
             }
@@ -73,14 +73,14 @@ private:
         }
     }
 
-    void ParseConfig(std::string &configFile) {
+    void parseConfig(std::string &configFile) {
         std::ifstream Md2ConfigFile(configFile);
         rapidjson::IStreamWrapper json(Md2ConfigFile);
         rapidjson::Document document;
         document.ParseStream(json);
 
         if (document.IsObject()) {
-            ParseConfigEx(document.GetObject(), "");
+            parseConfigObject(document.GetObject(), "");
         }
     }
 
