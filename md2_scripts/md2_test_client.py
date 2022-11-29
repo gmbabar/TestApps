@@ -12,24 +12,25 @@ class Md2ProtocolClient:
     LevelIdx = 0
     counter = 0
     unsubscribed = False
-    def __init__(self, host, port):
+    def __init__(self, host, port, exchangeNemonic):
         try:
             self.websocket_ = websockets.connect(f'ws://{host}:{port}')
         except:
             print(f"Unable To Connect With \'{host}:{port}\'")
         self.msg = self.build_secList()
-    
-    def build_subscribe(self, symbol, level):
+        self.exchange = exchangeNemonic
+
+    def build_subscribe(self, symbol, level, exchangeNemonic):
         if level != "S":
-            return json.dumps({"type":"subscribe","exchange":"DERI","symbol":symbol,"level":level})
+            return json.dumps({"type":"subscribe","exchange":self.exchange,"symbol":symbol,"level":level})
         else:
-            return json.dumps({"type":"subscribe","exchange":"DERI","symbol":symbol,"level":level,"update_frequency":2,"time_window_secs":5,"max_levels":5})
-    
+            return json.dumps({"type":"subscribe","exchange":self.exchange,"symbol":symbol,"level":level,"update_frequency":2,"time_window_secs":5,"max_levels":5})
+
     def build_secList(self):
         return json.dumps({"type" : "security_list_request"})
 
     def build_unsubscribe(self, symbol, level):
-        return json.dumps({"type":"unsubscribe","exchange":"DERI","symbol":symbol,"level":level})
+        return json.dumps({"type":"unsubscribe","exchange":self.exchange,"symbol":symbol,"level":level})
     # {'type': 'security_list', 'symbols': ['DERI:UNI/USDC_PS/UNI', 'DERI:SOL/USD_PS/SOL', 'DERI:BTC/USD_PS/BTC', 'DERI:ETH/USD_PS/ETH']}
     def parseSecList(self, json):
         if 'symbols' not in json:
@@ -41,8 +42,8 @@ class Md2ProtocolClient:
                     symbol = symbol.replace("DERI:", "")
                 self.symbols.append(symbol)
             # print(self.symbols[2])
-    
-    # {'type': 'inside', 'key': [0, 0], 'symbol': 'SOL/USD_PS/SOL', 'bid': 31.61, 'bidqty': 93320, 'offer': 31.67, 'offerqty': 72750, 'exchange': 'DERI', 'isIntra': False} 
+
+    # {'type': 'inside', 'key': [0, 0], 'symbol': 'SOL/USD_PS/SOL', 'bid': 31.61, 'bidqty': 93320, 'offer': 31.67, 'offerqty': 72750, 'exchange': 'DERI', 'isIntra': False}
     def parseL1(self, jsonMsg):
         symbol = jsonMsg['symbol']
         msgType = jsonMsg['type'].upper()
@@ -53,7 +54,7 @@ class Md2ProtocolClient:
                 self.Errors.append(errorMsg)
 
         exchange = jsonMsg['exchange'].upper()
-        if exchange != "DERI":
+        if exchange != self.exchange:
             errorMsg = f"{msgType}: Invalid Exchange \'{exchange}\' Received while Request Sent In \'DERI\'"
             if errorMsg not in self.Errors:
                 self.Errors.append(errorMsg)
@@ -82,8 +83,8 @@ class Md2ProtocolClient:
         #     if errorMsg not in self.Warnings:
         #         self.Warnings.append(errorMsg)
 
-    
-    # {"type":"L2","key":[0,0],"symbol":"BTC/USD_PS/BTC","price":18701.5,"qty":41970,"exchange":"DERI","qlen":1,"side":-1,"isIntra":false}
+
+    # {"type":"L2","key":[0,0],"symbol":"BTC/USD_PS/BTC","price":18701.5,"qty":41970,"exchange":self.exchange,"qlen":1,"side":-1,"isIntra":false}
     def parseL2(self, jsonMsg):
         symbol = jsonMsg['symbol']
         msgType = jsonMsg['type'].upper()
@@ -92,34 +93,34 @@ class Md2ProtocolClient:
             errorMsg = f"{msgType}: Wrong Symbol \'{symbol}\' Received while Sent Request For \'{self.symbols[self.symbolIdx]}\'"
             if errorMsg not in self.Errors:
                 self.Errors.append(errorMsg)
-        
+
         exchange = jsonMsg['exchange'].upper()
-        if exchange != "DERI":
+        if exchange != self.exchange:
             errorMsg = f"{msgType}: Invalid Exchange \'{exchange}\' Received while Request Sent In \'DERI\'"
             if errorMsg not in self.Errors:
                 self.Errors.append(errorMsg)
-        
+
         price = jsonMsg['price']
         if price <= 0:
             errorMsg = f"{msgType}: Invalid Price \'{price}\' Received In Message, Symbol = {self.symbols[self.symbolIdx]}"
             if errorMsg not in self.Warnings:
                 self.Warnings.append(errorMsg)
-        
+
         # qty = jsonMsg['qty']
         # if qty <= 0:
         #     errorMsg = f"{msgType}: Invalid Quantity \'{qty}\' Received In Message, Symbol = {self.symbols[self.symbolIdx]}"
         #     if errorMsg not in self.Warnings:
         #         self.Warnings.append(errorMsg)
-        
+
         side = jsonMsg['side']
         if side not in self.sides:
             errorMsg = f"{msgType}: Invalid Side \'{side}\' Received In Message, Symbol = {self.symbols[self.symbolIdx]}"
             if errorMsg not in self.Errors:
                 self.Errors.append(errorMsg)
-        
 
 
-    # {"type":"trade","key":[0,0],"symbol":"BTC/USD_PS/BTC","exchange":"DERI","price":18696.5,"qty":12080,"isIntra":false}
+
+    # {"type":"trade","key":[0,0],"symbol":"BTC/USD_PS/BTC","exchange":self.exchange,"price":18696.5,"qty":12080,"isIntra":false}
     def parseTrade(self, jsonMsg):
         symbol = jsonMsg['symbol']
         msgType = jsonMsg['type'].upper()
@@ -128,9 +129,9 @@ class Md2ProtocolClient:
             errorMsg = f"{msgType}: Wrong Symbol \'{symbol}\' Received while Sent Request For \'{self.symbols[self.symbolIdx]}\'"
             if errorMsg not in self.Errors:
                 self.Errors.append(errorMsg)
-        
+
         exchange = jsonMsg['exchange'].upper()
-        if exchange != "DERI":
+        if exchange != self.exchange:
             errorMsg = f"{msgType}: Invalid Exchange \'{exchange}\' Received while Request Sent In \'DERI\'"
             if errorMsg not in self.Errors:
                 self.Errors.append(errorMsg)
@@ -140,14 +141,14 @@ class Md2ProtocolClient:
             errorMsg = f"{msgType}: Invalid Price \'{price}\' Received In Msg, Symbol = {self.symbols[self.symbolIdx]}"
             if errorMsg not in self.Warnings:
                 self.Errors.Warnings(errorMsg)
-        
+
         # qty = jsonMsg['qty']
         # if qty <= 0:
         #     errorMsg = f"{msgType}: Invalid Quantity \'{qty}\' Received In Message, Symbol = {self.symbols[self.symbolIdx]}"
         #     if errorMsg not in self.Warnings:
         #         self.Warnings.append(errorMsg)
-    
-    # {"type":"snapshot","globalSeq":1,"inside":"{"bid":18928,"bidqty":2500,"offer":18928.5,"offerqty":2500,"exchange":"DERI"}","isIntra":false,"key":[0,0],"live":1,"localSeq":0,"microsSincEpoch":1665676658805454,"symbol":"BTC/USD_PS/BTC","levels":[{"price":18928,"qty":2500,"qlen":1,"side":1},{"price":18925.5,"qty":4200,"qlen":1,"side":1},{"price":18911,"qty":50000,"qlen":1,"side":1},{"price":18891.5,"qty":1000,"qlen":1,"side":1},{"price":18865,"qty":20000,"qlen":1,"side":1},{"price":18928.5,"qty":2500,"qlen":1,"side":-1},{"price":18932.5,"qty":740,"qlen":1,"side":-1},{"price":18933,"qty":8990,"qlen":1,"side":-1},{"price":18934,"qty":2500,"qlen":1,"side":-1},{"price":18934.5,"qty":2000,"qlen":1,"side":-1}]}
+
+    # {"type":"snapshot","globalSeq":1,"inside":"{"bid":18928,"bidqty":2500,"offer":18928.5,"offerqty":2500,"exchange":self.exchange}","isIntra":false,"key":[0,0],"live":1,"localSeq":0,"microsSincEpoch":1665676658805454,"symbol":"BTC/USD_PS/BTC","levels":[{"price":18928,"qty":2500,"qlen":1,"side":1},{"price":18925.5,"qty":4200,"qlen":1,"side":1},{"price":18911,"qty":50000,"qlen":1,"side":1},{"price":18891.5,"qty":1000,"qlen":1,"side":1},{"price":18865,"qty":20000,"qlen":1,"side":1},{"price":18928.5,"qty":2500,"qlen":1,"side":-1},{"price":18932.5,"qty":740,"qlen":1,"side":-1},{"price":18933,"qty":8990,"qlen":1,"side":-1},{"price":18934,"qty":2500,"qlen":1,"side":-1},{"price":18934.5,"qty":2000,"qlen":1,"side":-1}]}
     def parseSnapshot(self, jsonMsg):
         msgType = jsonMsg['type'].upper()
         errorMsg = ""
@@ -169,7 +170,7 @@ class Md2ProtocolClient:
             if errorMsg not in self.Warnings:
                 self.Warnings.append(errorMsg)
         exchange = inside['exchange'].upper()
-        if exchange != "DERI":
+        if exchange != self.exchange:
             errorMsg = f"{msgType}: Invalid Exchange \'{exchange}\' Received while Request Sent In \'DERI\'"
             if errorMsg not in self.Errors:
                 self.Errors.append(errorMsg)
@@ -200,7 +201,7 @@ class Md2ProtocolClient:
                     self.Errors.append(errorMsg)
 
 
-    # {"type":"subscribe","exchange":"DERI","symbol":"BTC/USD_PS/BTC","level":"L2"}
+    # {"type":"subscribe","exchange":self.exchange,"symbol":"BTC/USD_PS/BTC","level":"L2"}
     def parseSubscribed(self, jsonMsg):
         msgType = jsonMsg['type'].upper()
 
@@ -210,13 +211,13 @@ class Md2ProtocolClient:
             errorMsg = f"{msgType}: Wrong Symbol \'{symbol}\' Received while Request Sent For \'{self.symbols[self.symbolIdx]}\'"
             if errorMsg not in self.Errors:
                 self.Errors.append(errorMsg)
-        
+
         exchange = jsonMsg['exchange'].upper()
-        if exchange != "DERI":
+        if exchange != self.exchange:
             errorMsg = f"{msgType}: Invalid Exchange \'{exchange}\' Received while Request Sent In \'DERI\'"
             if errorMsg not in self.Errors:
                 self.Errors.append(errorMsg)
-        
+
         level = jsonMsg['level']
         currLevel = self.Levels[self.LevelIdx]
         if level != currLevel:
@@ -259,7 +260,7 @@ class Md2ProtocolClient:
                 self.parseSecList(json.loads(response))
                 self.msg = self.build_subscribe(self.symbols[self.symbolIdx], self.Levels[self.LevelIdx])
                 await self._send_msg()
-            
+
             if msgType == 'subscribed':
                 self.parseSubscribed(json.loads(response))
             if msgType != 'security_list':
@@ -292,7 +293,7 @@ class Md2ProtocolClient:
                     self.unsubscribed = True
                     await self._send_msg()
 
-        
+
     async def _send_msg(self):
         async with self.websocket_ as websocket:
             await websocket.send(self.msg.encode())
@@ -307,7 +308,7 @@ class Md2ProtocolClient:
                         if self.LevelIdx == 3:
                             self.symbolIdx = 2
                         if self.LevelIdx >= len(self.Levels):
-                            
+
                             self.printErrors()
                             await websocket.close()
 
@@ -318,13 +319,14 @@ class Md2ProtocolClient:
                     self.unsubscribed = False
                     await self._send_msg()
             await self._recv_msg(websocket)
-    
+
 
 def init_argparse() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description='Test client for MA2 deribit implementation')
     # '-h' is reserved for help by argparse package, so '-s' is forced choice for host/server
     parser.add_argument('-s', '--host', help='server (host) name or ip address for MA2 server', required=True)
-    parser.add_argument('-p', '--port', help='port number for MA2 server', required=True, type=int)
+    parser.add_argument('-p', '--port', help='port number for MD2 server', required=True, type=int)
+    parser.add_argument('-e', '--exchange', help='Exchange for MD2 server', required=True)
     # args = vars(parser.parse_args())
     return parser
 
@@ -335,6 +337,7 @@ if __name__=="__main__":
     args = parser.parse_args()
     host = args.host
     port = args.port
+    exchange = args.exchange
 
-    client = Md2ProtocolClient(host, port)
+    client = Md2ProtocolClient(host, port, exchange)
     asyncio.get_event_loop().run_until_complete(client._send_msg())
