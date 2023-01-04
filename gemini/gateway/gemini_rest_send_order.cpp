@@ -19,8 +19,8 @@
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ssl/error.hpp>
 #include <boost/asio/ssl/stream.hpp>
-#include <boost/json.hpp>
-#include <boost/json/src.hpp>
+// #include <boost/json.hpp>
+// #include <boost/json/src.hpp>
 #include <cppcodec/hex_lower.hpp>
 #include <boost/beast/core/detail/base64.hpp>
 
@@ -125,6 +125,7 @@ inline bool fmtGeminiSpotRestApiOrder(
             << R"(, "type": ")" << type << '"'
             << R"(, "options": [")" << options << "\"]"
             << "}";
+        // aRequest.body() = oss.str();
         auto sPayload = oss.str();
         char payload[1024];
         auto size = boost::beast::detail::base64::encode(payload, sPayload.c_str(), sPayload.length());
@@ -230,7 +231,7 @@ public:
         if(ec)
             return fail(ec, "handshake");
 
-        fmtGeminiSpotRestApiOrder(req_, "btcusd", "1", "9459.15", "buy", "exchange limit", "maker-or-cancel");
+        fmtGeminiSpotRestApiOrder(req_, "btcusd", "1999", "9459.15", "buy", "exchange limit", "maker-or-cancel");
         std::cout << req_.target() << std::endl;
         std::cout << aApiHost << std::endl;
         std::cout << req_.method() << std::endl;
@@ -273,6 +274,7 @@ public:
             return fail(ec, "read");
 
         // Write the message to standard out
+	std::cout << res_.result() << std::endl;
         auto data = res_.body();
         std::cout << "Body: " << data << std::endl << std::endl << std::endl;
     }

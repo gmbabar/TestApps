@@ -11,70 +11,99 @@
 #include <vector>
 #include <sstream>
 
-using namespace rapidjson;
-
-struct MD2ConfigParser {    // Fix coding style/guide
-    MD2ConfigParser(std::string &configFile) {
-        this->parseConfig(configFile);
+struct MD2ConfigParser {
+    MD2ConfigParser(const std::string &aConfigFile) {
+        this->parseConfig(aConfigFile);
     }
 
-    std::string asStr(const std::string &key, const std::string &defaultVal="") {
-        auto itr = m_values.find(key);
-        if (itr != m_values.end() && itr->second.GetType() == ConfigValue::TypeString) {
-            return boost::any_cast<std::string>(itr->second.GetValue());
+    bool asBool(const std::string &aConfigKey, const bool &aDefaultVal=false) {
+        auto itr = m_values.find(aConfigKey);
+        if (itr != m_values.end() && itr->second.getType() == ConfigValue::TypeBool) {
+            return boost::any_cast<bool>(itr->second.getValue());
         }
-        return defaultVal;
+        return aDefaultVal;
     }
 
-    int asInt(const std::string &key, const int &defaultVal=0) {
-        auto itr = m_values.find(key);
-        if (itr != m_values.end() && itr->second.GetType() == ConfigValue::TypeString) {
-            return boost::any_cast<int>(itr->second.GetValue());
+    int asInt(const std::string &aConfigKey, const int &aDefaultVal=0) {
+        auto itr = m_values.find(aConfigKey);
+        if (itr == m_values.end())
+            return aDefaultVal;
+        if (itr->second.getType() == ConfigValue::TypeString) {
+            return std::stoi(boost::any_cast<std::string>(itr->second.getValue()));
         }
-        return defaultVal;
+        if (itr->second.getType() == ConfigValue::TypeInt) {
+            return boost::any_cast<int>(itr->second.getValue());
+        }
+        return aDefaultVal;
     }
 
-    bool asBool(const std::string &key, const bool &defaultVal=false) {
-        auto itr = m_values.find(key);
-        if (itr != m_values.end() && itr->second.GetType() == ConfigValue::TypeString) {
-            return boost::any_cast<bool>(itr->second.GetValue());
+    int asLong(const std::string &aConfigKey, const int &aDefaultVal=0) {
+        auto itr = m_values.find(aConfigKey);
+        if (itr == m_values.end())
+            return aDefaultVal;
+        if (itr->second.getType() == ConfigValue::TypeString) {
+            return std::stol(boost::any_cast<std::string>(itr->second.getValue()));
         }
-        return defaultVal;
+        if (itr->second.getType() == ConfigValue::TypeInt || itr->second.getType() == ConfigValue::TypeLong) {
+            return boost::any_cast<long>(itr->second.getValue());
+        }
+        return aDefaultVal;
     }
 
-    double asDouble(const std::string &key, const double &defaultVal=0.0) {
-        auto itr = m_values.find(key);
-        if (itr != m_values.end() && itr->second.GetType() == ConfigValue::TypeString) {
-            return boost::any_cast<bool>(itr->second.GetValue());
+    double asDouble(const std::string &aConfigKey, const double &aDefaultVal=0.0) {
+        auto itr = m_values.find(aConfigKey);
+        if (itr == m_values.end())
+            return aDefaultVal;
+        if (itr->second.getType() == ConfigValue::TypeString) {
+            return std::stod(boost::any_cast<std::string>(itr->second.getValue()));
         }
-        return defaultVal;
+        if (itr->second.getType() == ConfigValue::TypeDouble) {
+            return boost::any_cast<double>(itr->second.getValue());
+        }
+        return aDefaultVal;
     }
+
+    std::string asStr(const std::string &aConfigKey, const std::string &aDefaultVal="") {
+        auto itr = m_values.find(aConfigKey);
+        if (itr != m_values.end() && itr->second.getType() == ConfigValue::TypeString) {
+            return boost::any_cast<std::string>(itr->second.getValue());
+        }
+        return aDefaultVal;
+    }
+
+    // nebula::dtm::time_duration asTimeDuration(const std::string &aConfigKey,
+    //         const nebula::dtm::time_duration aDefaultValue = nebula::dtm::seconds(0)) {
+    //     auto value = this->asInt(aConfigKey, 0);
+    //     if (value != 0)
+    //         return nebula::dtm::seconds(value);
+    //     return aDefaultValue;
+    // }
 
 private:
-    void parseConfigObject(rapidjson::Value val, std::string prefix) {
-        if (!prefix.empty())
-            prefix += ".";
-        for (auto& vitr : val.GetObject()) {
-            // int type = vitr.value.GetType();
+    void parseConfigObject(rapidjson::Value aVal, std::string aPrefix) {
+        if (!aPrefix.empty())
+            aPrefix += ".";
+        for (auto& vitr : aVal.GetObject()) {
+            // int type = vitr.value.getType();
             if (vitr.value.IsObject()) {
-                parseConfigObject(vitr.value.GetObject(), prefix + vitr.name.GetString());
+                parseConfigObject(vitr.value.GetObject(), aPrefix + vitr.name.GetString());
             }
             if (vitr.value.IsArray()) {
                 auto arr = vitr.value.GetArray();
-                for (SizeType i = 0; i < arr.Size(); i++) {
+                for (rapidjson::SizeType i = 0; i < arr.Size(); i++) {
                     if(arr[i].IsObject()) {
-                        parseConfigObject(arr[i].GetObject(), prefix + vitr.name.GetString());
+                        parseConfigObject(arr[i].GetObject(), aPrefix + vitr.name.GetString());
                     }
                 }
             }
             else {
-                m_values.emplace(prefix + vitr.name.GetString(), ConfigValue(vitr.value));
+                m_values.emplace(aPrefix + vitr.name.GetString(), ConfigValue(vitr.value));
             }
         }
     }
 
-    void parseConfig(std::string &configFile) {
-        std::ifstream Md2ConfigFile(configFile);
+    void parseConfig(const std::string &aConfigFile) {
+        std::ifstream Md2ConfigFile(aConfigFile);
         rapidjson::IStreamWrapper json(Md2ConfigFile);
         rapidjson::Document document;
         document.ParseStream(json);
@@ -90,13 +119,14 @@ private:
             TypeNull,
             TypeBool,
             TypeInt,
+            TypeLong,
             TypeDouble,
             TypeString
         };
 
-        // default ctor
+        // default ctors
         ConfigValue() = default;
-        ConfigValue(const ConfigValue &other) = default;
+        ConfigValue(const ConfigValue&) = default;
 
         // ctor
         explicit ConfigValue(const rapidjson::Value &aVal) : m_type(TypeNull) {
@@ -123,17 +153,14 @@ private:
         }
 
         // assignment
-        void operator=(const ConfigValue &other) {
-            m_type = other.m_type;
-            m_value = other.m_value;
-        }
+        ConfigValue& operator=(const ConfigValue&) = default;
 
         // getters
-        boost::any GetValue() {
+        boost::any getValue() {
             return m_value;
         }
 
-        ConfigType GetType() {
+        ConfigType getType() {
             return m_type;
         }
 
@@ -155,7 +182,8 @@ int main()
     // std::cout << parser.asInt(cmd) << std::endl;
     // std::cout << parser.asStr("ROLE") << std::endl;
     // std::cout << parser.asStr("APP_ID") << std::endl;
-    // std::cout << parser.asInt("APP_CODE") << std::endl;
+    std::cout << "APP_CODE: " << parser.asInt("APP_CODE") << std::endl;
+    std::cout << "MD_SERVICE.listen_port: " << parser.asInt("MD_SERVICE.listen_port") << std::endl;
     // std::cout << parser.asStr("LOGGING.log_level") << std::endl;
     // std::cout << parser.asStr("LOGGING.log_path") << std::endl;
     // std::cout << parser.asStr("LOGGING.destinations.log_type") << std::endl;

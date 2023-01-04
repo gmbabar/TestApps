@@ -36,4 +36,12 @@ json/rapidjson/Md2ConfigParser
 json/rapidjson/error
 json/rapidjson/loop
 json/rapidjson/subscribe
+bitfinex/parser
+bitfinex/pricefeed
+boost/timer/timer
+boost/timer/timer.o
+json/rapidjson/awskeys
+boost/UUID/generator
+boost/boost_version
+gemini/gateway/gemini_rest_send_order
 

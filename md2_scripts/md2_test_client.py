@@ -20,7 +20,7 @@ class Md2ProtocolClient:
         self.msg = self.build_secList()
         self.exchange = exchangeNemonic
 
-    def build_subscribe(self, symbol, level, exchangeNemonic):
+    def build_subscribe(self, symbol, level):
         if level != "S":
             return json.dumps({"type":"subscribe","exchange":self.exchange,"symbol":symbol,"level":level})
         else:

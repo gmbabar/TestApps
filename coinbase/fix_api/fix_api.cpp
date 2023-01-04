@@ -75,8 +75,8 @@ std::cout << "Payload: ";
 for ( const auto &ch : aPayload)
     std::cout << (int(ch) == 1 ? '|' : ch);
 std::cout << std::endl;
-std::cout << "signature: " << signature << std::endl;
-std::cout << "signature: " << std::string(buffer, msgSize) << std::endl;
+// std::cout << "signature: " << signature << std::endl;
+// std::cout << "signature: " << std::string(buffer, msgSize) << std::endl;
 
     return std::string(buffer, msgSize);
 }
@@ -256,8 +256,10 @@ public:
         if(ec)
             return fail(ec, "read error");
 
+std::cout << __func__ << ": bytes: " << bytes << std::endl;
         std::string data;
         std::istream(&response_) >> data;
+std::cout << __func__ << ": data: " << data.size() << std::endl;
         std::cout << __func__ << ": ";
         for ( const auto &ch : data) {
             std::cout << (int(ch) == 1 ? '|' : ch);

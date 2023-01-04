@@ -17,16 +17,32 @@ int main () {
 	boost::beast::flat_buffer buffer(1024);
 	buffer.max_size(1024);	// limit max_size
 
-	// consume 6 bytes.
+	// consume 7 bytes.
 	auto prepBuff = buffer.prepare(10);
 	char *p = static_cast<char*>(prepBuff.data());
-	memcpy(p, "123456", 6);
-	buffer.commit(6);
+	memcpy(p, "123456\0", 7);
+	buffer.commit(7);
 
 	// read data.
 	auto cbuf = buffer.cdata();
 	for( int i=0; i<buffer.size(); ++i)
 		printf("%c \n", static_cast<const char*>(cbuf.data())[i]);
+
+	printf("Size: %lu\n", buffer.size());
+	printf("STR: %s \n", static_cast<const char*>(cbuf.data()));
+
+	// consume... data still there.
+	buffer.consume(buffer.size());
+	printf("Size: %lu\n", buffer.size());
+	printf("STR: %s \n", static_cast<const char*>(buffer.cdata().data()));
+	printf("STR: %s \n", static_cast<const char*>(buffer.data().data()));
+
+	// clear removes data from buffer.
+	buffer.clear();
+	printf("Size: %lu\n", buffer.size());
+	printf("STR: %s \n", static_cast<const char*>(buffer.cdata().data()));
+	printf("STR: %s \n", static_cast<const char*>(buffer.data().data()));
+
 }
 
 

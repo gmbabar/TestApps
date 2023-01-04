@@ -6,7 +6,7 @@
 #include <boost/asio/connect.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ssl/stream.hpp>
-#include <boost/bind/bind.hpp>
+//#include <boost/bind/bind.hpp>
 #include <fstream>
 #include <cstdlib>
 #include <iostream>
@@ -33,6 +33,7 @@ namespace websocket = beast::websocket; // from <boost/beast/websocket.hpp>
 namespace net = boost::asio;            // from <boost/asio.hpp>
 namespace ssl = boost::asio::ssl;       // from <boost/asio/ssl.hpp>
 using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
+//using namespace boost::placeholders;
 
 inline std::string bitfinexSignature (const std::string &key, const std::string &payload){
     unsigned int len = SHA384_DIGEST_LENGTH;

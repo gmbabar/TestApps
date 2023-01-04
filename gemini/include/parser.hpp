@@ -126,9 +126,7 @@ inline void slowParseV2Marketdata(const std::string& json) {
 
 /*
 -------l2-update
-{"type":"l2_updates","symbol":"BTCUSD","changes":[["buy","21440.73","0"],["buy","21427.95","0.2"],["buy","21440.74","0.00402665"],
-["sell","21468.93","0"],["sell","40861.60","0"],["sell","21468.09","0"],["sell","21465.09","1"],["sell","21459.01","0.425"],
-["sell","21464.73","0"],["sell","21468.96","0.00311346"]]}
+{"type":"l2_updates","symbol":"BTCUSD","changes":[["buy","21440.73","0"],["sell","21468.93","0"]]}
 */
 
 
