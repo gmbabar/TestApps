@@ -41,10 +41,11 @@ public:
         m_ws(net::make_strand(ioc), ctx) {
     }
     // void run( char const* host, char const* port, char const* target) {
-    void run( char const* host, char const* port, char const* msg) {
+    void run( char const* host, char const* port, std::vector<std::string> &msgs) {
         std::cout << "Listener:" << __func__ << std::endl;
         m_host = host;
-        m_text = msg;
+        msgs_ = msgs;
+        // m_text = msgs[0];
         // m_target = target;
         // Look up the domain name
         m_resolver.async_resolve(host,port,beast::bind_front_handler(&Session::on_resolve, shared_from_this()));
@@ -114,10 +115,25 @@ public:
         std::cout << "Listener:" << __func__ << std::endl;
         if(ec)
             return fail(ec, "handshake");
-
         // Send the message
-        m_ws.async_write(net::buffer(m_text), beast::bind_front_handler(&Session::on_write, shared_from_this()));
+        // for(auto idx=0; idx < msgs_.size(); idx++) {
+        //     if(idx == msgs_.size()-2) {
+        //         m_ws.async_write(net::buffer(msgs_[idx+1]), beast::bind_front_handler(&Session::on_write, shared_from_this()));
+        //     }
+            m_ws.async_write(net::buffer(msgs_.back()), beast::bind_front_handler(&Session::on_write, shared_from_this()));
+            msgs_.pop_back();
+            // msgs_.erase(msgs_[idx]);
+            // idx++;
+        // }
+        // for(auto ele : msgs_) {
+        //     this->write(ec, ele);
+        // }
     }
+
+
+    // void write(beast::error_code ec, std::string &msg) {
+    //     m_ws.async_write(net::buffer(msg), beast::bind_front_handler(&Session::on_write, shared_from_this()));
+    // }
 
     void on_write(beast::error_code ec,std::size_t bytes_transferred) {
         std::cout << "Listener:" << __func__ << std::endl;
@@ -135,17 +151,39 @@ public:
             return fail(ec, "read");
         std::ostringstream oss;
         oss << beast::make_printable(m_buffer.data());
-        std::cout << __func__ << "-" << ": " << oss.str() << std::endl;
-        // Document doc;
-        // doc.Parse(oss.str().c_str());
-        // std::string type = doc["ch"].GetString();
-        // if(strcmp(type.c_str(), "trades") == 0) {
-        //     parseTrade(oss.str());
+        const std::string data = oss.str();
+        std::cout << __func__ << "-" << ": " << data << std::endl;
+
+        // rapidjson::Document doc;
+        // doc.Parse(data.c_str());
+        // if(doc.GetObject().MemberBegin()->name.GetString() != "result") {
+        //     if(doc.HasMember("ch")) {
+        //         std::string channel = doc["ch"].GetString();
+        //         if (channel.find("orderbook/") != std::string::npos) {
+        //             parseTopOfBook(doc);
+        //             }
+        //         else if (channel.find("ticker/") != std::string::npos) {
+        //             // parseTopOfBook(doc);
+        //         }
+        //         else if (channel.find("trades") != std::string::npos) {
+        //             parseTrade(doc);
+        //         }
+        //     }
         // }
 
+        if(msgs_.size() == 0) {
+            m_buffer.consume(m_buffer.size());
+            m_ws.async_read(m_buffer, beast::bind_front_handler(&Session::on_read, shared_from_this()));
+        }
+        else {
+            std::cout << "----------SENT: >" << msgs_.back() << ", " << msgs_.size() << " <---------------" << std::endl;
+            m_ws.async_write(net::buffer(msgs_.back()), beast::bind_front_handler(&Session::on_write, shared_from_this()));
+            msgs_.pop_back();
+        }
+
+
+
         // Clear the buffer
-        m_buffer.consume(m_buffer.size());
-        m_ws.async_read(m_buffer, beast::bind_front_handler(&Session::on_read, shared_from_this()));
     }
     void on_close(beast::error_code ec) {
         std::cout << "Listener:" << __func__ << std::endl;
@@ -159,6 +197,8 @@ private:
     beast::flat_buffer m_buffer;
     std::string m_host;
     std::string m_text;
+    std::vector<std::string> msgs_;
+    int idx=0;
     // std::string m_target;
 };
 
@@ -186,7 +226,17 @@ int main(int argc, char **argv) {
     {\"method\":\"subscribe\",\"ch\":\"orderbook/top/1000ms\",\"params\":{\"symbols\":[\"ETHBTC\",\"BTCUSDT\"]},\"id\":123}
     */
     oss << "{\"method\":\"subscribe\",\"ch\":\"trades\",\"params\":{\"symbols\":[\"ETHBTC\",\"BTCUSDT\"]},\"id\":123}";
+    std::vector<std::string> subscriptions;
+    // subscriptions.push_back(oss.str());
+    // oss.str("");
+    // oss << R"({"method": "subscribe","ch": "ticker/1s","params": {"symbols": ["ETHBTC","BTCUSDT"]},"id": 123})";
+    // subscriptions.push_back(oss.str());
+    // oss.str("");
+    // oss << R"({"method": "subscribe","ch": "orderbook/top/100ms","params": {"symbols": ["ETHBTC", "BTCUSDT"]},"id": 123})";
+    subscriptions.push_back(oss.str());
     std::cout << __func__ << ": " << oss.str() << std::endl;
+
+
 
     net::io_context ioc;
 
@@ -194,7 +244,7 @@ int main(int argc, char **argv) {
     ssl::context ctx{ssl::context::tlsv12_client};
 
     // std::make_shared<Session>(ioc, ctx)->run(host, port, target);
-    std::make_shared<Session>(ioc, ctx)->run(host, port, oss.str().c_str());
+    std::make_shared<Session>(ioc, ctx)->run(host, port, subscriptions);
 
     ioc.run();
 
