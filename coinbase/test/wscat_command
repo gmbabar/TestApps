@@ -7,4 +7,5 @@ wscat -c wss://ws-feed.exchange.coinbase.com
 
 BINA API KEY: t6pj1DchQsRIxcX2NRyAtADhD8AeQ1RWlx1tahnX3caoQP7hzlOj6urmxRXa0ru0
 BINA SECRET KEY: T7no5tnsCU4xqwertOPxQXsfs6l01pAXBkslRAkV8osMwQES6HpB9uGx9D0D0KGU
-
+BINA REST ENDPOINT: https://testnet.binance.vision/api
+BINA WEBSOCKET ENDPOINT: wss://testnet.binance.vision/ws-api/v3
