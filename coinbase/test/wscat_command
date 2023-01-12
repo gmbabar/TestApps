@@ -5,3 +5,6 @@ wscat -c wss://ws-feed.exchange.coinbase.com
 
 {"type":"subscribe","product_ids":["ETH-USD","ETH-EUR"],"channels":["level2","heartbeat",{"name":"ticker","product_ids":["ETH-BTC","ETH-USD"]}]}
 
+BINA API KEY: t6pj1DchQsRIxcX2NRyAtADhD8AeQ1RWlx1tahnX3caoQP7hzlOj6urmxRXa0ru0
+BINA SECRET KEY: T7no5tnsCU4xqwertOPxQXsfs6l01pAXBkslRAkV8osMwQES6HpB9uGx9D0D0KGU
+
