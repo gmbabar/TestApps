@@ -32,21 +32,24 @@ public:
 		    perror("connect");
             exit(EXIT_FAILURE);
 	    }
+        std::cout << "[INFO] Connected With Server" << std::endl;
         this->onStart();
     }
 private:
 
     void onStart() {
+        std::cout << "[INFO] Starting To Receive Data From Server" << std::endl;
         auto initialTime = std::chrono::steady_clock::now();
-        while (recv(m_socketFD, m_buffer, sizeof(m_buffer), 0) > 0)
+        for (int i=0; i<1E6; i++)
         {
+            recv(m_socketFD, m_buffer, sizeof(m_buffer), 0);
             parseMsg(std::string(m_buffer), m_result);
             m_parsedQueue.push(m_result);
         }
         auto finalTime = std::chrono::steady_clock::now();
         auto totalTime = std::chrono::duration_cast<std::chrono::microseconds>(finalTime-initialTime);
         std::cout << "[INFO] Total Time To Parse Messages Is " << totalTime.count()
-                << "MICS, The Queue Size Is " << m_parsedQueue.size() << std::endl;
+                << " MICS, The Queue Size Is " << m_parsedQueue.size() << std::endl;
     }
     int m_socketFD;
     sockaddr_in m_serverAddr;

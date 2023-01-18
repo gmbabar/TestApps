@@ -39,11 +39,13 @@ public:
             perror("Accept ");
             exit(EXIT_FAILURE);
         }
+        std::cout << "[INFO] Client Connected With Server" << std::endl;
         this->onStart();
     }
 private:
 
     void onStart() {
+        std::cout << "[INFO] Sending Messages To Client" << std::endl;
         for (int idx=0; idx<m_sendTime; idx++) {
             send(m_clientFD, m_msg.c_str(), m_msg.size(), 0);
         }
