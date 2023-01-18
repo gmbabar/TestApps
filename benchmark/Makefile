@@ -2,7 +2,7 @@
 CC = g++
 
 FLAGS = -g -I./ -I./include -march=native
-# FLAGS = -g -I./
+# FLAGS = -g -I./include
 LIBS = -lpthread -lboost_system -lcrypto -lssl
 objects = server client parser
 
