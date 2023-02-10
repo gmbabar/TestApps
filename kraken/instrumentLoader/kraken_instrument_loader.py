@@ -20,7 +20,7 @@ def kraken_instrument_loader():
         exchSym = symbol
         baseCcy = data['base']
         quoteCcy = data['quote']
-        tickSize = data['lot']
+        tickSize = data['tick_size']
         final_data = {
             "Exchange-Symbol":exchSym,
             "QPT-Symbol":baseCcy+quoteCcy,
