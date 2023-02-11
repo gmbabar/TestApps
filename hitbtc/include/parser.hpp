@@ -1,6 +1,7 @@
 #include <iostream>
 #include "rapidjson/stringbuffer.h"
 #include "rapidjson/document.h"
+#include "bufrange.hpp"
 #include <boost/property_tree/ptree.hpp>
 #include <boost/json.hpp>
 #include <boost/property_tree/ptree.hpp>
@@ -9,6 +10,7 @@
 #include <vector>
 
 using namespace rapidjson;
+
 
 
 namespace SlowParser {
@@ -105,41 +107,43 @@ namespace FastParser {
     */
 
     inline void parseTopOfBook(std::string &json) {
+        const char *aBuf = json.c_str();
         auto sPos = json.find("data");
         auto col = json.find(':', sPos);
         auto start = json.find('{', col);
         auto symS = json.find('"', start+1);
         auto symE = json.find('"', symS+1);
-
-        auto sym = json.substr(symS+1, symE-symS-1);
+        Parse::data::ConstBufRange symbol(&aBuf[symS]+1, &aBuf[symE]);
+        // auto sym = json.substr(symS+1, symE-symS-1);
 
         auto dataS = json.find('{', symE+1);
         auto askPxS = json.find("a", dataS);
         auto askPxC = json.find(':', askPxS+1);
         askPxS = json.find('"', askPxC);
         auto askPxE = json.find('"', askPxS+1);
-
-        auto askPx = json.substr(askPxS+1, askPxE-askPxS-1);
+        Parse::data::ConstBufRange askPx(&aBuf[askPxS]+1, &aBuf[askPxE]);
+        // auto askPx = json.substr(askPxS+1, askPxE-askPxS-1);
 
         auto askQtyCol = json.find(':', askPxE);
         auto askQtyS = json.find('"', askQtyCol);
         auto askQtyE = json.find('"', askQtyS+1);
 
-        auto askQty = json.substr(askQtyS+1, askQtyE-askQtyS-1);
+        Parse::data::ConstBufRange askQty(&aBuf[askQtyS]+1, &aBuf[askQtyE]);
+        // auto askQty = json.substr(askQtyS+1, askQtyE-askQtyS-1);
 
         auto bidPxCol = json.find(':', askQtyE);
         auto bidPxS = json.find('"', bidPxCol+1);
         auto bidPxE = json.find('"', bidPxS+1);
-
-        auto bidPx = json.substr(bidPxS+1, bidPxE-bidPxS-1);
+        Parse::data::ConstBufRange bidPx(&aBuf[bidPxS]+1, &aBuf[bidPxE]);
+        // auto bidPx = json.substr(bidPxS+1, bidPxE-bidPxS-1);
 
         auto bidQtyCol = json.find(':', bidPxE);
         auto bidQtyS = json.find('"', bidQtyCol+1);
         auto bidQtyE = json.find('"', bidQtyS+1);
-
-        auto bidQty = json.substr(bidQtyS+1, bidQtyE-bidQtyS-1);
-
-        std::cout << askPx << " | " << askQty << " | " << bidPx << " | " << bidQty << std::endl;
+        Parse::data::ConstBufRange bidQty(&aBuf[bidQtyS]+1, &aBuf[bidQtyE]);
+        // auto bidQty = json.substr(bidQtyS+1, bidQtyE-bidQtyS-1);
+        // std::cout << askPx << " | " << askQty << " | " << bidPx << " | " << bidQty << std::endl;
+        std::cout << askPx.asStr() << " | " << askQty.asStr() << " | " << bidPx.asStr() << " | " << bidQty.asStr() << std::endl;
     }
 
 
@@ -151,36 +155,42 @@ namespace FastParser {
         auto start = json.find('{', col);
         auto symS = json.find('"', start+1);
         auto symE = json.find('"', symS+1);
+        const char *aBuf = json.c_str();
 
-        auto sym = json.substr(symS+1, symE-symS-1);
+        Parse::data::ConstBufRange symbol(&aBuf[symS]+1, &aBuf[symE]);
+        // auto sym = json.substr(symS+1, symE-symS-1);
 
         auto dataS = json.find('{', symE+1);
         auto askPxS = json.find("a", dataS);
         auto askPxC = json.find(':', askPxS+1);
         askPxS = json.find('"', askPxC);
         auto askPxE = json.find('"', askPxS+1);
+        Parse::data::ConstBufRange askPx(&aBuf[askPxS]+1, &aBuf[askPxE]);
 
-        auto askPx = json.substr(askPxS+1, askPxE-askPxS-1);
+        // auto askPx = json.substr(askPxS+1, askPxE-askPxS-1);
 
         auto askQtyCol = json.find(':', askPxE);
         auto askQtyS = json.find('"', askQtyCol);
         auto askQtyE = json.find('"', askQtyS+1);
+        Parse::data::ConstBufRange askQty(&aBuf[askQtyS]+1, &aBuf[askQtyE]);
 
-        auto askQty = json.substr(askQtyS+1, askQtyE-askQtyS-1);
+        // auto askQty = json.substr(askQtyS+1, askQtyE-askQtyS-1);
 
         auto bidPxCol = json.find(':', askQtyE);
         auto bidPxS = json.find('"', bidPxCol+1);
         auto bidPxE = json.find('"', bidPxS+1);
+        Parse::data::ConstBufRange bidPx(&aBuf[bidPxS]+1, &aBuf[bidPxE]);
 
-        auto bidPx = json.substr(bidPxS+1, bidPxE-bidPxS-1);
+        // auto bidPx = json.substr(bidPxS+1, bidPxE-bidPxS-1);
 
         auto bidQtyCol = json.find(':', bidPxE);
         auto bidQtyS = json.find('"', bidQtyCol+1);
         auto bidQtyE = json.find('"', bidQtyS+1);
+        Parse::data::ConstBufRange bidQty(&aBuf[bidQtyS]+1, &aBuf[bidQtyE]);
 
-        auto bidQty = json.substr(bidQtyS+1, bidQtyE-bidQtyS-1);
-
-        std::cout << askPx << " | " << askQty << " | " << bidPx << " | " << bidQty << std::endl;
+        // auto bidQty = json.substr(bidQtyS+1, bidQtyE-bidQtyS-1);
+        // std::cout << askPx << " | " << askQty << " | " << bidPx << " | " << bidQty << std::endl;
+        std::cout << askPx.asStr() << " | " << askQty.asStr() << " | " << bidPx.asStr() << " | " << bidQty.asStr() << std::endl;
     }
 
     /*
@@ -189,19 +199,22 @@ namespace FastParser {
     */
 
     inline void parseTradeUPD(std::string &json) {
-        std::string side, px, qty, symbol;
-
+        Parse::data::ConstBufRange side, px, qty;
+        // std::string side, px, qty, symbol;
+        const char *aBuf = json.c_str();
         int dataS, dataE;
         auto sPos = json.find("update");
         auto col = json.find(':', sPos);
         auto start = json.find('{', col);
         auto symS = json.find('"', start+1);
         auto symE = json.find('"', symS+1);
-        symbol = json.substr(symS+1, symE-symS-1);
+        Parse::data::ConstBufRange symbol(&aBuf[symS+1], &aBuf[symE]);
+        // symbol = json.substr(symS+1, symE-symS-1);
         auto arrS = json.find('[', symE);
         auto arrE = json.find(']', arrS);
 
         auto arr = json.substr(arrS+1, arrE-arrS-1);
+        aBuf = arr.c_str();
         int valStart, valEnd;
         // std::cout << arr << std::endl;
         for(int i=0; i<arr.size(); i++) {
@@ -209,18 +222,25 @@ namespace FastParser {
             if(arr[i] == 'p') {
                 valStart = arr.find('"', arr.find(":", i));
                 valEnd = arr.find('"', valStart+1);
-                px = arr.substr(valStart+1, valEnd-valStart-1);
+                px.buf = &aBuf[valStart+1];
+                px.bufEnd = &aBuf[valEnd];
+                // px = arr.substr(valStart+1, valEnd-valStart-1);
             }
             if(arr[i] == 'q') {
                 valStart = arr.find('"', arr.find(":", i));
                 valEnd = arr.find('"', valStart+1);
-                qty = arr.substr(valStart+1, valEnd-valStart-1);
+                qty.buf = &aBuf[valStart+1];
+                qty.bufEnd = &aBuf[valEnd];
+                // qty = arr.substr(valStart+1, valEnd-valStart-1);
             }
             if(arr[i] == 's') {
                 valStart = arr.find('"', arr.find(":", i));
                 valEnd = arr.find('"', valStart+1);
-                side = arr.substr(valStart+1, valEnd-valStart-1);
+                // side = arr.substr(valStart+1, valEnd-valStart-1);
+                side.buf = &aBuf[valStart+1];
+                side.bufEnd = &aBuf[valEnd];
                 std::cout << "|" << side << " for " << px << "@" << qty << " on " << symbol << "|" << std::endl;
+                // std::cout << symbol.asStr() << std::endl;
                 if(arr.find("s", i+1) == std::string::npos) {
                     break;
                 }
@@ -236,19 +256,22 @@ namespace FastParser {
     */
 
     inline void parseTradeSnapshot(std::string &json) {
-        std::string side, px, qty, symbol;
+        Parse::data::ConstBufRange side, px, qty;
+        // std::string side, px, qty, symbol;
+        const char *aBuf = json.c_str();
         int dataS, dataE;
         auto sPos = json.find("snapshot");
         auto col = json.find(':', sPos);
         auto start = json.find('{', col);
         auto symS = json.find('"', start+1);
         auto symE = json.find('"', symS+1);
-        symbol = json.substr(symS+1, symE-symS-1);
+        // symbol = json.substr(symS+1, symE-symS-1);
+        Parse::data::ConstBufRange symbol(&aBuf[symS+1], &aBuf[symE]);
         auto arrS = json.find('[', symE);
         auto arrE = json.find(']', arrS);
 
         auto arr = json.substr(arrS+1, arrE-arrS-1);
-
+        aBuf = arr.c_str();
         int valStart, valEnd;
         // std::cout << arr << std::endl;
         for(int i=0; i<arr.size(); i++) {
@@ -256,17 +279,23 @@ namespace FastParser {
             if(arr[i] == 'p') {
                 valStart = arr.find('"', arr.find(":", i));
                 valEnd = arr.find('"', valStart+1);
-                px = arr.substr(valStart+1, valEnd-valStart-1);
+                // px = arr.substr(valStart+1, valEnd-valStart-1);
+                px.buf = &aBuf[valStart+1];
+                px.bufEnd = &aBuf[valEnd];
             }
             if(arr[i] == 'q') {
                 valStart = arr.find('"', arr.find(":", i));
                 valEnd = arr.find('"', valStart+1);
-                qty = arr.substr(valStart+1, valEnd-valStart-1);
+                // qty = arr.substr(valStart+1, valEnd-valStart-1);
+                qty.buf = &aBuf[valStart+1];
+                qty.bufEnd = &aBuf[valEnd];
             }
             if(arr[i] == 's') {
                 valStart = arr.find('"', arr.find(":", i));
                 valEnd = arr.find('"', valStart+1);
-                side = arr.substr(valStart+1, valEnd-valStart-1);
+                // side = arr.substr(valStart+1, valEnd-valStart-1);
+                side.buf = &aBuf[valStart+1];
+                side.bufEnd = &aBuf[valEnd];
                 std::cout << "|" << side << " for " << px << "@" << qty << " on " << symbol << "|" << std::endl;
                 if(arr.find("s", i+1) == std::string::npos) {
                     break;
