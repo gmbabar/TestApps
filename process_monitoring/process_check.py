@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 import psutil
 import subprocess
 
@@ -11,25 +12,25 @@ def bina_process_check(process_name:str):
     for process in psutil.process_iter():
         if process.name() == process_name and process.pid not in commands:
             print (" ".join(process.cmdline()))
-            if "futures" in " ".join(process.cmdline()):
+            if "md2_futures_pf.json" in " ".join(process.cmdline()):
                 futures = True
-            elif "margin" in " ".join(process.cmdline()):
+            elif "md2_swaps_pf.json" in " ".join(process.cmdline()):
                 margin = True
-            elif "spot" in " ".join(process.cmdline()):
+            elif "md2_spot_pf.json" in " ".join(process.cmdline()):
                 spot = True
 
     if not futures:
-        print("Running Futures")
-        subprocess.Popen(["/usr/bin/nohup", "/home/harismirza/Desktop/Coding/Clones/TestApps/TestingFolder/process.sh", "-futures_pf"])
+        print("Starting FuturesPF")
+        subprocess.Popen(["/usr/bin/nohup", "/home/users/gbabar/work/BinanceGw/run_md2_pf_fut.sh"])
     if not spot:
-        print("Running Spot")
-        subprocess.Popen(["/usr/bin/nohup", "/home/harismirza/Desktop/Coding/Clones/TestApps/TestingFolder/process.sh", "-spot_pf"])
+        print("Starting SpotPF")
+        subprocess.Popen(["/usr/bin/nohup", "/home/users/gbabar/work/BinanceGw/run_md2_pf.sh"])
     if not margin:
-        print("Running Margin")
-        subprocess.Popen(["/usr/bin/nohup", "/home/harismirza/Desktop/Coding/Clones/TestApps/TestingFolder/process.sh", "-margin_pf"])
+        print("Starting MarginPF")
+        subprocess.Popen(["/usr/bin/nohup", "/home/users/gbabar/work/BinanceGw/run_md2_pf_swap.sh"])
 
     if futures and spot and margin:
         print("Every Process Running")
 
 if __name__ == "__main__":
-    bina_process_check("process.sh")
+    bina_process_check("binancespotpfmd2_d")
