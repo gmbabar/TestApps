@@ -43,6 +43,16 @@ inline void slowParseTrade(const std::string& trade) {
     }
 }
 
+
+void GetSymbol(const std::string &aMsg, int &aBeg, int &aEnd) {
+    aBeg = aMsg.find_last_of(',');
+    aBeg = aMsg.find('"', aBeg)+1;
+    aEnd = aMsg.find("\"]", aBeg);
+    // ConstBufRange Symbol(&aBuf[symbolS]+1,&aBuf[symbolE]);
+    // std::cout << __FILE__ << ':' << __LINE__ << ':' << __func__ << ':' << Symbol.asStr() << std::endl;
+
+}
+
 /*
 trade message
 [337,[["20781.60000","0.00017774","1674125899.401130","b","l",""]],"trade","XBT/USD"]
@@ -53,6 +63,13 @@ inline void fastParseTrade(const std::string& trade) {
     int firstTradeIndex = 0;
     int lastTradeIndex = 0;
     const char *aBuf = trade.c_str();
+
+
+        GetSymbol(trade, start, stop);
+        ConstBufRange Symbol(&aBuf[start], &aBuf[stop]);
+        std::cout << __FILE__ << ':' << __LINE__ << ':' << __func__ << ':' << Symbol.asStr() << std::endl;
+        start = 0;
+        stop = 0;
 
         start = trade.find("[");
         stop  = trade.find(",", start);
@@ -136,6 +153,13 @@ inline void fastParseSnapShot(const std::string& trade) {
     int firstTradeIndex = 0;
     int lastTradeIndex = 0;
     const char *aBuf = trade.c_str();
+
+    GetSymbol(trade, start, stop);
+    ConstBufRange Symbol(&aBuf[start], &aBuf[stop]);
+    std::cout << __FILE__ << ':' << __LINE__ << ':' << __func__ << ':' << Symbol.asStr() << std::endl;
+    start = 0;
+    stop = 0;
+
     if(trade.find("\"as\":") != std::string::npos || trade.find("\"bs\":") != std::string::npos) {
         start = trade.find("[");
         stop  = trade.find(",", start);
@@ -290,6 +314,12 @@ inline void fastParseLevelUpdate(const std::string& trade) {
     int lastTradeIndex = 0;
     const char *aBuf = trade.c_str();
 
+    GetSymbol(trade, start, stop);
+    ConstBufRange Symbol(&aBuf[start], &aBuf[stop]);
+    std::cout << __FILE__ << ':' << __LINE__ << ':' << __func__ << ':' << Symbol.asStr() << std::endl;
+    start = 0;
+    stop = 0;
+
     if(trade.find("\"a\":") != std::string::npos || trade.find("\"b\":") != std::string::npos) {
         start = trade.find("[");
         stop  = trade.find(",", start);
@@ -409,6 +439,13 @@ inline void fastParseTicker(const std::string& trade) {
     int firstTradeIndex = 0;
     int lastTradeIndex = 0;
     const char *aBuf = trade.c_str();
+
+    GetSymbol(trade, start, stop);
+    ConstBufRange Symbol(&aBuf[start], &aBuf[stop]);
+    std::cout << __FILE__ << ':' << __LINE__ << ':' << __func__ << ':' << Symbol.asStr() << std::endl;
+    start = 0;
+    stop = 0;
+
 
     start = trade.find("[");
     stop  = trade.find(",", start);
