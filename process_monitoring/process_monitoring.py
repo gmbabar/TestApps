@@ -1,36 +1,21 @@
+#!/usr/bin/python3
+
 import psutil
 from datetime import datetime
 import os
 import signal
 import subprocess
 import argparse
+import time
 
 
-def get_process_info(process_name:str, alternateCommands:list):
+def get_process_info(process_name: str):
     found = False
     pids = []
     commands = {}
     for process in psutil.process_iter():
-        if process.name() == process_name and process.pid not in pids:
-            pids.append(process.pid)
-            commandLine = process.cmdline()
-            actual = str()
-            for command in commandLine:
-                actual+=str(command + ' ')
-            actual = actual.rstrip(actual[-1])
-            commands[process.pid] = actual
-
-    if len(pids) <= 0:
-        for command in alternateCommands:
-            subprocess.Popen(["nohup", command])
-        return
-
-    for pid in pids:
-        try:
-            process = psutil.Process(pid)
-        except psutil.NoSuchProcess:
-            subprocess.Popen(["nohup", commands[pid]])
-            return
+        if process.name() != process_name:
+            continue
         try:
             createTime = datetime.fromtimestamp(process.create_time())
         except OSError:
@@ -74,33 +59,28 @@ def get_process_info(process_name:str, alternateCommands:list):
             print("Failed To Get Write Bytes For Process")
             return
         print({
-            "process_name":process_name,
-            "pid":pid,
-            "create_time":createTime,
-            "started_by":username,
-            "no_of_threads_spawned":threadsNo,
-            "cpu_usage":cpuUsage,
-            "memory_usage":memoryUsage,
-            "status":status,
-            "read_bytes":readBytes,
-            "write_bytes":writeBytes
+            "process_name": process_name,
+            "pid": process.pid,
+            "create_time": createTime,
+            "started_by": username,
+            "no_of_threads_spawned": threadsNo,
+            "cpu_usage": cpuUsage,
+            "memory_usage": memoryUsage,
+            "status": status,
+            "read_bytes": readBytes,
+            "write_bytes": writeBytes
         })
-        if cpuUsage > 1.5 or memoryUsage > 2.0:
-            os.kill(pid, signal.SIGTERM)
-            subprocess.Popen(["nohup", commands[pid]])
+        if cpuUsage > 10.0 or memoryUsage > 5.0:
+            cmd = process.cmdline()
+            os.kill(process.pid, signal.SIGTERM)
+            time.sleep(1)
+            subprocess.Popen(["/usr/bin/nohup"] + cmd)
 
-
-def init_argparse() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description='Test client for MA2 deribit implementation')
-    # '-h' is reserved for help by argparse package, so '-s' is forced choice for host/server
-    parser.add_argument('-p', "--process", help="Process Name To Monitor", required=True)
-    parser.add_argument('-e', '--executables', help='Executable List For Binaries', required=True)
-    return parser
 
 if __name__ == "__main__":
-    parser = init_argparse()
+    parser = argparse.ArgumentParser(description='Process monitor and relauncher in case of excessive resource pegging')
+    # '-h' is reserved for help by argparse package, so '-s' is forced choice for host/server
+    parser.add_argument('-p', "--process", help="Process Name To Monitor", required=True)
     args = parser.parse_args()
     process = args.process
-    executables = args.executables
-    print(list(executables.split(',')))
-    get_process_info(process, executables)
+    get_process_info(process)

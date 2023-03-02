@@ -359,11 +359,9 @@ inline void fastParseTrade(const std::string& json) {
 */
 
 inline void fastParseV2Marketdata(const std::string& json) {
-
     fastParseL2update(json);
     if(json.find("trades")!=std::string::npos)
         fastParseTrades(json);
     if(json.find("auction_events")!=std::string::npos)
         fastParseAuction(json);
-    
 }

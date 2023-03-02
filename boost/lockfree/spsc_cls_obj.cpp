@@ -12,7 +12,7 @@ struct Test {
 struct Queue {
 	boost::lockfree::spsc_queue<Test> que;
 
-	Queue(int size) : que(size) {
+	explicit Queue(int size) : que(size) {
 	}
 };
 

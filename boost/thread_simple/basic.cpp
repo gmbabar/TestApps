@@ -1,5 +1,5 @@
-#include <boost/thread.hpp>
-#include <boost/chrono.hpp>
+#include <boost/thread/thread.hpp>
+#include <boost/chrono/chrono.hpp>
 #include <iostream>
 
 void thread_func() {

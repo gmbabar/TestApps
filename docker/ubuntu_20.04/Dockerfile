@@ -22,6 +22,7 @@ RUN export USER=root
 RUN export GITHUB_USER=gbabar-galaxy
 RUN export GITHUB_COMPANY=BlueFireCapital
 RUN export GITHUB_TOKEN=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
+RUN export NEBULA_HOME=/tmp/$USER/dist/nebula/
 
 RUN git clone https://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@github.com/BlueFireCapital/Nebula.git
 RUN git clone https://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@github.com/BlueFireCapital/JaneStGw.git

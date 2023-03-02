@@ -10,6 +10,7 @@ class Server {
 
 public:
     Server(int &port, long &sendTime, std::string &msg) {
+        // FIXME: member should be initialized in initializer list.
         m_msg = msg;
         m_sendTime = sendTime;
         m_socketFD = socket(AF_INET, SOCK_STREAM, 0);

@@ -43,6 +43,10 @@ public:
   }
 
 private:
+  /**
+   * strand ensures saftey of shared resources and make sure only one callback executes at any given time
+   * and blocks parallel execution even if we have multiple threads attached to io_context.
+   **/
   boost::asio::io_context::strand strand_;
   boost::asio::steady_timer timer1_;
   boost::asio::steady_timer timer2_;
