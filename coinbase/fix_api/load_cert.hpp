@@ -2358,7 +2358,7 @@ load_root_certificates(ssl::context& ctx, boost::system::error_code& ec)
         "EAYJKwYBBAGCNxUBBAMCAQAwDQYJKoZIhvcNAQEFBQADggEBAEuh/wuHbrP5wUOx\n"
         "SPMowB0uyQlB+pQAHKSkq0lPjz0e701vvbyk9vImMMkQyh2I+3QZH4VFvbBsUfk2\n"
         "ftv1TDI6QU9bR8/oCy22xBmddMVHxjtqD6wU2zz0c5ypBd8A3HR4+vg1YFkCExh8\n"
-        "vPtNsCBtQ7tgMHpnM1zFmdH4LTlSc/uMqpclXHLZCB6rTjzjgTGfA6b7wP4piFXa\n"
+        "vPtNsCBtQ7tgMHpnM1zfmtH4LTlSc/uMqpclXHLZCB6rTjzjgTGfA6b7wP4piFXa\n"
         "hNVQA7bihKOmNqoROgHhGEvWRGizPflTdISzRpFGlgC3gCy24eMQ4tui5yiPAZZi\n"
         "Fj4A4xylNoEYokxSdsARo27mHbrjWr42U8U+dY+GaSlYU7Wcu2+fXMUY7N0v4ZjJ\n"
         "/L7fCg0=\n"

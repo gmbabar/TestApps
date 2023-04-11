@@ -110,7 +110,7 @@ std::string loginRequest() {
         << "8013=Y" << delim;
 
     // Fix Header
-    hdr << "8=FIX.4.2" << delim << "9=" << msg.str().size() << delim;
+    hdr << "8=FIX.4.4" << delim << "9=" << msg.str().size() << delim;
     hdr << msg.str();
 
     // Fix checksum
