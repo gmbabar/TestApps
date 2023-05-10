@@ -1,8 +1,0 @@
-{
-    "pf.market_depth" : "CONNECTORS.configs.market_depth",
-    "pf.symbol_mapping" : "SYMBOLS.symbol_mapping",
-    "pf.host" : "CONNECTORS.configs.host",
-    "pf.log_rotation_size_mb" : "CONNECTORS.configs.log_rotation_size_mb",
-    "pf.use_sni_hostname_for_ssl" : "CONNECTORS.configs.use_sni_hostname_for_ssl",
-    "pf.port" : "CONNECTORS.configs.port"
-}

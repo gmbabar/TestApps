@@ -54,15 +54,15 @@ def build_helo(msgId: str, endpoint: str) -> str:
 
 def build_new_order(msgId: str, clt_oid: str, endpoint: str, symbol: str) -> str:
     return json.dumps({"id":msgId,"type":"ornw","ord_cl_id":clt_oid,"cl_account_id":endpoint,"ord_type":"L",
-                      "symbol":symbol,"amount":1,"price":16500,"post_only":1,"hidden":0,
-                      "trader_id":"trd123","strategy":"trex","tif":"GTC","min_amount":10})
+                      "symbol":symbol,"amount":0.1,"price":16500,"post_only":1,"hidden":0,
+                      "trader_id":"trd123","strategy":"trex","tif":"GTC","min_amount":0.0001})
 
 def build_cancel(msgId: str, oid: str, cancelType = "C") -> str:
     if cancelType.upper() == "C":
         return json.dumps({"id":msgId,"type":"orcn","ord_cl_id":oid,"ord_ex_id":"exchOid123","can_id":54321})
     else:
         return json.dumps({"id":msgId,"type":"orcn","ord_ex_id":oid,"can_id":54322})
-    
+
 def build_pair_data(msgId) -> str:
     return json.dumps({"id":msgId,"type":"pdrq"})
 
@@ -260,7 +260,7 @@ class Ma2ClientProtocol(asyncio.Protocol):
             error = "Missing 'id' in 'ack' message"
             if error not in self.errors:
                 self.errors.append(error)
-        
+
 
 
     # {
@@ -294,7 +294,7 @@ class Ma2ClientProtocol(asyncio.Protocol):
                 self.errors.append(error)
             else:
                 self.errors.append("Multiple Error Message Received For Same Message")
-        self.errors.append(f"Error Message: {json['msg']}")        
+        self.errors.append(f"Error Message: {json['msg']}")
 
 
     # {
@@ -767,7 +767,7 @@ class Ma2ClientProtocol(asyncio.Protocol):
                 return
 
             if 'type' not in json_data:
-                self.errors.append("_Critical: Missing 'type' in received MA2 message.")                
+                self.errors.append("_Critical: Missing 'type' in received MA2 message.")
                 return
             if self.appl_init:
                 self.errors.append("Message '" + json_data['type'] + "' received even before 'helo' message")
@@ -793,7 +793,7 @@ class Ma2ClientProtocol(asyncio.Protocol):
                     self.parse_open_order_report(json_data)
                 elif json_data['type'] == 'trex':
                     self.parse_trace_execution(json_data)
-                
+
                 return
             if json_data['type'] == 'err':
                 self.parse_error(json_data)
@@ -804,7 +804,7 @@ class Ma2ClientProtocol(asyncio.Protocol):
                 if self.helo_sent:
                     self.helo_recv = True
                     self.parse_exch_status(json_data)
-            
+
             if self.pdrq_sent:
                 if json_data['type'] == 'pdrp':
                     self.pdrp_recv = True
@@ -814,7 +814,7 @@ class Ma2ClientProtocol(asyncio.Protocol):
             else:
                 if json_data['type'] == 'pdrp':
                     self.parse_pair_data(json_data)
-            
+
             if self.blrq_sent:
                 if json_data['type'] == 'blrp':
                     self.blrp_recv = True
@@ -824,7 +824,7 @@ class Ma2ClientProtocol(asyncio.Protocol):
             else:
                 if json_data['type'] == 'blrp':
                     self.parse_balance_report(json_data)
-            
+
             if self.oprq_sent:
                 if json_data['type'] == 'oprp':
                     self.oprp_recv = True
@@ -834,7 +834,7 @@ class Ma2ClientProtocol(asyncio.Protocol):
             else:
                 if json_data['type'] == 'oprp':
                     self.parse_open_order_report(json_data)
-            
+
             if self.ornw_sent:
                 if json_data['type'] == 'ack':
                     self.ack_recv = True

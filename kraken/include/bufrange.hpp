@@ -5,7 +5,7 @@
 #include <stdlib.h>
 
 
-namespace Parse { namespace data {
+namespace parser { namespace data {
 
 
 struct BufRange {

@@ -64,3 +64,7 @@ tcp/echo_server
 tcp/parser
 tcp/tcp_client_ssl
 tcp/tcp_server_ssl
+*.log
+*.out
+SecretManager
+echo_client

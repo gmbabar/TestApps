@@ -2,7 +2,7 @@ CC = g++
 FLAGS =  -g -Wall -I../include
 LIBS = -lboost_system
 
-objects = ParseConfig
+objects = ParseConfig SecretManager
 
 all:$(objects)
 
