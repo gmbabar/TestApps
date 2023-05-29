@@ -22,6 +22,7 @@
 #include <rapidjson/document.h>
 #include <rapidjson/stringbuffer.h>
 #include <rapidjson/writer.h>
+#include <boost/asio/steady_timer.hpp>
 
 namespace beast = boost::beast;         // from <boost/beast.hpp>
 namespace http = beast::http;           // from <boost/beast/http.hpp>
@@ -131,7 +132,8 @@ public:
     // Resolver and socket require an io_context
     explicit Session(net::io_context& ioc, ssl::context& ctx)
         : m_resolver(net::make_strand(ioc))
-        , m_ws(net::make_strand(ioc), ctx) {
+        , m_ws(net::make_strand(ioc), ctx)
+        , m_timer(ioc) {
     }
 
     // Start the asynchronous operation
@@ -208,7 +210,7 @@ public:
             return fail(ec, "handshake");
 
         // Send the message
-
+        this->SetPingTimer();
         std::string msg = fmtOkexLogin(m_authInfo);
         m_ws.async_write(net::buffer(msg), beast::bind_front_handler(&Session::on_write,shared_from_this()));
     }
@@ -224,33 +226,28 @@ public:
         m_ws.async_read(m_buffer, beast::bind_front_handler(&Session::on_read, shared_from_this()));
     }
 
-    void on_read(beast::error_code ec,std::size_t bytes_transferred) {
-        //std::cout << __func__ << ": bytes: " << bytes_transferred << std::endl;
-        boost::ignore_unused(bytes_transferred);
+    void on_read(beast::error_code ec, std::size_t bytes_transferred) {
+    if (ec)
+        return fail(ec, "read");
 
-        if(ec)
-            return fail(ec, "read");
+    // The make_printable() function helps print a ConstBufferSequence
+    std::ostringstream oss;
+    oss << beast::make_printable(m_buffer.data());
+    m_buffer.consume(bytes_transferred);
+    std::cout << __func__ << "-" << m_msgCount + 1 << ": " << oss.str() << std::endl;
+    Document doc;
+    doc.Parse(oss.str().c_str());
+    // const auto event = (doc.HasMember("event") && doc["event"].IsString() ? doc["event"].GetString() : "");
 
-        // The make_printable() function helps print a ConstBufferSequence
-        std::ostringstream oss;
-        oss << beast::make_printable(m_buffer.data());
-        m_buffer.consume(m_buffer.max_size());
-        std::cout << __func__ << "-" << m_msgCount + 1 << ": " << oss.str() << std::endl;
-        Document doc;
-        doc.Parse(oss.str().c_str());
-        const auto event = (doc.HasMember("event") && doc["event"].IsString() ? doc["event"].GetString():"");
-        // const auto event = "";
-        ++m_msgCount;
-        if (!m_subscribed) {
-            std::string msg = fmtOkexWebsocketSubscribeChannel("balance_and_position");
-            m_subscribed = true;
-            m_ws.async_write(net::buffer(msg), beast::bind_front_handler(&Session::on_write,shared_from_this()));
-        }
-        else {
-            m_ws.async_read(m_buffer, beast::bind_front_handler(&Session::on_read, shared_from_this()));
-        }
-
+    ++m_msgCount;
+    if (!m_subscribed) {
+        std::string msg = fmtOkexWebsocketSubscribeChannel("balance_and_position");
+        m_subscribed = true;
+        m_ws.async_write(net::buffer(msg), beast::bind_front_handler(&Session::on_write, shared_from_this()));
+    } else {
+        m_ws.async_read(m_buffer, beast::bind_front_handler(&Session::on_read, shared_from_this()));
     }
+}
 
     void on_close(beast::error_code ec) {
         std::cout << "Listener:" << __func__ << std::endl;
@@ -271,6 +268,72 @@ private:
     OkexAuthInfo m_authInfo;
     unsigned m_msgCount = 0;
     bool m_subscribed = false;
+
+    net::steady_timer m_timer;
+
+    void SetPingTimer() {
+        // Cancel any previous timer
+        m_timer.cancel();
+
+        // Set the timer to expire after 10 seconds
+        m_timer.expires_after(std::chrono::seconds(10));
+
+        // Asynchronously wait for the timer to expire
+        m_timer.async_wait([this](boost::system::error_code ec) {
+            if (!ec) {
+                // Timer expired, no data received for 10 seconds
+                this->SendPing();
+            }
+        });
+    }
+
+    void SendPing() {
+        // Send a ping message
+        m_ws.async_ping("ping_payload", [this](beast::error_code ec) {
+            if (!ec) {
+                // Ping sent successfully, set the timer again
+                SetPingTimer();
+            }
+            else {
+                // Failed to send ping, handle the error
+                fail(ec, "ping");
+            }
+        });
+        std::cout << "PING REQUEST SENT" << std::endl;
+    }
+
+    // void StartReading() {
+    //     // Start reading WebSocket messages
+    //     m_ws.async_read(m_buffer, [this](beast::error_code ec, std::size_t bytes_transferred) {
+    //         if (!ec) {
+    //             // Data received, update the last received data time
+    //             m_lastReceiveTime = std::chrono::steady_clock::now();
+
+    //             // Process the received message
+
+    //             // Continue reading WebSocket messages
+    //             StartReading();
+    //         }
+    //         else if (ec == websocket::error::closed) {
+    //             // WebSocket connection closed
+    //             std::cout << "WebSocket connection closed\n";
+    //         }
+    //         else {
+    //             // Error occurred while reading WebSocket message
+    //             std::cerr << "Error reading WebSocket message: " << ec.message() << "\n";
+    //         }
+    //     });
+    // }
+
+    // void on_handshake(beast::error_code ec) {
+    //     // ...
+
+    //     // Start the timer to send ping if no data received for 10 seconds
+    //     SetPingTimer();
+
+    //     // Start reading WebSocket messages
+    //     StartReading();
+    // }
 };
 
 //------------------------------------------------------------------------------
