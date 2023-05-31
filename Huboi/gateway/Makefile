@@ -6,7 +6,7 @@ LIBS = -lboost_system -lssl -lcrypto
 
 # objects = gemini_rest_send_order gemini_rest_symbols test_cli gemini_rest_cancel gemini_formatter gemini_rest_order_status
 # objects = gemini_websocket
-objects = balance
+objects = balance open_orders
 
 
 all: $(objects)

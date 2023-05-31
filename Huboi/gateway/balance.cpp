@@ -31,6 +31,7 @@
 using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
 namespace ssl = boost::asio::ssl;       // from <boost/asio/ssl.hpp>
 namespace http = boost::beast::http;    // from <boost/beast/http.hpp>
+using boost::property_tree::ptree;
 
 //------------------------------------------------------------------------------
 
@@ -219,6 +220,40 @@ void ParseAccounts(const std::string& jsonString, std::vector<int> &id) {
     }
 }
 
+void ParseBalances(const std::string& jsonString)
+{
+    ptree pt;
+
+    try {
+        std::istringstream iss(jsonString);
+        read_json(iss, pt);
+    } catch (const boost::property_tree::json_parser::json_parser_error& e) {
+        std::cerr << "JSON parsing error: " << e.what() << std::endl;
+        return;
+    }
+
+    std::string status = pt.get<std::string>("status");
+    std::cout << "Status: " << status << std::endl;
+
+    ptree data = pt.get_child("data");
+    int id = data.get<int>("id");
+    std::string type = data.get<std::string>("type");
+    std::string state = data.get<std::string>("state");
+
+    std::cout << "Data - ID: " << id << ", Type: " << type << ", State: " << state << std::endl;
+
+    ptree listArray = data.get_child("list");
+    for (const auto& item : listArray) {
+        std::string currency = item.second.get<std::string>("currency");
+        std::string balance = item.second.get<std::string>("balance");
+        std::string debt = item.second.get<std::string>("debt");
+        std::string seqNum = item.second.get<std::string>("seq-num");
+
+        std::cout << "List Array - Currency: " << currency << ", Balance: " << balance
+                  << ", Debt: " << debt << ", Seq-Num: " << seqNum << std::endl;
+    }
+}
+
 // Performs an HTTP GET and prints the response
 class session : public std::enable_shared_from_this<session>
 {
@@ -371,7 +406,6 @@ public:
         res_.clear();
         if(not accountsReceived) {
             ParseAccounts(data, m_ids);
-            accountsReceived = true;
             std::stringstream ss;
             for (const auto &id : m_ids) {
                 ss  << "/v1/account/accounts/" << id <<"/balance";
@@ -386,6 +420,7 @@ public:
                         std::placeholders::_1,
                         std::placeholders::_2));
             }
+            accountsReceived = true;
         }
     }
 
