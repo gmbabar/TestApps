@@ -16,7 +16,6 @@ void ParseAccountBalance(const std::string& response)
         return;
     }
 
-    // Check if the response contains an error
     auto error = pt.get_child("error");
     if (error.size() > 0) {
         std::string error = pt.get<std::string>("error");
@@ -24,7 +23,6 @@ void ParseAccountBalance(const std::string& response)
         return;
     }
 
-    // Extract and print the balances
     ptree balances = pt.get_child("result");
     for (const auto& balance : balances) {
         std::string currency = balance.first;
@@ -45,7 +43,6 @@ void ParseOpenOrders(const std::string& response)
         return;
     }
 
-    // Check if the response contains an error
     auto error = pt.get_child("error");
     if (error.size() > 0) {
         std::string error = pt.get<std::string>("error");
@@ -53,7 +50,6 @@ void ParseOpenOrders(const std::string& response)
         return;
     }
 
-    // Extract and print the open orders
     ptree orders = pt.get_child("result.open");
     for (const auto& order : orders) {
         std::string orderID = order.first;
@@ -82,7 +78,6 @@ void ParseOrderResponse(const std::string& response)
         return;
     }
 
-    // Check if the response contains an error
     auto error = pt.get_child("error");
     if (error.size() > 0) {
         std::string error = pt.get<std::string>("error");
@@ -90,7 +85,6 @@ void ParseOrderResponse(const std::string& response)
         return;
     }
 
-    // Extract and print the order details
     ptree result = pt.get_child("result");
     std::string order = result.get<std::string>("descr.order");
     std::string close = result.get<std::string>("descr.close");
@@ -101,7 +95,6 @@ void ParseOrderResponse(const std::string& response)
 
     std::cout << "Order: " << order << std::endl;
     std::cout << "Close: " << close << std::endl;
-    // std::cout << "Transaction ID: " << txid << std::endl;
 }
 
 void ParseCancelOrderResponse(const std::string& response)
@@ -116,7 +109,6 @@ void ParseCancelOrderResponse(const std::string& response)
         return;
     }
 
-    // Check if the response contains an error
     auto error = pt.get_child("error");
     if (error.size() > 0) {
         std::string error = pt.get<std::string>("error");
@@ -124,7 +116,6 @@ void ParseCancelOrderResponse(const std::string& response)
         return;
     }
 
-    // Extract and print the order details
     const auto count = pt.get<int>("result.count");
     std::cout << "Cancelled Orders: " << count << std::endl;
 }
@@ -141,7 +132,6 @@ void ParseWebAuthResponse(const std::string& response)
         return;
     }
 
-    // Check if the response contains an error
     auto error = pt.get_child("error");
     if (error.size() > 0) {
         std::string error = pt.get<std::string>("error");
@@ -149,7 +139,6 @@ void ParseWebAuthResponse(const std::string& response)
         return;
     }
 
-    // Extract and print the order details
     const auto token = pt.get<std::string>("result.token");
     std::cout << "Authentication Token: " << token << std::endl;
 }
