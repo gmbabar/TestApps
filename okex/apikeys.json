@@ -1,6 +1,12 @@
 {
-	"API KEY":"415c3127-6b61-478f-bd21-94c946bd7a62",
-	"API SECRET":"91878CFAFE56860490C2F977FDCEBAF7",
-	"PASS PHRASE":"ForTestingOnTST.1",
-	"API NAME": "V5 Gateway Demo"
+    "API KEY":"415c3127-6b61-478f-bd21-94c946bd7a62",
+    "API SECRET":"91878CFAFE56860490C2F977FDCEBAF7",
+    "PASS PHRASE":"ForTestingOnTST.1",
+    "API NAME": "V5 Gateway Demo"
+},
+{
+    "ApiKey" : "8dbdda78-c3a7-4a38-ab8a-2602363375eb",
+    "SecretKey" : "9D6717430361B1822FC08FC59FB5FAAE",
+    "PassPhrase" : "ForTesting.1",
+    "API-Name" : "DemoAPI"
 }

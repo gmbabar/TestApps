@@ -23,8 +23,7 @@ def generate_signature():
             'signatureVersion': '2.1',
             'timestamp': datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S')
         }
-    target = sorted(params.items(),
-                        key=lambda x: x[0], reverse=False)  # 参数ASCII排序ta
+    target = sorted(params.items(), key=lambda x: x[0], reverse=False)  # 参数ASCII排序ta
     to_sign = '\n'.join(
             ['GET', 'api.huobi.pro', '/ws/v2', parse.urlencode(target)])
 

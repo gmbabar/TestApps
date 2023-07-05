@@ -1,11 +1,11 @@
 #include <iostream>
 #include <string>
 #include "rapidjson/document.h"
-#include <boost/beast.hpp>
+//#include <boost/beast.hpp>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
 
-namespace beast = boost::beast;
+//namespace beast = boost::beast;
 namespace pt = boost::property_tree;
 
 using namespace rapidjson;
@@ -63,6 +63,15 @@ void boostExtractBalData(const std::string& message) {
     pt::ptree tree;
     std::istringstream iss(message);
     pt::read_json(iss, tree);
+
+    // Extract "channel" info:
+    const auto &arg = tree.get_child_optional("arg");
+    if (arg) {
+	const auto &channel = arg->get<std::string>("channel", "");
+	if (channel == "balance_and_position") {
+		std::cout << "CHANNEL 'balance_and_position' FOUND." << std::endl;
+	}
+    }
 
     // Extract "balData" information
     const auto& balData = tree.get_child("data").front().second.get_child("balData");

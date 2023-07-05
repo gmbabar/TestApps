@@ -68,3 +68,7 @@ tcp/tcp_server_ssl
 *.out
 SecretManager
 echo_client
+json/rapidjson/test
+okex/gateway/okex_balance
+okex/gateway/parse
+
