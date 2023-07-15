@@ -71,6 +71,28 @@ def generate_request():
 
     return rest_url + parse.urlencode(params)
 
+
+
+def generate_balance_req(accountId):
+    target = '/v1/account/accounts/' + accountId + '/balance'
+    balance_url = 'https://api.huobi.pro' + target + '?'
+    params = {
+            'AccessKeyId': API_KEY,
+            'SignatureMethod': 'HmacSHA256',
+            'SignatureVersion': '2',
+            'Timestamp': datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S')
+        }
+    
+    to_sign = '\n'.join(
+            ['GET', 'api.huobi.pro', target, parse.urlencode(params)])
+
+    params.update({
+            'Signature': base64.b64encode(hmac.new(API_SECRET.encode(),
+                            to_sign.encode(), hashlib.sha256).digest()).decode()
+        })
+
+    return balance_url + parse.urlencode(params)
+
 if __name__ == "__main__":
     print (generate_request())
 
@@ -78,3 +100,22 @@ if __name__ == "__main__":
     data = response.json()
     print(data)
 
+    '''
+    {'status': 'ok', 'data':
+        {'id': 56649264, 'type': 'spot', 'state': 'working',
+        'list':
+            [{'currency': 'ioi', 'type': 'trade', 'balance': '0', 'available': '0', 'debt': '0', 'seq-num': '0'},...]
+        }
+    }
+    '''
+    for item in data['data']:
+        accountId = str(item['id'])
+        response = requests.get(generate_balance_req(accountId))
+        balances = response.json()
+        # print(balances)
+        bal_data = balances['data']
+        bal_list = bal_data['list']
+        for bal in bal_list:
+            if bal['type'] != 'trade':
+                continue
+            print ("\t- currency: {}, type: {}, balance: {}".format(bal['currency'], bal['type'], bal['balance']))

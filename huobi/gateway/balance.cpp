@@ -22,8 +22,8 @@
 #include <boost/date_time.hpp>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
-#include <boost/json.hpp>
-#include <boost/json/src.hpp>
+// #include <boost/json.hpp>
+// #include <boost/json/src.hpp>
 #include <cppcodec/hex_lower.hpp>
 #include <cppcodec/base64_rfc4648.hpp>
 #include <boost/beast/core/detail/base64.hpp>
@@ -37,7 +37,7 @@ using boost::property_tree::ptree;
 
 
 
-// inline uint64_t geminiTimestamp() {
+// inline uint64_t HuobiTimestamp() {
 //     // timespec now = { 0, 0 };
 //     // if(clock_gettime(CLOCK_REALTIME, &now) < 0) 
 //     //     return -1;
@@ -102,7 +102,7 @@ std::string urlEncode(const std::string& input) {
 }
 
 template <typename BodyT>
-void signGeminiRestRequest(
+void signHuobiRestRequest(
         const std::string &aHost,
         authInfo &aAuthInfo,
         const boost::posix_time::ptime aNow,
@@ -189,10 +189,6 @@ void signGeminiRestRequest(
     aRequest.set(http::field::content_type, "application/json");
     aRequest.set(http::field::content_length, "0");
     aRequest.set(http::field::cache_control, "no-cache");
-
-    // aRequest.set("X-GEMINI-SIGNATURE", signature);
-    // aRequest.set("X-GEMINI-APIKEY", aPubKey);
-    // aRequest.set("X-GEMINI-PAYLOAD", payload);
 }
 
 
@@ -347,6 +343,7 @@ public:
         if(ec)
             return fail(ec, "handshake");
 
+std::cout << __func__ << ": handshake complete." << std::endl;
         // fmtGeminiSpotRestApiOrder(req_, "btcusd", "1", "9459.15", "buy", "exchange limit", "maker-or-cancel");
         // std::cout << req_.target() << std::endl;
         // std::cout << aApiHost << std::endl;
@@ -361,7 +358,7 @@ public:
         req_.target("/v1/account/accounts");
         // fmtGeminiSpotRestApiCancel(req_, m_orderId);
         boost::posix_time::ptime currentTime = boost::posix_time::second_clock::universal_time();
-        signGeminiRestRequest(m_host, m_authInfo, currentTime, req_);
+        signHuobiRestRequest(m_host, m_authInfo, currentTime, req_);
         // Send the HTTP request to the remote host
         http::async_write(stream_, req_,
             std::bind(
@@ -412,7 +409,7 @@ public:
                 std::cout << ss.str() << std::endl;
                 req_.target(ss.str());
                 boost::posix_time::ptime currentTime = boost::posix_time::second_clock::universal_time();
-                signGeminiRestRequest(m_host, m_authInfo, currentTime, req_);
+                signHuobiRestRequest(m_host, m_authInfo, currentTime, req_);
                 http::async_write(stream_, req_,
                     std::bind(
                         &session::on_write,
@@ -471,7 +468,7 @@ int main(int argc, char** argv)
     ioc.run();
 
     // boost::beast::http::request<std::string> req_;
-    // fmtGeminiSpotRestApiOrder(req_, "btcusd", "1", "9459.15", "buy", "exchange limit", "maker-or-cancel");
+    // fmtHuobiSpotRestApiOrder(req_, "btcusd", "1", "9459.15", "buy", "exchange limit", "maker-or-cancel");
 
     return EXIT_SUCCESS;
 }
