@@ -71,4 +71,5 @@ echo_client
 json/rapidjson/test
 okex/gateway/okex_balance
 okex/gateway/parse
-
+huobi/gateway/balance
+huobi/gateway/open_orders
