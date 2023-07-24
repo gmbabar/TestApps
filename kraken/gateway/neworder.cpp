@@ -112,21 +112,33 @@ void signKrakenRestRequest(
     // Prepare final request
     aRequest.prepare_payload();
 
-    //std::cout << "Request: \n" << aRequest << std::endl;
+    std::cout << "Request: \n" << aRequest << std::endl;
 }
 
 
 template <typename BodyT>
-inline bool fmtKrakenSpotRestApiBalance(
+inline bool fmtKrakenSpotRestApiNewOrder(
     boost::beast::http::request<BodyT> &aRequest) {
 
-    const auto target = "/0/private/BalanceEx";
+    const auto target = "/0/private/AddOrder";
     const auto nonce = std::to_string(std::chrono::duration_cast<std::chrono::milliseconds>(
                             std::chrono::system_clock::now().time_since_epoch()).count());
+    const auto &type = "limit";
+    const auto &side = "buy";
+    const auto &sym = "XBTUSD";
+    const auto qty = 0.0001;
+    const auto px  = 17500.0;
 
     aRequest.target(target);
     std::ostringstream oss;
-    oss << "{\"nonce\": " << nonce << "}";
+    oss << "{"
+        << "\"nonce\":" << nonce
+        << ",\"ordertype\":\"" << type << "\""
+        << ",\"type\":\"" << side << "\""
+        << ",\"volume\":" << qty
+        << ",\"pair\":\"" << sym << "\""
+        << ",\"price\":" << px
+        << "}";
 
     signKrakenRestRequest(aRequest, nonce, oss.str());
     return true;
@@ -142,7 +154,7 @@ void fail(boost::system::error_code ec, char const* what) {
 }
 
 // Performs an HTTP GET and prints the response
-class session : public std::enable_shared_from_this<session> {
+class RestSession : public std::enable_shared_from_this<RestSession> {
     tcp::resolver resolver_;
     ssl::stream<tcp::socket> stream_;
     boost::beast::flat_buffer buffer_; // (Must persist between reads)
@@ -153,7 +165,7 @@ class session : public std::enable_shared_from_this<session> {
 public:
     // Resolver and stream require an io_context
     explicit
-    session(boost::asio::io_context& ioc, ssl::context& ctx)
+    RestSession(boost::asio::io_context& ioc, ssl::context& ctx)
         : resolver_(ioc)
         , stream_(ioc, ctx)
     {
@@ -181,7 +193,7 @@ public:
             aApiHost,
             aApiPort,
             std::bind(
-                &session::on_resolve,
+                &RestSession::on_resolve,
                 shared_from_this(),
                 std::placeholders::_1,
                 std::placeholders::_2));
@@ -201,7 +213,7 @@ public:
             results.begin(),
             results.end(),
             std::bind(
-                &session::on_connect,
+                &RestSession::on_connect,
                 shared_from_this(),
                 std::placeholders::_1));
     }
@@ -216,7 +228,7 @@ public:
         stream_.async_handshake(
             ssl::stream_base::client,
             std::bind(
-                &session::on_handshake,
+                &RestSession::on_handshake,
                 shared_from_this(),
                 std::placeholders::_1));
     }
@@ -229,11 +241,11 @@ public:
 
 
         // fmtGeminiSpotRestApiOrderStatus(req_, "2294408759", true);
-        fmtKrakenSpotRestApiBalance(req_);
+        fmtKrakenSpotRestApiNewOrder(req_);
         // Send the HTTP request to the remote host
         http::async_write(stream_, req_,
             std::bind(
-                &session::on_write,
+                &RestSession::on_write,
                 shared_from_this(),
                 std::placeholders::_1,
                 std::placeholders::_2));
@@ -252,7 +264,7 @@ public:
         // Receive the HTTP response
         http::async_read(stream_, buffer_, res_,
             std::bind(
-                &session::on_read,
+                &RestSession::on_read,
                 shared_from_this(),
                 std::placeholders::_1,
                 std::placeholders::_2));
@@ -305,7 +317,7 @@ int main(int argc, char** argv)
     ctx.set_verify_mode(boost::asio::ssl::verify_none);
 
     // Launch the asynchronous operation
-    std::make_shared<session>(ioc, ctx)->run();
+    std::make_shared<RestSession>(ioc, ctx)->run();
 
     // Run the I/O service. The call will return when
     // the get operation is complete.

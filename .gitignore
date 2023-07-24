@@ -73,3 +73,7 @@ okex/gateway/okex_balance
 okex/gateway/parse
 huobi/gateway/balance
 huobi/gateway/open_orders
+kraken/gateway/balance
+kraken/gateway/cancelorder
+kraken/gateway/neworder
+
