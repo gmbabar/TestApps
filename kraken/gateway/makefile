@@ -2,12 +2,9 @@
 CC = g++
 
 FLAGS = -std=c++17 -g -I./  -I../../include
-LIBS = -lboost_system -lssl -lcrypto
+LIBS = -lboost_system -lssl -lcrypto -lpthread
 
-# objects = gemini_rest_send_order gemini_rest_symbols test_cli gemini_rest_cancel gemini_formatter gemini_rest_order_status
-# objects = gemini_websocket
 objects = balance
-
 
 all: $(objects)
 
