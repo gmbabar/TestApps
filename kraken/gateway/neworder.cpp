@@ -125,7 +125,9 @@ inline bool fmtKrakenSpotRestApiNewOrder(
                             std::chrono::system_clock::now().time_since_epoch()).count());
     const auto &type = "limit";
     const auto &side = "buy";
+    // const auto &sym = "XBTUSD";
     const auto &sym = "XBTUSD";
+    const auto &tif = "IOC";
     const auto qty = 0.0001;
     const auto px  = 17500.0;
 
@@ -134,8 +136,9 @@ inline bool fmtKrakenSpotRestApiNewOrder(
     oss << "{"
         << "\"nonce\":" << nonce
         << ",\"ordertype\":\"" << type << "\""
-        << ",\"type\":\"" << side << "\""
+        << ",\"type\":\"" << side << '"'
         << ",\"volume\":" << qty
+        << ",\"timeinforce\":\"" << tif << '"'
         << ",\"pair\":\"" << sym << "\""
         << ",\"price\":" << px
         << "}";

@@ -16,18 +16,25 @@ void ParseAccountBalance(const std::string& response)
         return;
     }
 
-    auto error = pt.get_child("error");
-    if (error.size() > 0) {
-        std::string error = pt.get<std::string>("error");
-        std::cerr << "API error: " << error << std::endl;
+    const auto &error = pt.get_child_optional("error");
+    if (!error || error->size() > 0) {
+        std::cerr << "Balance API error: " << std::endl;
+        for (const auto &err : *error)
+            std::cerr << "\terror: " << err.second.get_value<std::string>() << std::endl;
         return;
     }
 
-    ptree balances = pt.get_child("result");
-    for (const auto& balance : balances) {
+    const auto &results = pt.get_child_optional("result");
+    if (!results) {
+        std::cerr << "Unexpected Json Msg Received: " << response << std::endl;
+        return;
+    }
+    for (const auto& balance : *results) {
         std::string currency = balance.first;
-        double amount = balance.second.get_value<double>();
-        std::cout << "Currency: " << currency << ", Balance: " << amount << std::endl;
+        const auto balanceData = balance.second.get_child_optional("balance");
+        if (!balanceData)
+            continue;
+        std::cout << "Currency: " << currency << ", Balance: " << balanceData->get_value<std::string>() << std::endl;
     }
 }
 
@@ -85,16 +92,16 @@ void ParseOrderResponse(const std::string& response)
         return;
     }
 
-    ptree result = pt.get_child("result");
+    const auto &result = pt.get_child("result");
     std::string order = result.get<std::string>("descr.order");
-    std::string close = result.get<std::string>("descr.close");
+    // std::string close = result.get<std::string>("descr.close");      // optional
     const auto txid = result.get_child("txid");
-    for(const auto &id : result.get_child("txid")) {
+    for(const auto &id : txid) {
         std::cout << "Transaction ID: " << id.second.get_value<std::string>() << std::endl;
     }
 
     std::cout << "Order: " << order << std::endl;
-    std::cout << "Close: " << close << std::endl;
+    // std::cout << "Close: " << close << std::endl;        // optional
 }
 
 void ParseCancelOrderResponse(const std::string& response)
