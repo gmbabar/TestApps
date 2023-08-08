@@ -198,5 +198,3 @@ int main(int argc, char* argv[])
 
     return 0;
 }
-
-.vscode/settings.json Bittrex/pricefeed Bittrex/pricefeed.cpp TestingFolder/Performance Test TestingFolder/Performance Test Without Native TestingFolder/Performance Test.cpp TestingFolder/PerformanceTest TestingFolder/TestScript.sh TestingFolder/process.sh benchmark/march_client benchmark/march_parser benchmark/march_server bitfinex/include/test bitfinex/include/test.cpp boost/asio/input/input boost/asio/input/input2 boost/lockfree/multiproducer/Makefile boost/lockfree/multiproducer/first boost/lockfree/multiproducer/first.cpp boost/lockfree/multiproducer/second boost/lockfree/multiproducer/second.cpp coinbase/Fix Api/bin/fix_api coinbase/gateway/MakeNewOrders.sh coinbase/gateway/coinbase_get_order coinbase/gateway/coinbase_get_orders gateway/.gitignore gateway/Makefile gateway/binance_balances.cpp gateway/coinbase_get_balance.cpp gemini/gateway/Makefile gemini/gateway/gemini_formatter gemini/gateway/gemini_rest_cancel gemini/gateway/gemini_rest_order_status gemini/gateway/gemini_rest_order_status.cpp gemini/gateway/gemini_rest_symbols gemini/gateway/gemini_websocket gemini/gateway/gemini_websocket.cpp
