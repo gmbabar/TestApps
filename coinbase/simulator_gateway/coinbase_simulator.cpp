@@ -129,7 +129,7 @@ public:
         : io_service_(io_service),
             acceptor_(io_service,
                     boost::asio::ip::tcp::endpoint(boost::asio::ip::make_address(host), port)),
-            context_(boost::asio::ssl::context::sslv23)
+            context_(boost::asio::ssl::context::sslv3_server)
     {
         // context_.set_options(
         //         boost::asio::ssl::context::default_workarounds
