@@ -1,104 +1,88 @@
-#include <unistd.h>
-#include <cstdio>
-#include <sys/socket.h>
+//
+// server.cpp
+// ~~~~~~~~~~
+//
+// Copyright (c) 2003-2011 Christopher M. Kohlhoff (chris at kohlhoff dot com)
+//
+// Distributed under the Boost Software License, Version 1.0. (See accompanying
+// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+//
+
 #include <cstdlib>
-#include <netinet/in.h>
-#include <cstring>
 #include <iostream>
-#include <algorithm>
-#include <thread>
-#include <chrono>
+#include <boost/bind/bind.hpp>
+#include <boost/asio.hpp>
+#include <boost/asio/ssl.hpp>
 
-using namespace std;
+typedef boost::asio::ssl::stream<boost::asio::ip::tcp::socket> ssl_socket;
 
-#define PORT 65432
-
-
-struct Session {
-    Session() {
-
-        m_sockFd = socket(AF_INET, SOCK_STREAM, 0);
-        if (m_sockFd == 0) {
-            perror("socket error"); exit(EXIT_FAILURE);
-        }
-
-        if (setsockopt(m_sockFd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &m_opt, sizeof(m_opt))) {
-            perror("setsockopt"); exit(EXIT_FAILURE);
-        }
-
-        m_addr.sin_family = AF_INET;
-        m_addr.sin_addr.s_addr = INADDR_ANY;
-        m_addr.sin_port = htons(PORT);
-        this->SetupSocket();
+class session
+{
+public:
+        session(boost::asio::io_service& io_service, boost::asio::ssl::context& context)
+    : socket_(io_service, context)
+    {
     }
 
-    void run() {
-        int len = sizeof(m_addr);
-        m_clientFd = accept(m_sockFd, (struct sockaddr*)&m_addr, (socklen_t*)&len);
-        if (m_clientFd < 0) {
-            perror("accept"); exit(EXIT_FAILURE);
+    ssl_socket::lowest_layer_type& socket()
+    {
+        return socket_.lowest_layer();
+    }
+
+    void start()
+    {
+        socket_.async_handshake(boost::asio::ssl::stream_base::server,
+                boost::bind(&session::handle_handshake, this,
+                    boost::asio::placeholders::error));
+    }
+
+    void handle_handshake(const boost::system::error_code& error)
+    {
+        if (!error)
+        {
+            socket_.async_read_some(boost::asio::buffer(data_, max_length),
+                    boost::bind(&session::handle_read, this,
+                        boost::asio::placeholders::error,
+                        boost::asio::placeholders::bytes_transferred));
         }
+        else
+        {
+            delete this;
+        }
+    }
 
-
-        while (true) {
-        // read data
-            char buffer[1024];
-            int size = read(m_clientFd, buffer, sizeof(buffer));
-            if (size == 0) break;
-            cout << "read " << size << " bytes" << endl;
-            std::string msg = buffer;
-            std::replace(msg.begin(), msg.end(), '\x01', '|');
-            cout << "Msg Rcv: " << msg << endl;
-            //sprintf(buffer, "Hello from Server");
-
-
-            const auto type = this->parseResponse(msg);
+    void handle_read(const boost::system::error_code& error,
+            size_t bytes_transferred)
+    {
+        if (!error)
+        {
+            auto type = this->parseResponse(data_);
+            std::string msg;
             if(type == 'A') {
-                msg = "\n\n8=FIX.4.2|9=172|35=A|34=1|49=Coinbase|52=20230808-14:46:30.660|56=c636bc5e6a36f1089f90e1c05ccc4d18|96=vqu3SkWPCuGkH2vo+TNtaCrv4hclSu9KBJdZd9UlJ+M=|98=0|108=30|141=Y|554=ncz86pr00bh|8013=Y|10=013|\n\n";
-                std::replace(msg.begin(), msg.end(), '|', '\x01');
-                int ec = send(m_clientFd, msg.c_str(), msg.size(), 0);
-                if(ec < 0) {
-                    perror("send"); exit(EXIT_FAILURE);
+                    msg = "8=FIX.4.2|9=172|35=A|34=1|49=Coinbase|52=20230808-14:46:30.660|56=c636bc5e6a36f1089f90e1c05ccc4d18|96=vqu3SkWPCuGkH2vo+TNtaCrv4hclSu9KBJdZd9UlJ+M=|98=0|108=30|141=Y|554=ncz86pr00bh|8013=Y|10=013|";
+                    std::replace(msg.begin(), msg.end(), '|', '\x01');
+                    boost::asio::async_write(socket_, boost::asio::buffer(msg), boost::bind(&session::handle_write, this, boost::asio::placeholders::error));
+                    std::cout << "Sending back: " << msg << std::endl;
                 }
-                cout << "Sending back: " << msg << endl;
-            }
-            else if (type == '0') {
-                msg = "\n\n8=FIX.4.2|9=58|35=0|49=Coinbase|56=c636bc5e6a36f1089f90e1c05ccc4d18|34=4|52=20190605-12:19:52.060|10=165\n\n";
-                std::replace(msg.begin(), msg.end(), '|', '\x01');
-                int ec = send(m_clientFd, msg.c_str(), msg.size(), 0);
-                if(ec < 0) {
-                    perror("send"); exit(EXIT_FAILURE);
+                else if (type == '0') {
+                    msg = "8=FIX.4.2|9=58|35=0|49=Coinbase|56=c636bc5e6a36f1089f90e1c05ccc4d18|34=4|52=20190605-12:19:52.060|10=165|";
+                    std::replace(msg.begin(), msg.end(), '|', '\x01');
+                    boost::asio::async_write(socket_, boost::asio::buffer(msg), boost::bind(&session::handle_write, this, boost::asio::placeholders::error));
+                    std::cout << "Sending back: " << msg << std::endl;
                 }
-                cout << "Sending back: " << msg << endl;
-            }
-            memset(buffer,0,sizeof(buffer));
-            if(++m_sentCount == 15) {
-                break;
-            }
+                // memset(buffer,0,sizeof(buffer));
+                if(++m_sentCount == 15) {
+                    exit(EXIT_SUCCESS);
+                }
         }
-    }
-
-private:
-
-    void SetupSocket() {
-        if (bind(m_sockFd, (struct sockaddr*)&m_addr, sizeof(m_addr)) < 0) {
-            perror("bind error"); exit(EXIT_FAILURE);
+        else
+        {
+        //     delete this;
         }
-
-        if (listen(m_sockFd, 5) < 0) {
-            perror("listen error"); exit(EXIT_FAILURE);
-        }
-        std::cout << "socket listening to port: " << PORT << std::endl;
-    }
-
-    void closeSocket() {
-        close(m_clientFd);
-        close(m_sockFd);
-        std::cout << "[INFO] Sessions closed.\n";
-        this->run();
     }
 
     char parseResponse(const std::string &msg) {
+        std::cout << "[RECEIVED DATA] " << msg << std::endl;
         auto key = msg.find("|35");
         if(key == std::string::npos) {
             key = msg.find('\x01'+"35");
@@ -116,23 +100,103 @@ private:
         return result;
     }
 
+    void handle_write(const boost::system::error_code& error)
+    {
+        if (!error)
+        {
+            socket_.async_read_some(boost::asio::buffer(data_, max_length),
+                    boost::bind(&session::handle_read, this,
+                        boost::asio::placeholders::error,
+                        boost::asio::placeholders::bytes_transferred));
+        }
+        else
+        {
+            delete this;
+        }
+    }
 
-    int m_sockFd;
-    int m_clientFd;
+private:
+    ssl_socket socket_;
     int m_sentCount = 0;
-    const int m_opt = 1;
-    sockaddr_in m_addr;
+    enum { max_length = 1024 };
+    char data_[max_length];
 };
 
+class server
+{
+public:
+    server(boost::asio::io_service& io_service, unsigned short port, std::string host)
+        : io_service_(io_service),
+            acceptor_(io_service,
+                    boost::asio::ip::tcp::endpoint(boost::asio::ip::make_address(host), port)),
+            context_(boost::asio::ssl::context::sslv23)
+    {
+        // context_.set_options(
+        //         boost::asio::ssl::context::default_workarounds
+        //         | boost::asio::ssl::context::no_sslv2
+        //         | boost::asio::ssl::context::single_dh_use);
+        // context_.set_password_callback(boost::bind(&server::get_password, this));
+        // context_.use_certificate_chain_file("server.pem");
+        // context_.use_private_key_file("server.pem", boost::asio::ssl::context::pem);
+        // context_.use_tmp_dh_file("dh512.pem");
 
-int main () {
-    Session server;
-    server.run();
+        session* new_session = new session(io_service_, context_);
+        acceptor_.async_accept(new_session->socket(),
+                boost::bind(&server::handle_accept, this, new_session,
+                    boost::asio::placeholders::error));
+    }
+
+    std::string get_password() const
+    {
+        return "test";
+    }
+
+    void handle_accept(session* new_session,
+            const boost::system::error_code& error)
+    {
+        if (!error)
+        {
+            new_session->start();
+            new_session = new session(io_service_, context_);
+            acceptor_.async_accept(new_session->socket(),
+                    boost::bind(&server::handle_accept, this, new_session,
+                        boost::asio::placeholders::error));
+        }
+        else
+        {
+            delete new_session;
+        }
+    }
+
+private:
+    boost::asio::io_service& io_service_;
+    boost::asio::ip::tcp::acceptor acceptor_;
+    boost::asio::ssl::context context_;
+};
+
+int main(int argc, char* argv[])
+{
+    try
+    {
+        if (argc != 2)
+        {
+            std::cerr << "Usage: server <port>\n";
+            return 1;
+        }
+
+        boost::asio::io_service io_service;
+
+        using namespace std; // For atoi.
+        server s(io_service, atoi(argv[1]), "127.0.0.1");
+
+        io_service.run();
+    }
+    catch (std::exception& e)
+    {
+        std::cerr << "Exception: " << e.what() << "\n";
+    }
+
+    return 0;
 }
 
-
-// 8=FIX.4.2|9=172|35=A|34=1|49=c636bc5e6a36f1089f90e1c05ccc4d18|56=Coinbase|98=0|108=30|141=Y|52=20230808-14:46:30.613|554=ncz86pr00bh|96=vqu3SkWPCuGkH2vo+TNtaCrv4hclSu9KBJdZd9UlJ+M=|8013=Y|10=011|
-// 8=FIX.4.2|9=172|35=A|34=1|49=Coinbase|52=20230808-14:46:30.660|56=c636bc5e6a36f1089f90e1c05ccc4d18|96=vqu3SkWPCuGkH2vo+TNtaCrv4hclSu9KBJdZd9UlJ+M=|98=0|108=30|141=Y|554=ncz86pr00bh|8013=Y|10=013|
-
-
-// 8=FIX.4.2|9=58|35=0|49=c636bc5e6a36f1089f90e1c05ccc4d18|56=Coinbase|34=4|52=20190605-12:19:52.060|10=165|
+.vscode/settings.json Bittrex/pricefeed Bittrex/pricefeed.cpp TestingFolder/Performance Test TestingFolder/Performance Test Without Native TestingFolder/Performance Test.cpp TestingFolder/PerformanceTest TestingFolder/TestScript.sh TestingFolder/process.sh benchmark/march_client benchmark/march_parser benchmark/march_server bitfinex/include/test bitfinex/include/test.cpp boost/asio/input/input boost/asio/input/input2 boost/lockfree/multiproducer/Makefile boost/lockfree/multiproducer/first boost/lockfree/multiproducer/first.cpp boost/lockfree/multiproducer/second boost/lockfree/multiproducer/second.cpp coinbase/Fix Api/bin/fix_api coinbase/gateway/MakeNewOrders.sh coinbase/gateway/coinbase_get_order coinbase/gateway/coinbase_get_orders gateway/.gitignore gateway/Makefile gateway/binance_balances.cpp gateway/coinbase_get_balance.cpp gemini/gateway/Makefile gemini/gateway/gemini_formatter gemini/gateway/gemini_rest_cancel gemini/gateway/gemini_rest_order_status gemini/gateway/gemini_rest_order_status.cpp gemini/gateway/gemini_rest_symbols gemini/gateway/gemini_websocket gemini/gateway/gemini_websocket.cpp
