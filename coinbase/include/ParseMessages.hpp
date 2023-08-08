@@ -286,24 +286,25 @@ inline void parseSubscriptionsMsg(const std::string& json) {
 inline void parseSubscriptions(const std::string& json) {
     Document document;
     document.Parse(json.c_str());
-    std::cout << "type: " << document["type"].GetString() << std::endl;
+    // std::cout << "type: " << document["type"].GetString() << std::endl;
     auto var = document["channels"].GetArray();
-    std::cout << "channels: [";
+    // std::cout << "channels: [";
     for (int idx=0; idx<var.Size(); ++idx) {
         auto &arrVal = var[idx];
         if (arrVal.IsString()) 
-            std::cout << arrVal.GetString() << ","; 
+            // std::cout << arrVal.GetString() << ","; 
+            std::cout << "";
         else if (arrVal.IsObject()) {
-            std::cout << "  name: " << arrVal["name"].GetString() << std::endl;
+            // std::cout << "  name: " << arrVal["name"].GetString() << std::endl;
             auto jsonArr = arrVal["product_ids"].GetArray();
-            std::cout << "  product_ids:[ ";
+            // std::cout << "  product_ids:[ ";
             for (int x=0; x<jsonArr.Size(); ++x) {
-                std::cout << jsonArr[x].GetString() << ",";
+                // std::cout << jsonArr[x].GetString() << ",";
             }
-            std::cout << "\b]" << std::endl;
+            // std::cout << "\b]" << std::endl;
         }
     }
-    std::cout << "]" << std::endl;
+    // std::cout << "]" << std::endl;
 }
 
 /*
@@ -315,35 +316,35 @@ inline void parseSubscriptions(const std::string& json) {
 inline void parseSnapshot(const char *json) {
     Document document;
     document.Parse(json);
-    std::cout << "Type : " << document["type"].GetString() << std::endl;
-    std::cout << "product Id : " << document["product_id"].GetString() << std::endl;
+    // std::cout << "Type : " << document["type"].GetString() << std::endl;
+    // std::cout << "product Id : " << document["product_id"].GetString() << std::endl;
     //Gets The Value Of Asks
     auto asks = document["asks"].GetArray();
-    std::cout << "Asks : [" << std::endl;
+    // std::cout << "Asks : [" << std::endl;
     for (SizeType i = 0; i < asks.Size(); i++) {
         auto arrVal = asks[i].GetArray();
-        std::cout << "Asks : [";
+        // std::cout << "Asks : [";
         for(SizeType i = 0; i < arrVal.Size(); i++)
         {
             auto val = arrVal[i].GetString();
-            std::cout << val << ",";
+            // std::cout << val << ",";
         }
-        std::cout << "\b]" << std::endl;
+        // std::cout << "\b]" << std::endl;
     }
-    std::cout << "]" << std::endl;
+    // std::cout << "]" << std::endl;
     
     auto bids = document["bids"].GetArray();
     std::cout << "bids : [" << std::endl;
     for (SizeType i = 0; i < bids.Size(); i++) {
         auto arrVal = bids[i].GetArray();
-        std::cout << "Bids : [";
+        // std::cout << "Bids : [";
         for(SizeType i = 0; i < arrVal.Size(); i++) {
             auto val = arrVal[i].GetString();
-            std::cout << val << ",";
+            // std::cout << val << ",";
         }
-        std::cout << "\b]" << std::endl;
+        // std::cout << "\b]" << std::endl;
     }
-    std::cout << "]" << std::endl;
+    // std::cout << "]" << std::endl;
 }
 
 
@@ -355,7 +356,7 @@ inline void parseSnapshotSs(const std::string& json) {
     int start = json.find("\"type\"");
     start = json.find(":", start);
     int stop  = json.find("\",", start);
-    std::cout << json.substr(start+2, stop-start-2) << std::endl;
+    // std::cout << json.substr(start+2, stop-start-2) << std::endl;
     start = json.find("\"product_id\"");
     start = json.find(":", start);
     stop  = json.find("\",", start);
@@ -364,7 +365,7 @@ inline void parseSnapshotSs(const std::string& json) {
     start = json.find(":", start);
     stop  = json.find("]],", start);
     std::string arr = json.substr(start+1, stop-start+1);
-    std::cout << "ASKS : " << arr << std::endl;
+    // std::cout << "ASKS : " << arr << std::endl;
     while (true) {
         /* code */
         firstPos = arr.find("[", firstPos+1);
@@ -376,7 +377,7 @@ inline void parseSnapshotSs(const std::string& json) {
         int comma = innerArr.find("\",");
         price = innerArr.substr(2, comma-2); 
         amount = innerArr.substr(comma+3, (innerArr.size() - innerArr.find("\"", comma+2))-3);
-        std::cout << price << ", " << amount << std::endl;
+        // std::cout << price << ", " << amount << std::endl;
     }
     firstPos = 0;
     secondPos = 0;
@@ -384,7 +385,7 @@ inline void parseSnapshotSs(const std::string& json) {
     start = json.find(":", start);
     stop  = json.find("]]", start);
     arr = json.substr(start+1, stop-start+1);
-    std::cout << "BIDS : " << arr << std::endl;
+    // std::cout << "BIDS : " << arr << std::endl;
     while (true) {
         /* code */
         firstPos = arr.find("[", firstPos+1);
@@ -396,6 +397,6 @@ inline void parseSnapshotSs(const std::string& json) {
         int comma = innerArr.find("\",");
         price = innerArr.substr(2, comma-2); 
         amount = innerArr.substr(comma+3, (innerArr.size() - innerArr.find("\"", comma+2))-3);
-        std::cout << price << ", " << amount << std::endl;
+        // std::cout << price << ", " << amount << std::endl;
     }
 }

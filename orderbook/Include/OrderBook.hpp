@@ -1,5 +1,6 @@
 #include <ncurses.h>
 #include <map>
+#include <iostream>
 
 typedef std::map<float, float, std::greater<float>> bidMap;
 typedef std::map<float, float> askMap;
@@ -11,7 +12,8 @@ public:
         initscr();
         noecho();
         getmaxyx(stdscr, scrMaxY, scrMaxX);
-        win_ = newwin(scrMaxY/1.25, scrMaxX/1.2, scrMaxY/10, scrMaxX/10);
+        win_ = newwin(scrMaxY/0.75, scrMaxX/1.2, scrMaxY/10, scrMaxX/10);
+        std::cout << scrMaxX << " | " << scrMaxY << std::endl;
         getmaxyx(win_, winMaxY, winMaxX);
         this->Border();
     }

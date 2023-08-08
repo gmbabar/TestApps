@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <algorithm>
 #include <arpa/inet.h>
 #include <netdb.h>
 
@@ -84,14 +85,16 @@ int main(int argc, char **argv) {
     std::memset(buf, 0, 4096);
     std::cout << "> ";
     std::getline(std::cin, temp, '\n');
-    std::strcpy(buf, temp.c_str());
+    std::replace(temp.begin(), temp.end(), '|', '\x01');
+    // std::strcpy(buf, temp.c_str());
 
     // Check the input
-    if (!strlen(buf)) continue;
-    else if (!strcmp(buf, "quit")) break;
+    if (!temp.size()) continue;
+    else if (!strcmp(temp.c_str(), "quit")) break;
 
     // Send the data that buffer contains
-    int bytes_send = send(sock_fd, &buf, (size_t)strlen(buf), 0);
+
+    int bytes_send = send(sock_fd, temp.c_str(), temp.size(), 0);
     // Check if message sending is successful
     if (bytes_send < 0) {
       std::cerr << "[ERROR] Message cannot be sent!\n";

@@ -13,6 +13,7 @@
 #include <boost/beast/websocket.hpp>
 #include <boost/beast/websocket/ssl.hpp>
 #include <boost/asio/strand.hpp>
+#include <cppcodec/hex_lower.hpp>
 #include <thread>
 #include <cstdlib>
 #include <functional>
@@ -31,6 +32,81 @@ using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
 using namespace rapidjson;
 
 //------------------------------------------------------------------------------
+
+const std::string aPubKey = "47dfc129c1135efb2348d443297aaa0c";
+const std::string aPriKey = "igIjLcJHQaBCMaYpGoexS2/HQ5jdKjXX7i4qsSAJkdcjb+deOkNHf0LfD9VDg9lGM+jfK5B6zSmyEASB0PYz1A==";
+const std::string aPassPhrase = "bdtvyfvpyu9";
+
+inline uint64_t gdaxTimestamp() {
+    const auto p1 = std::chrono::system_clock::now();
+    return std::chrono::duration_cast<std::chrono::seconds>(p1.time_since_epoch()).count();
+}
+
+inline std::string coinbaseSignature(const uint64_t &timestamp) {
+
+
+    auto nonce = timestamp;
+    // auto target = aRequest.target();
+
+    std::stringstream ss;
+    ss << nonce
+       << boost::beast::http::verb::get
+       << "/users/self/verify";
+    const auto payload = ss.str();
+    
+    // DMA: Gateways/Coinbase/rest_api.cpp
+    // Calculate signature
+    char buffer[1024];
+    auto msgSize = boost::beast::detail::base64::decode(buffer, aPriKey.c_str(), aPriKey.length()).first;
+	unsigned int len = SHA256_DIGEST_LENGTH;
+	unsigned char hash[SHA256_DIGEST_LENGTH];
+#if OPENSSL_VERSION_NUMBER >= 0x1010100fL
+    HMAC_CTX * hmac = HMAC_CTX_new();
+    HMAC_Init_ex(hmac, reinterpret_cast<const unsigned char*>(buffer), msgSize, EVP_sha256(), NULL);
+    HMAC_Update(hmac, reinterpret_cast<const unsigned char*>(payload.c_str()), payload.length());
+    HMAC_Final(hmac, hash, &len);
+    HMAC_CTX_free(hmac);
+#else
+    HMAC_CTX hmac;
+    HMAC_CTX_init(&hmac);
+    HMAC_Init_ex(&hmac, reinterpret_cast<const unsigned char*>(buffer), size, EVP_sha256(), NULL);
+    HMAC_Update(&hmac, reinterpret_cast<const unsigned char*>(payload.c_str()), payload.length());
+    HMAC_Final(&hmac, hash, &len);
+    HMAC_CTX_cleanup(&hmac);
+#endif
+
+    // Format into string
+auto signature = cppcodec::hex_lower::encode(hash, len);
+    // std::memset(buffer, 0, sizeof(buffer));
+    msgSize = boost::beast::detail::base64::encode(buffer, hash, len);
+
+std::cout << "Payload: " << payload << std::endl;
+std::cout << "signature: " << signature << std::endl;
+std::cout << "signature: " << std::string(buffer, msgSize) << std::endl;
+
+    return std::string(buffer, msgSize);
+}
+
+
+std::string fmtGdaxSubscribe(const std::string &symbols) {
+
+    // oss << "{\"type\":\"subscribe\",\"product_ids\":[" << argv[1] << "],\"channels\":[\"level2\",{\"name\":\"ticker\",\"product_ids\":[" << argv[1] << "]}], "signature":}";
+    const auto timestamp = gdaxTimestamp();
+    const auto signature = coinbaseSignature(timestamp);
+    std::ostringstream oss;
+    oss << "{"
+        << R"("type":"subscribe")"
+        << R"(, "product_ids": [)" << symbols << ']'
+        << R"(, "channels": ["level2", {"name":"ticker", "product_ids": [)" << symbols << "]}]"
+        << R"(, "signature": ")" << signature << '"'
+        << R"(, "key": ")" << aPubKey << '"'
+        << R"(, "passphrase": ")" << aPassPhrase << '"'
+        << R"(, "timestamp": ")" << timestamp << '"'
+        << "}";
+
+    return oss.str();
+}
+
 
 
 // Report a failure
@@ -157,7 +233,7 @@ public:
         // The make_printable() function helps print a ConstBufferSequence
         std::ostringstream oss;
         oss << beast::make_printable(m_buffer.data());
-        std::cout << __func__ << "-" << m_msgCount + 1 << ": " << oss.str() << std::endl;
+        std::cout << __func__ << "-" << ++m_msgCount << ": " << oss.str() << std::endl;
         Document doc;
         doc.Parse(oss.str().c_str());
         std::string type = doc["type"].GetString();
@@ -180,18 +256,9 @@ public:
         // Clear the buffer
         m_buffer.consume(m_buffer.size());
 
-        if (++m_msgCount == 50) {
-            // Send the message
-            m_ws.async_write(net::buffer(this->unsubscribe("NBINE", "BTCUSDT", "L2|L1")), beast::bind_front_handler(&Session::on_write,shared_from_this()));
-	    } 
-        else if (m_msgCount == 80) {
-            m_ws.async_write(net::buffer(m_text),beast::bind_front_handler(&Session::on_write, shared_from_this()));
-	    } 
-        else {
-            // Read a message into our buffer
-            sleep(1);
-            m_ws.async_read( m_buffer, beast::bind_front_handler(&Session::on_read, shared_from_this()));
-	    }
+        // Read a message into our buffer
+        sleep(1);
+        m_ws.async_read( m_buffer, beast::bind_front_handler(&Session::on_read, shared_from_this()));
 
     }
 
@@ -223,15 +290,16 @@ int main(int argc, char **argv) {
         std::cout << "Invalid Arguements :";
         std::cout << "\nExample:";
         std::cout << "\n\t" << argv[0] << " <Symbols>";
-        std::cout << "\n\t" << argv[0] << " \"\\\"BTC-USD\\\", \\\"ETH-USD\\\"\"\n";
+        std::cout << "\n\t" << argv[0] << " \"\\\"BTC-USD\\\"\"\n";
         return -1;
     }
     // Check command line arguments.
-    auto const host = "ws-feed.exchange.coinbase.com";
+    auto const host = "ws-feed-public.sandbox.exchange.coinbase.com";
     auto const port = "443";
     std::ostringstream oss;
-    oss << "{\"type\":\"subscribe\",\"product_ids\":[" << argv[1] << "],\"channels\":[\"level2\",{\"name\":\"ticker\",\"product_ids\":[" << argv[1] << "]}]}";
-    std::cout << __func__ << ": " << oss.str() << std::endl;
+    oss << argv[1];
+    const auto msg = fmtGdaxSubscribe(oss.str());
+    std::cout << __func__ << ": " << msg << std::endl;
 
     // The io_context is required for all I/O
     net::io_context ioc;
@@ -241,7 +309,7 @@ int main(int argc, char **argv) {
 
     // Launch the asynchronous operation
     // std::cout << text << std::endl;
-    std::make_shared<Session>(ioc, ctx)->run(host, port, oss.str().c_str());
+    std::make_shared<Session>(ioc, ctx)->run(host, port, msg.c_str());
 
     // Run the I/O service. The call will return when
     // the socket is closed.
@@ -249,3 +317,24 @@ int main(int argc, char **argv) {
 
     return EXIT_SUCCESS;
 }
+
+
+
+
+// Request
+/*
+{
+    "type": "subscribe",
+    "product_ids": [
+        "BTC-USD"
+    ],
+    "channels": [
+        "level2"
+    ],
+    "signature": "...",
+    "key": "...",
+    "passphrase": "...",
+    "timestamp": "..."
+}
+
+*/

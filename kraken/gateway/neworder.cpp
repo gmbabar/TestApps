@@ -129,7 +129,7 @@ inline bool fmtKrakenSpotRestApiNewOrder(
     const auto &sym = "XBTUSD";
     const auto &tif = "IOC";
     const auto qty = 0.0001;
-    const auto px  = 17500.0;
+    const auto px  = 8000;
 
     aRequest.target(target);
     std::ostringstream oss;
