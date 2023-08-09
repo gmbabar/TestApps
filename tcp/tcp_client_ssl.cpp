@@ -23,8 +23,15 @@ public:
             boost::asio::ip::tcp::resolver::iterator endpoint_iterator)
         : socket_(io_service, context)
     {
-        boost::asio::ip::tcp::endpoint endpoint = *endpoint_iterator;
-        socket_.lowest_layer().async_connect(endpoint,
+        m_endpoint = *endpoint_iterator;
+
+        // auto host = m_endpoint.address().to_v4().to_string();
+        // std::cout << "Setting up tlsext_host to : " << host << std::endl;
+        // if(!SSL_set_tlsext_host_name(socket_.native_handle(), host.c_str())) {
+        //     std::cout << "Failed to setup tlsext_host_name" << std::endl;
+        // }
+
+        socket_.lowest_layer().async_connect(m_endpoint,
                 boost::bind(&client::handle_connect, this,
                     boost::asio::placeholders::error, ++endpoint_iterator));
     }
@@ -68,7 +75,7 @@ public:
         }
         else
         {
-            std::cout << "Handshake failed: " << error << "\n";
+            std::cout << "Handshake failed: " << error.message() << "\n";
         }
     }
 
@@ -108,6 +115,7 @@ private:
     boost::asio::ssl::stream<boost::asio::ip::tcp::socket> socket_;
     char request_[max_length];
     char reply_[max_length];
+    boost::asio::ip::tcp::endpoint m_endpoint;
 };
 
 int main(int argc, char* argv[])
@@ -126,7 +134,7 @@ int main(int argc, char* argv[])
         boost::asio::ip::tcp::resolver::query query(argv[1], argv[2]);
         boost::asio::ip::tcp::resolver::iterator iterator = resolver.resolve(query);
 
-        boost::asio::ssl::context ctx(boost::asio::ssl::context::sslv23);
+        boost::asio::ssl::context ctx(boost::asio::ssl::context::sslv23_client);
         ctx.set_verify_mode(boost::asio::ssl::context::verify_none);
         // ctx.load_verify_file("ca.pem");
 

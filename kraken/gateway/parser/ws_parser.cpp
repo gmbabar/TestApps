@@ -43,15 +43,18 @@ void PrintTradeData(boost::property_tree::ptree const& pt, std::string pad ="") 
         if (!it->first.empty() && it->second.begin() != it->second.end()) {
             std::cout << pad << "TradeID: " << it->first << ": " << it->second.get_value<std::string>() << std::endl;
             const auto &trade = it->second;
-            // PrintOrderDetails(it->second, pad+".\t");
-            for (const auto &val : trade) {
-                std::cout << pad << val.first << " : " << val.second.get_value<std::string>() << std::endl;
-            }
+            // for (const auto &val : trade) {
+            //     std::cout << pad << val.first << " : " << val.second.get_value<std::string>() << std::endl;
+            // }
+            const auto px = trade.get<std::string>("price");
+            const auto qty = trade.get<std::string>("vol");
+            const auto sym = trade.get<std::string>("pair");
+            std::cout << px << " | " << qty << " | " << sym << std::endl;
 
         }
         else if (it->second.begin() != it->second.end()) {
-            std::cout << "Printing trade:" << std::endl;
-        	PrintOrderData(it->second, pad+".\t");
+            std::cout << "Printing Trade:" << std::endl;
+        	PrintTradeData(it->second, pad+".\t");
         }
     }
     std::cout << pad << __func__ << " is Done." << endl;
@@ -82,9 +85,28 @@ void ProcessMessage(const std::string &msg) {
             else {
                 std::cout << "Error: UNKNOWN Msg Type" << std::endl;
             }
-            
+
         } else {
+
             std::cout << "The JSON data is UNKNOWN key-value pair." << std::endl;
+            const auto event = pt.get<std::string>("event");
+            std::cout << "EVENT: " << event << std::endl;
+            const auto status = pt.get<std::string>("status");
+            std::cout << "STATUS: " << status << std::endl;
+            if (status == "error") {
+                const auto errorReason = pt.get<std::string>("errorMessage");
+                std::cout << "ERROR REASON: " << errorReason << std::endl;
+                return;
+            }
+            if(event == "addOrderStatus") {
+                const auto orderId = pt.get<std::string>("txid");
+                std::cout << "ORDER ADDED WITH TXID: " << orderId << std::endl;
+            }
+            else if(event == "cancelOrderStatus") {
+                std::cout << "ORDER CANCELLED." << std::endl;
+            }
+
+            std::cout << "--------------RESPONSE PARSING DONE--------------" << std::endl;
         }
     } catch (const std::exception& e) {
         std::cerr << "Error: " << e.what() << std::endl;
@@ -123,6 +145,44 @@ int main() {
 ]
     )";
     ProcessMessage(tradeData);
+
+    const std::string newOrderOkay = R"(
+{
+  "descr": "buy 0.01770000 XBTUSD @ limit 4000",
+  "event": "addOrderStatus",
+  "status": "ok",
+  "txid": "ONPNXH-KMKMU-F4MR5V"
+}
+    )";
+    ProcessMessage(newOrderOkay);
+
+    const std::string newOrderFailed = R"(
+{
+  "errorMessage": "EOrder:Order minimum not met",
+  "event": "addOrderStatus",
+  "status": "error"
+}
+    )";
+    ProcessMessage(newOrderFailed);
+
+
+    const std::string cancelOrderOkay = R"(
+{
+  "event": "cancelOrderStatus",
+  "status": "ok"
+}
+    )";
+    ProcessMessage(cancelOrderOkay);
+
+    const std::string cancelOrderFailed = R"(
+{
+  "errorMessage": "EOrder:Unknown order",
+  "event": "cancelOrderStatus",
+  "status": "error"
+}
+    )";
+    ProcessMessage(cancelOrderFailed);
+
 
     return 0;
 }

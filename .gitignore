@@ -76,4 +76,6 @@ huobi/gateway/open_orders
 kraken/gateway/balance
 kraken/gateway/cancelorder
 kraken/gateway/neworder
+kraken/gateway/parser/rest_parser
+kraken/gateway/parser/ws_parser
 

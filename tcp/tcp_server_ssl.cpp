@@ -14,6 +14,8 @@
 #include <boost/asio.hpp>
 #include <boost/asio/ssl.hpp>
 
+#include "common/server_certificate.hpp"
+
 typedef boost::asio::ssl::stream<boost::asio::ip::tcp::socket> ssl_socket;
 
 class session
@@ -47,6 +49,7 @@ public:
         }
         else
         {
+            std::cout << "Handshake failed: " << error.message() << "\n";
             delete this;
         }
     }
@@ -105,6 +108,13 @@ public:
         // context_.use_certificate_chain_file("server.pem");
         // context_.use_private_key_file("server.pem", boost::asio::ssl::context::pem);
         // context_.use_tmp_dh_file("dh512.pem");
+
+    // // The SSL context is required, and holds certificates
+    // ssl::context ctx{ssl::context::sslv23};
+
+    // This holds the self-signed certificate used by the server
+    load_server_certificate(context_);
+
 
         session* new_session = new session(io_service_, context_);
         acceptor_.async_accept(new_session->socket(),
