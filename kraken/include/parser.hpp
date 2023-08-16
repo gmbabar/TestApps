@@ -11,7 +11,7 @@ inline
 bool getNextJsonArrayValue(
         const char *&cptr,
         const char *cend,
-        parser::data::ConstBufRange &token,
+        std::string &token,
         bool &hasMoreValues) {
     // Check if more values at same level.
     auto HasMoreValues = [](const char *cptr, const char *cend) {
@@ -53,7 +53,7 @@ bool getNextJsonArrayValue(
 
     if (cptr <= cend) {
         hasMoreValues = HasMoreValues(cptr, cend);
-        token = parser::data::ConstBufRange(begin, cptr-begin);
+        token = std::string(begin, cptr-begin);
         ++cptr;
         return true;
     }
@@ -75,24 +75,24 @@ bool isJsonArray(const std::string &aMsg) {
     return false;
 }
 
-//inline
-bool isJsonArray(const parser::data::ConstBufRange &aBuf) {
-    size_t len = aBuf.size();
-    char ch;
-    size_t idx = 0;
-    while (idx < len) {
-        ch = aBuf[idx++];
-        if (::isspace(ch)) continue;
-        if (ch == '[') return true;      // should be first char
-        break;
-    }
-    return false;
-}
+// //inline
+// bool isJsonArray(const std::string &aBuf) {
+//     size_t len = aBuf.size();
+//     char ch;
+//     size_t idx = 0;
+//     while (idx < len) {
+//         ch = aBuf[idx++];
+//         if (::isspace(ch)) continue;
+//         if (ch == '[') return true;      // should be first char
+//         break;
+//     }
+//     return false;
+// }
 
 // inline
 
 bool getJsonKey(
-        const parser::data::ConstBufRange &aBuf,
+        const std::string &aBuf,
         const std::string& aKey,
         size_t &aBegin,
         size_t &aEnd) {
@@ -106,7 +106,7 @@ bool getJsonKey(
 
 // inline
 bool getJsonStrVal(
-        const parser::data::ConstBufRange &aBuf,
+        const std::string &aBuf,
         const std::string& aKey,
         size_t &aBegin,
         size_t &aEnd) {
@@ -128,7 +128,7 @@ bool getJsonStrVal(
 
 // inline
 bool getJsonNumVal(
-        const parser::data::ConstBufRange &aBuf,
+        const std::string &aBuf,
         const std::string& aKey,
         size_t &aBegin,
         size_t &aEnd) {
@@ -197,9 +197,9 @@ inline void fastParseTrade(const std::string& trade) {
     const char *aBuf = trade.c_str();
 
 
-        GetSymbol(trade, beg, end);
-        ConstBufRange Symbol(&aBuf[beg], &aBuf[end]);
-        std::cout << __FILE__ << ':' << __LINE__ << ':' << __func__ << ':' << Symbol.asStr() << std::endl;
+        // GetSymbol(trade, beg, end);
+        // ConstBufRange Symbol(&aBuf[beg], &aBuf[end]);
+        // std::cout << __FILE__ << ':' << __LINE__ << ':' << __func__ << ':' << Symbol.asStr() << std::endl;
         beg = 0;
         end = 0;
 
@@ -425,80 +425,148 @@ level update msg
 
 */
 
-inline void fastParseLevelUpdate(const std::string& trade) {
+// inline void fastParseLevelUpdate(const std::string& trade) {
+//     int beg = 0;
+//     int end = 0;
+//     int firstTradeIndex = 0;
+//     int lastTradeIndex = 0;
+//     const char *aBuf = trade.c_str();
+
+//     // GetSymbol(trade, beg, end);
+//     // ConstBufRange Symbol(&aBuf[beg], &aBuf[end]);
+//     // std::cout << __FILE__ << ':' << __LINE__ << ':' << __func__ << ':' << Symbol.asStr() << std::endl;
+//     beg = 0;
+//     end = 0;
+
+//     if(trade.find("\"a\":") != std::string::npos || trade.find("\"b\":") != std::string::npos) {
+//         beg = trade.find("[");
+//         end  = trade.find(",", beg);
+//         ConstBufRange channelID(&aBuf[beg]+1,&aBuf[end]);
+//         std::cout << "channal ID: " << channelID.asStr() << std::endl;
+//         beg = trade.find("[",beg+1);
+//         end  = trade.find("]]", beg);
+//         ConstBufRange Asks(&aBuf[beg],&aBuf[end]+2);
+//         std::string trades = Asks.asStr();
+//         beg = trade.find("{");
+//         end = trade.find(":",beg+1);
+//         ConstBufRange Side(&aBuf[beg]+2,&aBuf[end]-1);
+//         std::cout << "Side "<< Side.asStr() <<" : "<< trades << std::endl;
+//             while (true) {
+//                 firstTradeIndex = trades.find("[", firstTradeIndex+1);
+//                 lastTradeIndex = trades.find("]", lastTradeIndex+1);
+ 
+//                 if(firstTradeIndex == std::string::npos || lastTradeIndex == std::string::npos ) {
+//                     // std::cout << "_______inside if statement_____" << std::endl; 
+//                     break;
+//                 }
+//                 // std::cout << "_______After if statement_____" << std::endl; 
+//                 ConstBufRange arr(&trades[firstTradeIndex],&trades[lastTradeIndex]+1);
+//                 std::string trade = arr.asStr();
+//                 std::cout << trade << std::endl; 
+//                 beg = trade.find("\"");
+//                 end  = trade.find("\",", beg);
+//                 ConstBufRange price(&trade[beg]+1,&trade[end]);//price
+//                 std::cout << "Price: " << price.asStr() << std::endl;
+//                 beg = trade.find("\"", end+1);
+//                 end  = trade.find("\",", beg);
+//                 ConstBufRange volume(&trade[beg]+1,&trade[end]);//volume
+//                 std::cout << "Volume: " << volume.asStr() << std::endl;
+                
+//                 if(trade.find("r") != std::string::npos) {
+//                     // std::cout << "____inside if____" << std::endl;
+//                     beg = trade.find("\"", end+1);
+//                     end  = trade.find("\",", beg);
+//                     ConstBufRange timestamp(&trade[beg]+1,&trade[end]);//timestamp
+//                     std::cout << "Timestamp: " << timestamp.asStr() << std::endl;
+//                     beg = trade.find("\"", end+1);
+//                     end  = trade.find("\"]", beg);
+//                     ConstBufRange updateType(&trade[beg]+1,&trade[end]);//updateType
+//                     std::cout << "update type: " << updateType.asStr() << std::endl;
+//                 }
+//                 else {
+//                     // std::cout << "____inside Else____" << std::endl;
+//                     beg = trade.find("\"", end+1);
+//                     end  = trade.find("\"]", beg);
+//                     ConstBufRange timestamp(&trade[beg]+1,&trade[end]);//timestamp
+//                     std::cout << "Timestamp: " << timestamp.asStr() << std::endl;
+//                 }
+//             }
+//         beg = trade.find("},");
+//         end  = trade.find("\"", beg+4);
+//         ConstBufRange channelName(&trade[beg]+3,&trade[end]);//channel name
+//         std::cout << "Channel name: " << channelName.asStr() << std::endl;
+//         beg = trade.find(",\"",end);
+//         end  = trade.find("\"", beg+2);
+//         ConstBufRange pairName(&trade[beg]+2,&trade[end]);//channel name
+//         std::cout << "Pair name: " << pairName.asStr() << std::endl;
+//     }
+// }
+
+
+inline void fastParseBookUpdate(const std::string& trade) {
     int beg = 0;
     int end = 0;
-    int firstTradeIndex = 0;
-    int lastTradeIndex = 0;
-    const char *aBuf = trade.c_str();
+    int fieldStart = 0;
+    int fieldEnd = 0;
 
-    GetSymbol(trade, beg, end);
-    ConstBufRange Symbol(&aBuf[beg], &aBuf[end]);
-    std::cout << __FILE__ << ':' << __LINE__ << ':' << __func__ << ':' << Symbol.asStr() << std::endl;
-    beg = 0;
-    end = 0;
 
-    if(trade.find("\"a\":") != std::string::npos || trade.find("\"b\":") != std::string::npos) {
-        beg = trade.find("[");
-        end  = trade.find(",", beg);
-        ConstBufRange channelID(&aBuf[beg]+1,&aBuf[end]);
-        std::cout << "channal ID: " << channelID.asStr() << std::endl;
-        beg = trade.find("[",beg+1);
-        end  = trade.find("]]", beg);
-        ConstBufRange Asks(&aBuf[beg],&aBuf[end]+2);
-        std::string trades = Asks.asStr();
-        beg = trade.find("{");
-        end = trade.find(":",beg+1);
-        ConstBufRange Side(&aBuf[beg]+2,&aBuf[end]-1);
-        std::cout << "Side "<< Side.asStr() <<" : "<< trades << std::endl;
-            while (true) {
-                firstTradeIndex = trades.find("[", firstTradeIndex+1);
-                lastTradeIndex = trades.find("]", lastTradeIndex+1);
- 
-                if(firstTradeIndex == std::string::npos || lastTradeIndex == std::string::npos ) {
-                    // std::cout << "_______inside if statement_____" << std::endl; 
-                    break;
-                }
-                // std::cout << "_______After if statement_____" << std::endl; 
-                ConstBufRange arr(&trades[firstTradeIndex],&trades[lastTradeIndex]+1);
-                std::string trade = arr.asStr();
-                std::cout << trade << std::endl; 
-                beg = trade.find("\"");
-                end  = trade.find("\",", beg);
-                ConstBufRange price(&trade[beg]+1,&trade[end]);//price
-                std::cout << "Price: " << price.asStr() << std::endl;
-                beg = trade.find("\"", end+1);
-                end  = trade.find("\",", beg);
-                ConstBufRange volume(&trade[beg]+1,&trade[end]);//volume
-                std::cout << "Volume: " << volume.asStr() << std::endl;
-                
-                if(trade.find("r") != std::string::npos) {
-                    // std::cout << "____inside if____" << std::endl;
-                    beg = trade.find("\"", end+1);
-                    end  = trade.find("\",", beg);
-                    ConstBufRange timestamp(&trade[beg]+1,&trade[end]);//timestamp
-                    std::cout << "Timestamp: " << timestamp.asStr() << std::endl;
-                    beg = trade.find("\"", end+1);
-                    end  = trade.find("\"]", beg);
-                    ConstBufRange updateType(&trade[beg]+1,&trade[end]);//updateType
-                    std::cout << "update type: " << updateType.asStr() << std::endl;
-                }
-                else {
-                    // std::cout << "____inside Else____" << std::endl;
-                    beg = trade.find("\"", end+1);
-                    end  = trade.find("\"]", beg);
-                    ConstBufRange timestamp(&trade[beg]+1,&trade[end]);//timestamp
-                    std::cout << "Timestamp: " << timestamp.asStr() << std::endl;
-                }
-            }
-        beg = trade.find("},");
-        end  = trade.find("\"", beg+4);
-        ConstBufRange channelName(&trade[beg]+3,&trade[end]);//channel name
-        std::cout << "Channel name: " << channelName.asStr() << std::endl;
-        beg = trade.find(",\"",end);
-        end  = trade.find("\"", beg+2);
-        ConstBufRange pairName(&trade[beg]+2,&trade[end]);//channel name
-        std::cout << "Pair name: " << pairName.asStr() << std::endl;
+    if (trade.find("\"a\"") != std::string::npos) {
+        beg = trade.find("\"a\"")+4;
+        end  = trade.find("]]", beg)+1;
+        while (true) {
+            std::cout << "----------------------------------------------------------------------" << std::endl;
+            fieldStart = trade.find("[", beg);
+            if(fieldStart >= end || fieldStart == std::string::npos)
+                break;
+            // fieldEnd = trade.find(',', fieldStart);
+            // fieldEnd = trade.find(',', fieldEnd+1);
+
+            // const auto pxBeg = trade.find('"', fieldStart);
+            // const auto pxEnd = trade.find('"', pxBeg+1);
+            // std::cout << trade.substr(pxBeg+1, pxEnd-pxBeg-1) << std::endl; //price
+            // const auto volBeg = trade.find('"', pxEnd+1);
+            // const auto volEnd = trade.find('"', volBeg+1);
+            // std::cout << trade.substr(volBeg+1, volEnd-volBeg-1) << std::endl; //volume
+            // beg = fieldEnd+1;
+
+            fieldStart = trade.find('"', fieldStart)+1;
+            fieldEnd = trade.find('"', fieldStart);
+            std::cout << trade.substr(fieldStart, fieldEnd-fieldStart) << std::endl; //price
+            fieldStart = trade.find('"', fieldEnd+1)+1;
+            fieldEnd = trade.find('"', fieldStart);
+            std::cout << trade.substr(fieldStart, fieldEnd-fieldStart) << std::endl; //volume
+            beg = fieldEnd+1;
+        }
+    }
+    if (trade.find("\"b\"", end) != std::string::npos) {
+        beg = trade.find("\"b\"", end)+4;
+        end  = trade.find("]]", beg)+1;
+
+        while (true) {
+            std::cout << "----------------------------------------------------------------------" << std::endl;
+            fieldStart = trade.find("[", beg);
+            if(fieldStart >= end || fieldStart == std::string::npos)
+                break;
+
+            // fieldEnd = trade.find(',', fieldStart);
+            // fieldEnd = trade.find(',', fieldEnd+1);
+            // const auto pxBeg = trade.find('"', fieldStart);
+            // const auto pxEnd = trade.find('"', pxBeg+1);
+            // std::cout << trade.substr(pxBeg+1, pxEnd-pxBeg-1) << std::endl; //price
+            // const auto volBeg = trade.find('"', pxEnd+1);
+            // const auto volEnd = trade.find('"', volBeg+1);
+            // std::cout << trade.substr(volBeg+1, volEnd-volBeg-1) << std::endl; //volume
+            // beg = fieldEnd+1;
+
+            fieldStart = trade.find('"', fieldStart)+1;
+            fieldEnd = trade.find('"', fieldStart);
+            std::cout << trade.substr(fieldStart, fieldEnd-fieldStart) << std::endl; //price
+            fieldStart = trade.find('"', fieldEnd+1)+1;
+            fieldEnd = trade.find('"', fieldStart);
+            std::cout << trade.substr(fieldStart, fieldEnd-fieldStart) << std::endl; //volume
+            beg = fieldEnd+1;
+
+        }
     }
 }
 
@@ -558,9 +626,9 @@ inline void fastParseTicker(const std::string& trade) {
     int lastTradeIndex = 0;
     const char *aBuf = trade.c_str();
 
-    GetSymbol(trade, beg, end);
-    ConstBufRange Symbol(&aBuf[beg], &aBuf[end]);
-    std::cout << __FILE__ << ':' << __LINE__ << ':' << __func__ << ':' << Symbol.asStr() << std::endl;
+    // GetSymbol(trade, beg, end);
+    // ConstBufRange Symbol(&aBuf[beg], &aBuf[end]);
+    // std::cout << __FILE__ << ':' << __LINE__ << ':' << __func__ << ':' << Symbol.asStr() << std::endl;
     beg = 0;
     end = 0;
 
