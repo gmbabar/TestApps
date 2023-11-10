@@ -20,8 +20,9 @@ def on_close(ws):
 def on_open(ws):
     print("Opened connection")
 
-gemini_api_key = "account-8BDIOhP2VnBAzQHAn6DT"
-gemini_api_secret = "mXob3f85YcHu2KEQDxXeVSMtabL".encode()
+# PROD
+gemini_api_key = "account-lcDNZUZCQia4UgBOJFgD"
+gemini_api_secret = "3Vij4y712WfhJcf3SNZHyJqaZZgD".encode()
 
 payload = {"request": "/v1/order/events", "nonce": time.time()}
 # payload = {"request": "/v1/order/events", "nonce": 1698209224}
@@ -33,7 +34,7 @@ print('Payload: ', payload)
 print('Payload: ', encoded_payload)
 
 websocket.enableTrace(True)
-ws = websocket.WebSocketApp("wss://api.sandbox.gemini.com/v1/order/events",
+ws = websocket.WebSocketApp("wss://api.gemini.com/v1/order/events",
                             on_message=on_message,
                             on_open=on_open,
                             on_error=on_error,

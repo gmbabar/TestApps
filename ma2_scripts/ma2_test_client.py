@@ -8,7 +8,7 @@ import argparse
 import json
 import time
 
-from tomlkit import string
+# from tomlkit import string
 
 # some helper functions.
 
@@ -676,7 +676,7 @@ class Ma2ClientProtocol(asyncio.Protocol):
     #     "bals"    : [{ <curr1> : <number> },...],
     #     "bals_ex" : { { <curr1> : {<name1> : <value1>,...}, ...}, ...}
     # }
-    def parse_trace_execution(self, json):
+    def parse_trade_execution(self, json):
         if 'id' not in json:
             error = "Missing 'id' in 'trex' message"
             if error not in self.errors:
@@ -792,7 +792,7 @@ class Ma2ClientProtocol(asyncio.Protocol):
                 elif json_data['type'] == 'oprp':
                     self.parse_open_order_report(json_data)
                 elif json_data['type'] == 'trex':
-                    self.parse_trace_execution(json_data)
+                    self.parse_trade_execution(json_data)
 
                 return
             if json_data['type'] == 'err':

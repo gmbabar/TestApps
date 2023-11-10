@@ -4,14 +4,9 @@
 #include "bufrange.hpp"
 #include <sstream>
 
-
-
-
-
-
 using namespace rapidjson;
-using namespace Parse::data;
-
+// using namespace parse::data;
+using ConstBufRange = parser::data::ConstBufRange;
 
 /*
 {"type": "l2_updates","symbol": "BTCUSD",
