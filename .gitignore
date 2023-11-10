@@ -78,4 +78,6 @@ kraken/gateway/cancelorder
 kraken/gateway/neworder
 kraken/gateway/parser/rest_parser
 kraken/gateway/parser/ws_parser
-
+gemini/gateway/gemini_order_events 
+coinbase/simulator_gateway/coinbase_simulator 
+kraken/include/parser
