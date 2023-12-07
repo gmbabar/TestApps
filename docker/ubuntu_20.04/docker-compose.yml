@@ -1,0 +1,20 @@
+version: '3.7'
+
+services:
+  qmd2-dev-image:
+    image: gbabar/qma2_test:latest
+    container_name: QMA2-DEV-TEST
+    working_dir: /qma2_home
+    network_mode: "host"
+    command: /bin/bash
+    privileged: true
+    stdin_open: true
+    tty: true
+    restart: unless-stopped
+    volumes:
+      - /home/gbabar/:/qma2_home/
+      - /dev/shm:/dev/shm
+      - /run/systemd/journal/:/run/systemd/journal
+      - /dev/log:/dev/log
+      - /tmp/:/tmp/
+

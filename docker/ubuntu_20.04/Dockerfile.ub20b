@@ -1,0 +1,69 @@
+FROM ubuntu:focal
+USER root
+
+# Set timezone
+ENV TZ=America/Chicago
+ENV DEBIAN_FRONTEND noninteractive
+
+RUN apt -y update && apt -y upgrade
+RUN apt install -y software-properties-common
+RUN add-apt-repository -y ppa:deadsnakes/ppa
+RUN apt-cache policy python3.9
+RUN apt-get update && \
+    apt-get install -yq tzdata && \
+    ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone && \
+    dpkg-reconfigure -f noninteractive tzdata && \
+    apt-get install -y \
+    locales \
+    locales-all \
+    bzip2 \
+    tdsodbc \
+    python3.9 \
+    python3.9-dev \
+    python3-pip \
+    python-is-python3 \
+    python-dev-is-python3 \
+    libpython3.9-dev \
+    scons \
+    g++-12 \
+    make \
+    cmake \
+    libssl-dev \
+    libzstd-dev \
+    libnuma-dev \
+    sudo \
+    git \
+    git-lfs \
+    libipc-run-perl \
+    libipc-run3-perl \
+    libipc-filter-perl \
+    libipc-pubsub-perl \
+    libipc-run-safehandles-perl \
+    libipc-shareable-perl \
+    libipc-signal-perl \
+    libipc-system-simple-perl \
+    xxd \
+    libtool \
+    vim \
+    && update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-9 9 \
+    && rm -rf /var/lib/apt/lists/*
+
+
+RUN echo '[FreeTDS]\n\
+Description = ODBC for FreeTDS \n\
+Driver = /usr/lib/x86_64-linux-gnu/odbc/libtdsodbc.so\
+' > /etc/odbcinst.ini
+
+# Install pip tools
+RUN pip install github-release
+RUN pip install githubrelease
+RUN pip install jira
+
+RUN useradd -ms /bin/bash gbabar
+USER gbabar
+WORKDIR /home/gbabar
+
+ENV USER=gbabar
+ENV NEBULA_HOME=/tmp/$USER/dist/nebula
+ENV LD_LIBRARY_PATH=$NEBULA_HOME/lib
+ENV PATH=$PATH:$NEBULA_HOME/bin
