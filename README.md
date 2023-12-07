@@ -1,6 +1,6 @@
 # GBabar
 
-This is my personal area to store and share my small tools which I build to support my work.
+This is my personal area to store and share my small tools which I build to support my work. Please feel free to copy and reuse any code suitable to your project without any guarentee or liability. Most of these tools are isoloated boiler plates which I found hard to compose or search on web and AI tools.
 
 -Ghulam M. Babar
 
