@@ -27,11 +27,22 @@
         td {
             text-align: center;
         }
-        #balance-section {
+        #balance-section, #trade-section {
             margin-top: 20px;
         }
         #topofbook {
             margin-bottom: 40px; /* Space between sections */
+        }
+        #trade-div {
+            display: none;
+        }
+        .buy-button {
+            background-color: green;
+            color: white;
+        }
+        .sell-button {
+            background-color: lightcoral;
+            color: white;
         }
     </style>
 </head>
@@ -77,6 +88,42 @@
         </table>
     </div>
 
+    <!-- New Trade Form (Hidden Initially) -->
+    <div id="trade-div">
+        <h2>Trade</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Symbol</th>
+                    <th>Order Type</th>
+                    <th>Price</th>
+                    <th>Size</th>
+                    <th>Notional Value</th>
+                    <th>Trade</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td id="buy-symbol">BTC-USD</td>
+                    <td>Limit</td>
+                    <td><input type="number" id="buy-price" readonly></td>
+                    <td><input type="number" id="buy-size" onchange="updateNotional('buy')"></td>
+                    <td><input type="number" id="buy-notional" value="10000" readonly></td>
+                    <td><button class="buy-button" onclick="executeTrade('buy')">Buy</button></td>
+                </tr>
+                <tr>
+                    <td id="sell-symbol">BTC-USD</td>
+                    <td>Limit</td>
+                    <td><input type="number" id="sell-price" readonly></td>
+                    <td><input type="number" id="sell-size" onchange="updateNotional('sell')"></td>
+                    <td><input type="number" id="sell-notional" value="10000" readonly></td>
+                    <td><button class="sell-button" onclick="executeTrade('sell')">Sell</button></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Coinbase Balance Section -->
     <div id="balance-section">
         <h2>Wallet Balance (Coinbase)</h2>
         <table>
@@ -86,6 +133,7 @@
                     <th>Currency Balance</th>
                     <th>Available USD</th>
                     <th>Last Updated</th>
+                    <th>Action</th>
                 </tr>
             </thead>
             <tbody>
@@ -94,6 +142,7 @@
                     <td id="wallet-balance">-</td>
                     <td id="wallet-usd">-</td>
                     <td id="wallet-update-time">-</td>
+                    <td><button onclick="showTradeForm()">Trade</button></td>
                 </tr>
             </tbody>
         </table>
@@ -242,6 +291,40 @@
             fetchQuote();   // Fetch the quote when the page loads
             startAutoUpdate();  // Start automatic updates
         };
-    </script>
+
+        // Function to show the trade form
+        function showTradeForm() {
+            document.getElementById('trade-div').style.display = 'block';
+            // Set the price fields using the top of book values
+            const bidPrice = document.getElementById('bid').innerText;
+            const askPrice = document.getElementById('ask').innerText;
+
+            document.getElementById('buy-price').value = bidPrice;
+            document.getElementById('sell-price').value = askPrice;
+
+            // Update the size fields based on the notional value
+            document.getElementById('buy-size').value = (10000 / bidPrice).toFixed(4);
+            document.getElementById('sell-size').value = (10000 / askPrice).toFixed(4);
+        }
+
+        // Function to update the notional value based on the size and price
+        function updateNotional(type) {
+            const price = parseFloat(document.getElementById(`${type}-price`).value);
+            const size = parseFloat(document.getElementById(`${type}-size`).value);
+            const notionalValue = price * size;
+
+            document.getElementById(`${type}-notional`).value = notionalValue.toFixed(2);
+        }
+
+        // Function to execute trade (buy or sell)
+        function executeTrade(type) {
+            const price = document.getElementById(`${type}-price`).value;
+            const size = document.getElementById(`${type}-size`).value;
+            const symbol = document.getElementById(`${type}-symbol`).innerText;
+
+            alert(`${type === 'buy' ? 'Buying' : 'Selling'} ${size} of ${symbol} at ${price}`);
+        }
+
+</script>
 </body>
 </html>
