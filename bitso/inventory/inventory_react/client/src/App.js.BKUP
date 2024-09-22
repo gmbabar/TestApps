@@ -1,0 +1,61 @@
+import React, { useState, useEffect } from 'react';
+import { Table } from '@/components/ui/table';
+
+const BitsoBalanceTable = () => {
+  const [balances, setBalances] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchBalances = async () => {
+      try {
+        const response = await fetch('/api/bitso-balances');
+        if (!response.ok) {
+          throw new Error('Failed to fetch balances');
+        }
+        const data = await response.json();
+        setBalances(data);
+        setLoading(false);
+      } catch (err) {
+        setError(err.message);
+        setLoading(false);
+      }
+    };
+
+    fetchBalances();
+  }, []);
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  if (error) {
+    return <div>Error: {error}</div>;
+  }
+
+  return (
+    <div className="container mx-auto p-4">
+      <h1 className="text-2xl font-bold mb-4">Bitso Account Balances</h1>
+      <Table>
+        <thead>
+          <tr>
+            <th>Currency</th>
+            <th>Balance</th>
+            <th>Last Updated</th>
+          </tr>
+        </thead>
+        <tbody>
+          {balances.map((balance) => (
+            <tr key={balance.currency}>
+              <td>{balance.currency}</td>
+              <td>{balance.balance}</td>
+              <td>{new Date(balance.lastUpdated).toLocaleString()}</td>
+            </tr>
+          ))}
+        </tbody>
+      </Table>
+    </div>
+  );
+};
+
+export default BitsoBalanceTable;

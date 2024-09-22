@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coinbase & Bitso Exchange</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 50px;
+        }
+        table {
+            margin: 0 auto;
+            border-collapse: collapse;
+            width: 90%;
+        }
+        table, th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+        }
+        th {
+            padding-top: 12px;
+            padding-bottom: 12px;
+            background-color: #f2f2f2;
+        }
+        td {
+            text-align: center;
+        }
+        #balance-section {
+            margin-top: 20px;
+        }
+        #topofbook {
+            margin-bottom: 40px; /* Space between sections */
+        }
+    </style>
+</head>
+<body>
+    <h1>Coinbase & Bitso Exchange</h1>
+
+    <div>
+        <label for="pair">Select Pair: </label>
+        <select id="pair" onchange="updatePair()">
+            <option value="BTC-USD">BTC-USD</option>
+            <option value="ETH-USD">ETH-USD</option>
+            <option value="LTC-USD">LTC-USD</option>
+            <option value="BTC-USDT">BTC-USDT</option>
+            <option value="ETH-USDT">ETH-USDT</option>
+            <option value="LTC-USDT">LTC-USDT</option>
+            <option value="USDT-USD">USDT-USD</option> <!-- USDT-USD pair added -->
+        </select>
+    </div>
+
+    <div id="topofbook">
+        <h2>Top of Book (Coinbase)</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Currency</th>
+                    <th>Best Bid</th>
+                    <th>Best Ask</th>
+                    <th>Spread</th>
+                    <th>Bid Size x Ask Size</th>
+                    <th>Last Updated</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td id="currency">-</td>
+                    <td id="bid">-</td>
+                    <td id="ask">-</td>
+                    <td id="spread">-</td>
+                    <td id="size">-</td>
+                    <td id="update-time">-</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div id="balance-section">
+        <h2>Wallet Balance (Coinbase)</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Currency Name</th>
+                    <th>Currency Balance</th>
+                    <th>Available USD</th>
+                    <th>Last Updated</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td id="wallet-currency">-</td>
+                    <td id="wallet-balance">-</td>
+                    <td id="wallet-usd">-</td>
+                    <td id="wallet-update-time">-</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- New Bitso Balances Section -->
+    <div id="bitso-balance-section">
+        <h2>Wallet Balance (Bitso)</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Currency Name</th>
+                    <th>Currency Available Balance</th>
+                    <th>Currency Total Balance</th>
+                    <th>Available USD</th>
+                    <th>Last Updated</th>
+                </tr>
+            </thead>
+            <tbody id="bitso-balances-body">
+                <!-- Bitso balances will be populated here -->
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        let intervalId;
+        let currentPair = document.getElementById('pair').value;
+
+        // Function to fetch Bitso balances
+        async function fetchBitsoBalances() {
+            try {
+                const baseCurrency = currentPair.split('-')[0]; // Extract base currency (e.g., BTC from BTC-USD)
+                const ccyResponse = await fetch(`http://localhost:3000/api/bitso/balances/${baseCurrency}`);
+                const ccyBalances = await ccyResponse.json();
+                
+                // Fetch available USD balance
+                const usdResponse = await fetch(`http://localhost:3000/api/bitso/balances/usd`);
+                const usdBalance = await usdResponse.json();
+
+                // Populate the Bitso balance table
+                const bitsoBalancesBody = document.getElementById('bitso-balances-body');
+                bitsoBalancesBody.innerHTML = ''; // Clear the existing rows
+
+                const updateTime = new Date().toLocaleTimeString();
+
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${ccyBalances.currency}</td>
+                    <td>${ccyBalances.available}</td>
+                    <td>${ccyBalances.total}</td>
+                    <td>${usdBalance.available}</td> 
+                    <td>${updateTime}</td>
+                `;
+                bitsoBalancesBody.appendChild(row);
+            } catch (error) {
+                console.error('Error fetching Bitso balances:', error);
+            }
+        }
+
+        // Function to fetch the top-of-book quote
+        async function fetchQuote() {
+            try {
+                const response = await fetch(`http://localhost:3000/api/book/${currentPair}`);
+                const data = await response.json();
+
+                const bestBid = parseFloat(data.bids[0][0]);
+                const bestAsk = parseFloat(data.asks[0][0]);
+                const bidSize = parseFloat(data.bids[0][1]); // Extract bid size
+                const askSize = parseFloat(data.asks[0][1]); // Extract ask size
+                const spread = (bestAsk - bestBid).toFixed(6);  // Calculate the spread
+                const updateTime = new Date().toLocaleTimeString();
+
+                // Update table with the fetched data
+                document.getElementById('currency').innerText = currentPair;
+                document.getElementById('bid').innerText = bestBid;
+                document.getElementById('ask').innerText = bestAsk;
+                document.getElementById('spread').innerText = spread;
+                document.getElementById('size').innerText = `${bidSize} x ${askSize}`;  // Display sizes in the new column
+                document.getElementById('update-time').innerText = updateTime;
+
+                // Fetch wallet balance and available USD
+                const baseCurrency = currentPair.split('-')[0]; // Extract base currency (e.g., BTC from BTC-USD)
+                fetchBalance(baseCurrency);  // Fetch balance for the base currency
+                fetchAvailableUSD();          // Fetch available USD separately
+            } catch (error) {
+                console.error('Error fetching quote:', error);
+            }
+        }
+
+        // Function to fetch wallet balance for the base currency
+        async function fetchBalance(baseCurrency) {
+            try {
+                const response = await fetch(`http://localhost:3000/api/balance/${baseCurrency}`);
+                const data = await response.json();
+
+                const balance = parseFloat(data.balance);
+                const updateTime = new Date().toLocaleTimeString();
+
+                // Update wallet balance table
+                document.getElementById('wallet-currency').innerText = baseCurrency;
+                document.getElementById('wallet-balance').innerText = balance;
+                document.getElementById('wallet-update-time').innerText = updateTime;
+            } catch (error) {
+                console.error('Error fetching balance:', error);
+            }
+        }
+
+        // Function to fetch available USD
+        async function fetchAvailableUSD() {
+            try {
+                const response = await fetch(`http://localhost:3000/api/balance/USD`);
+                const data = await response.json();
+
+                // Convert the returned balance to a float
+                const availableUSD = parseFloat(data.balance).toFixed(2);
+
+                // Update available USD value
+                document.getElementById('wallet-usd').innerText = availableUSD;
+            } catch (error) {
+                console.error('Error fetching available USD:', error);
+            }
+        }
+
+        // Function to start the automatic update every second
+        function startAutoUpdate() {
+            intervalId = setInterval(() => {
+                fetchBitsoBalances(); // Fetch Bitso balances
+                fetchQuote();
+            }, 1000);
+        }
+        // function startAutoUpdate() {
+        //     intervalId = setInterval(fetchQuote, 1000);
+        // }
+
+        // Function to update the pair and restart the interval when a new pair is selected
+        function updatePair() {
+            currentPair = document.getElementById('pair').value;
+            
+            clearInterval(intervalId);  // Stop the current interval
+            fetchQuote();                // Fetch the latest quote for the new pair
+            startAutoUpdate();           // Restart the interval
+        }
+
+        // Initial call to start fetching the top-of-book quote and wallet balance every second
+        window.onload = function() {
+            fetchQuote();   // Fetch the quote when the page loads
+            startAutoUpdate();  // Start automatic updates
+        };
+    </script>
+</body>
+</html>
