@@ -90,7 +90,7 @@
 
     <!-- New Trade Form (Hidden Initially) -->
     <div id="trade-div">
-        <h2>Trade</h2>
+        <h2>Trade (Coinbase) </h2>
         <table>
             <thead>
                 <tr>
@@ -142,7 +142,7 @@
                     <td id="wallet-balance">-</td>
                     <td id="wallet-usd">-</td>
                     <td id="wallet-update-time">-</td>
-                    <td><button onclick="showTradeForm()">Trade</button></td>
+                    <td><button onclick="toggleTradeForm()">Rebalance</button></td>
                 </tr>
             </tbody>
         </table>
@@ -271,6 +271,7 @@
             intervalId = setInterval(() => {
                 fetchBitsoBalances(); // Fetch Bitso balances
                 fetchQuote();
+                reloadTradeForm();
             }, 1000);
         }
         // function startAutoUpdate() {
@@ -284,30 +285,54 @@
             clearInterval(intervalId);  // Stop the current interval
             fetchQuote();                // Fetch the latest quote for the new pair
             startAutoUpdate();           // Restart the interval
+            reloadTradeForm();  // Preload values on page load
         }
 
         // Initial call to start fetching the top-of-book quote and wallet balance every second
         window.onload = function() {
             fetchQuote();   // Fetch the quote when the page loads
             startAutoUpdate();  // Start automatic updates
+            reloadTradeForm();  // Preload values on page load
         };
 
-        // Function to show the trade form
-        function showTradeForm() {
-            document.getElementById('trade-div').style.display = 'block';
-            // Set the price fields using the top of book values
-            const bidPrice = document.getElementById('bid').innerText;
-            const askPrice = document.getElementById('ask').innerText;
+        // Toggles the trade form visibility
+        function toggleTradeForm() {
+            const tradeDiv = document.getElementById('trade-div');
+            if (tradeDiv.style.display === 'none') {
+                tradeDiv.style.display = 'block';
+                reloadTradeForm();
+            } else {
+                tradeDiv.style.display = 'none';
+            }
+        }
 
+        // Preload the trade form values based on the top-of-book data
+        function reloadTradeForm() {
+            const bidPrice = parseFloat(document.getElementById('bid').innerText);
+            const askPrice = parseFloat(document.getElementById('ask').innerText);
+            const symbol = document.getElementById('currency').innerText;
+            const currentSym = document.getElementById('buy-size').innerText;
+            if (currentSym == symbol)
+                return;
+
+            // Set symbol
+            document.getElementById('buy-symbol').innerText = symbol;
+            document.getElementById('sell-symbol').innerText = symbol;
+
+            // Set prices
             document.getElementById('buy-price').value = bidPrice;
             document.getElementById('sell-price').value = askPrice;
 
-            // Update the size fields based on the notional value
-            document.getElementById('buy-size').value = (10000 / bidPrice).toFixed(4);
-            document.getElementById('sell-size').value = (10000 / askPrice).toFixed(4);
+            // Set notional values and sizes
+            const buySize = (10000 / bidPrice).toFixed(4);
+            const sellSize = (10000 / askPrice).toFixed(4);
+            document.getElementById('buy-size').value = buySize;
+            document.getElementById('sell-size').value = sellSize;
+            document.getElementById('buy-notional').value = 10000;
+            document.getElementById('sell-notional').value = 10000;
         }
 
-        // Function to update the notional value based on the size and price
+        // Update the notional value based on the size and price
         function updateNotional(type) {
             const price = parseFloat(document.getElementById(`${type}-price`).value);
             const size = parseFloat(document.getElementById(`${type}-size`).value);
