@@ -316,26 +316,6 @@ async function cancelOrder(orderId) {
 app.get('/api/coinbase/orders', async (req, res) => {
     try {
         orders = await fetchCoinbaseOrders();
-
-        // ------ SIMULATED ORDERS BEGIN
-        // IF no orders received from the exchange, simulate one order
-        // if (!orders || orders.length === 0) {
-        //     console.log('No orders received from exchange, simulating an order...');
-        //     orders = [{
-        //         OrderId: 'simulated_order_1',
-        //         Symbol: 'BTC-USD',
-        //         Size: '0.5',
-        //         Price: '41000',
-        //         Side: 'buy',
-        //         OrderType: 'limit',
-        //         PostOnly: true,
-        //         Status: 'open',
-        //         TIF: 'GTC',
-        //         FilledSize: '0.0'
-        //     }];
-        // }
-        // ------ SIMULATED ORDERS ENDS
-
         res.json(orders);
     } catch (error) {
         console.log("Error sending response:", error);
@@ -377,24 +357,105 @@ app.post('/api/coinbase/orders', async (req, res) => {
 
         res.json({ message: 'Order placed successfully', order });
     } catch (error) {
-
-        // // Check if the error response has a status and data field
-        // if (error.response) {
-        //     const { status, data } = error.response;
-        //     if (status === 400) {
-        //         // Handle 400 status code - return meaningful error message
-        //         console.log(data.message || 'Invalid request parameters');
-        //         return res.status(400).json({ error: `${data.message || 'Invalid request parameters'}` });
-        //     } else {
-        //         // Handle other status codes if necessary
-        //         res.status(status).json({ error: `Error placing new order: ${data.message}` });
-        //     }
-        // } else {
-        //     // If no response or status is available (network error, etc.)
-        //     console.error('Error placing new order:', error.message);
-        //     res.status(500).json({ error: 'Failed to place order due to network or server issue' });
-        // }
         res.status(500).json({ error: 'Failed to place order due to network or server issue' });
+    }
+});
+
+// Function to fetch all fills from Coinbase
+async function fetchAllFills() {
+    const timestamp = Date.now() / 1000;
+    const requestPath = `/fills`;
+    const method = 'GET';
+    const body = '';  // GET request has no body
+
+    const signature = getSignature(timestamp, method, requestPath, body);
+
+    try {
+        const response = await axios({
+            method,
+            url: `${COINBASE_API_URL}${requestPath}`,
+            headers: {
+                'CB-ACCESS-KEY': API_KEY,
+                'CB-ACCESS-SIGN': signature,
+                'CB-ACCESS-TIMESTAMP': timestamp,
+                'CB-ACCESS-PASSPHRASE': API_PASSPHRASE,
+                'Content-Type': 'application/json'
+            },
+        });
+
+        // Map response to desired format
+        const fills = response.data.map(fill => ({
+            TradeID: fill.trade_id,
+            Product: fill.product_id,
+            Price: fill.price,
+            Size: fill.size,
+            Fee: fill.fee
+        }));
+
+        return fills;
+    } catch (error) {
+        console.error('Error fetching all fills:', error);
+        throw error;
+    }
+}
+
+// Function to fetch fills for a specific currency pair from Coinbase
+async function fetchFillsByCurrency(product_id) {
+    const timestamp = Date.now() / 1000;
+    const requestPath = `/fills?product_id=${product_id}`;
+    const method = 'GET';
+    const body = '';  // GET request has no body
+
+    const signature = getSignature(timestamp, method, requestPath, body);
+
+    try {
+        const response = await axios({
+            method,
+            url: `${COINBASE_API_URL}${requestPath}`,
+            headers: {
+                'CB-ACCESS-KEY': API_KEY,
+                'CB-ACCESS-SIGN': signature,
+                'CB-ACCESS-TIMESTAMP': timestamp,
+                'CB-ACCESS-PASSPHRASE': API_PASSPHRASE,
+                'Content-Type': 'application/json'
+            },
+        });
+
+        // Map response to desired format
+        const fills = response.data.map(fill => ({
+            TradeID: fill.trade_id,
+            Product: fill.product_id,
+            Price: fill.price,
+            Size: fill.size,
+            Fee: fill.fee
+        }));
+
+        return fills;
+    } catch (error) {
+        console.error(`Error fetching fills for ${product_id}:`, error);
+        throw error;
+    }
+}
+
+// Route to get all fills
+app.get('/api/coinbase/fills', async (req, res) => {
+    try {
+        const fills = await fetchAllFills();
+        res.json(fills);
+    } catch (error) {
+        res.status(500).send('Error fetching all fills');
+    }
+});
+
+// Route to get fills for a specific currency pair
+app.get('/api/coinbase/fills/:currencyPair', async (req, res) => {
+    const { currencyPair } = req.params;
+
+    try {
+        const fills = await fetchFillsByCurrency(currencyPair);
+        res.json(fills);
+    } catch (error) {
+        res.status(500).send(`Error fetching fills for ${currencyPair}`);
     }
 });
 

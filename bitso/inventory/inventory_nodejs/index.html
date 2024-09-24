@@ -103,6 +103,9 @@
     <!-- New Trade Form (Hidden Initially) -->
     <div id="trade-div">
         <h2>Trade (Coinbase) </h2>
+        <!-- Add Auto Update Checkbox -->
+        <label for="auto-update">Auto Update</label>
+        <input type="checkbox" id="auto-update" checked>
         <table>
             <thead>
                 <tr>
@@ -120,7 +123,7 @@
                     <td>Limit</td>
                     <td><input type="number" id="buy-price" readonly></td>
                     <td><input type="number" id="buy-size" onchange="updateNotional('buy')"></td>
-                    <td><input type="number" id="buy-notional" value="10" readonly></td>
+                    <td><input type="number" id="buy-notional" value="10"></td>
                     <td><button class="buy-button" onclick="executeTrade('buy')">Buy</button></td>
                 </tr>
                 <tr>
@@ -128,7 +131,7 @@
                     <td>Limit</td>
                     <td><input type="number" id="sell-price" readonly></td>
                     <td><input type="number" id="sell-size" onchange="updateNotional('sell')"></td>
-                    <td><input type="number" id="sell-notional" value="10" readonly></td>
+                    <td><input type="number" id="sell-notional" value="10"></td>
                     <td><button class="sell-button" onclick="executeTrade('sell')">Sell</button></td>
                 </tr>
             </tbody>
@@ -158,6 +161,26 @@
         </table>
     </div>
 
+    <!-- Fills Table Section (Hidden Initially) -->
+    <div id="fills-table-div">
+        <h2>Order Fills (Coinbase)</h2>
+        <table id="fills-table">
+            <thead>
+                <tr>
+                    <th>Trade ID</th>
+                    <th>Product</th>
+                    <th>Price</th>
+                    <th>Size</th>
+                    <th>Fee</th>
+                </tr>
+            </thead>
+            <tbody id="fills-table-body">
+                <!-- Fills will be dynamically inserted here -->
+            </tbody>
+        </table>
+    </div>
+    </br>
+
     <!-- Coinbase Balance Section -->
     <div id="balance-section">
         <h2>Wallet Balance (Coinbase)</h2>
@@ -169,7 +192,8 @@
                     <th>Available USD</th>
                     <th>Last Updated</th>
                     <th>Action</th>
-                    <th>Active Orders</th>
+                    <th>Orders</th>
+                    <th>Fills</th>
                 </tr>
             </thead>
             <tbody>
@@ -180,6 +204,7 @@
                     <td id="wallet-update-time">-</td>
                     <td><button onclick="toggleTradeForm()">Rebalance</button></td>
                     <td><button id="toggle-orders-btn" class="toggle-button" onclick="toggleOrders()">Show</button></td>
+                    <td><button id="toggle-fills-btn" class="toggle-button" onclick="toggleFills()">Show</button></td>
                 </tr>
             </tbody>
         </table>
@@ -303,12 +328,60 @@
             }
         }
 
+        // Function to fetch fills for the selected product
+        async function fetchFills() {
+            try {
+                const response = await fetch(`http://localhost:3000/api/coinbase/fills/${currentPair}`);
+                const fills = await response.json();
+
+                // Populate the Fills table
+                const fillsTableBody = document.getElementById('fills-table-body');
+                fillsTableBody.innerHTML = ''; // Clear existing rows
+
+                fills.forEach(fill => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${fill.TradeID}</td>
+                        <td>${fill.Product}</td>
+                        <td>${fill.Price}</td>
+                        <td>${fill.Size}</td>
+                        <td>${fill.Fee}</td>
+                    `;
+                    fillsTableBody.appendChild(row);
+                });
+            } catch (error) {
+                console.error('Error fetching fills:', error);
+            }
+        }
+
+        // Toggle the visibility of the Fills table
+        function toggleFills() {
+            const fillsDiv = document.getElementById('fills-table-div');
+            const toggleButton = document.getElementById('toggle-fills-btn');
+
+            if (fillsDiv.style.display === 'none') {
+                fillsDiv.style.display = 'block';
+                toggleButton.innerText = 'Hide';
+                fetchFills(); // Fetch fills when showing the table
+            } else {
+                fillsDiv.style.display = 'none';
+                toggleButton.innerText = 'Show';
+            }
+        }
+
         // Function to start the automatic update every second
         function startAutoUpdate() {
             intervalId = setInterval(() => {
                 fetchBitsoBalances(); // Fetch Bitso balances
                 fetchQuote();
-                reloadTradeForm();
+                if (document.getElementById('auto-update').checked)
+                    reloadTradeForm();
+                if (document.getElementById('active-orders-section').style.display !== 'none') {
+                    fetchActiveOrders();
+                }
+                if (document.getElementById('fills-table-div').style.display !== 'none') {
+                    fetchFills();
+                }
             }, 1000);
         }
 
@@ -322,22 +395,13 @@
             reloadTradeForm();  // Preload values on page load
         }
 
-        // Call the function to update active orders every second (if the table is visible)
-        document.getElementById('toggle-orders-btn').addEventListener('click', () => {
-            if (document.getElementById('active-orders-section').style.display !== 'none') {
-                // startActiveOrdersUpdate();
-                fetchActiveOrders();
-            } else {
-                clearInterval(intervalId);
-            }
-        });
-
         // Initial call to start fetching the top-of-book quote and wallet balance every second
         window.onload = function () {
             fetchQuote();   // Fetch the quote when the page loads
             startAutoUpdate();  // Start automatic updates
-            // reloadTradeForm();  // Preload values on page load
             document.getElementById('active-orders-section').style.display = 'none';
+            document.getElementById('fills-table-div').style.display = 'none'; // Hide fills table initially
+            document.getElementById('trade-div').style.display = 'none';
         };
 
         // Toggles the trade form visibility
@@ -368,11 +432,12 @@
             document.getElementById('buy-price').value = bidPrice;
             document.getElementById('sell-price').value = askPrice;
 
-            const allowedNotional = 10;
+            buyNotional = document.getElementById('buy-notional').value;
+            sellNotional = document.getElementById('sell-notional').value;
 
             // Set notional values and sizes
-            const buySize = (allowedNotional / bidPrice).toFixed(4);
-            const sellSize = (allowedNotional / askPrice).toFixed(4);
+            const buySize = (buyNotional / bidPrice).toFixed(4);
+            const sellSize = (sellNotional / askPrice).toFixed(4);
             document.getElementById('buy-size').value = buySize;
             document.getElementById('sell-size').value = sellSize;
             document.getElementById('buy-notional').value = allowedNotional;
