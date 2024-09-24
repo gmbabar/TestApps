@@ -8,6 +8,44 @@ const app = express();
 app.use(cors());    // Ensures that clients from different domains can make requests 
 app.use(express.json());    // Ensures that the JSON payload is parsed and made available as req.body.
 
+// Function to format the timestamp
+function getFormattedTimestamp() {
+    const date = new Date();
+    const YYYY = date.getFullYear();
+    const MM = String(date.getMonth() + 1).padStart(2, '0');
+    const DD = String(date.getDate()).padStart(2, '0');
+    const HH = String(date.getHours()).padStart(2, '0');
+    const mm = String(date.getMinutes()).padStart(2, '0');
+    const SS = String(date.getSeconds()).padStart(2, '0');
+
+    return `${YYYY}${MM}${DD}-${HH}:${mm}:${SS}`;
+}
+
+// Middleware to log requests and responses
+app.use((req, res, next) => {
+    const start = Date.now();
+    const timestamp = getFormattedTimestamp();
+
+    // Log the request
+    console.log(`[${timestamp}] ${req.method} ${req.url} - Incoming request`);
+
+    // Capture the response body by overriding res.send
+    const originalSend = res.send;
+    res.send = function (body) {
+        const duration = Date.now() - start;
+        const responseStatus = res.statusCode;
+
+        // Log the response
+        console.log(`[${timestamp}] ${req.method} ${req.url} - Response: ${responseStatus}, Duration: ${duration}ms`);
+        console.log(`[${timestamp}] Response body:`, typeof body === 'object' ? JSON.stringify(body) : body);
+
+        // Call the original res.send
+        originalSend.call(this, body);
+    };
+
+    next();
+});
+
 // Coinbase API keys
 const COINBASE_API_URL = 'https://api-public.sandbox.exchange.coinbase.com';
 const API_KEY = process.env.COINBASE_API_KEY;
@@ -165,6 +203,7 @@ async function fetchCoinbaseOrders() {
             OrderId: order.id,
             Symbol: order.product_id,
             Size: order.size,
+            Price: order.price,
             Side: order.side,
             OrderType: order.type,
             PostOnly: order.post_only,
@@ -193,7 +232,7 @@ async function placeNewOrder(symbol, side, size, price) {
             size: size,
             price: price,
             post_only: true, // save cost
-            time_in_force: 'GTC' 
+            time_in_force: 'GTC'
         });
         const signature = getSignature(timestamp, method, requestPath, body);
 
@@ -209,22 +248,29 @@ async function placeNewOrder(symbol, side, size, price) {
             },
             data: body
         });
-
-        // const response = await axios.post(`${COINBASE_API_URL}${requestPath}`, body, {
-        //     headers: {
-        //         'CB-ACCESS-KEY': API_KEY,
-        //         'CB-ACCESS-SIGN': signature,
-        //         'CB-ACCESS-TIMESTAMP': timestamp,
-        //         'CB-ACCESS-PASSPHRASE': API_PASSPHRASE,
-        //         'Content-Type': 'application/json'
-        //     }
-        // });
-
-        
         return response.data;
     } catch (error) {
-        console.error('Error placing new order:', error);
-        throw error;
+        // console.error('Error placing new order:', error);
+        // throw error;
+
+        // Check if the error response has a status and data field
+        if (error.response) {
+            const { status, data } = error.response;
+
+            if (status === 400) {
+                // Handle 400 status code - return meaningful error message
+                console.error(`Error placing new order: ${data.message}`);
+                return { error: data.message || 'Invalid request parameters', status: status };
+            } else {
+                // Handle other status codes if necessary
+                console.error(`Error placing new order: ${data.message}`);
+                return { error: `Error ${status}: ${data.message}`, status: status };
+            }
+        } else {
+            // If no response or status is available (network error, etc.)
+            console.error('Error placing new order:', error.message);
+            return { error: 'Failed to place order due to network or server issue' };
+        }
     }
 }
 
@@ -272,21 +318,22 @@ app.get('/api/coinbase/orders', async (req, res) => {
         orders = await fetchCoinbaseOrders();
 
         // ------ SIMULATED ORDERS BEGIN
-        // If no orders received from the exchange, simulate one order
-        if (!orders || orders.length === 0) {
-            console.log('No orders received from exchange, simulating an order...');
-            orders = [{
-            OrderId: 'simulated_order_1',
-            Symbol: 'BTC-USD',
-            Size: '0.5',
-            Side: 'buy',
-            OrderType: 'limit',
-            PostOnly: true,
-            Status: 'open',
-            TIF: 'GTC',
-            FilledSize: '0.0'
-            }];
-        }
+        // IF no orders received from the exchange, simulate one order
+        // if (!orders || orders.length === 0) {
+        //     console.log('No orders received from exchange, simulating an order...');
+        //     orders = [{
+        //         OrderId: 'simulated_order_1',
+        //         Symbol: 'BTC-USD',
+        //         Size: '0.5',
+        //         Price: '41000',
+        //         Side: 'buy',
+        //         OrderType: 'limit',
+        //         PostOnly: true,
+        //         Status: 'open',
+        //         TIF: 'GTC',
+        //         FilledSize: '0.0'
+        //     }];
+        // }
         // ------ SIMULATED ORDERS ENDS
 
         res.json(orders);
@@ -322,12 +369,34 @@ app.post('/api/coinbase/orders', async (req, res) => {
 
     try {
         const order = await placeNewOrder(symbol, side, size, price);
+
+        // If there's an error returned from placeNewOrder, return it as a response
+        if (order.error) {
+            return res.status(order.status).json({ error: order.error });
+        }
+
         res.json({ message: 'Order placed successfully', order });
     } catch (error) {
-        res.status(500).send('Error placing new order');
+
+        // // Check if the error response has a status and data field
+        // if (error.response) {
+        //     const { status, data } = error.response;
+        //     if (status === 400) {
+        //         // Handle 400 status code - return meaningful error message
+        //         console.log(data.message || 'Invalid request parameters');
+        //         return res.status(400).json({ error: `${data.message || 'Invalid request parameters'}` });
+        //     } else {
+        //         // Handle other status codes if necessary
+        //         res.status(status).json({ error: `Error placing new order: ${data.message}` });
+        //     }
+        // } else {
+        //     // If no response or status is available (network error, etc.)
+        //     console.error('Error placing new order:', error.message);
+        //     res.status(500).json({ error: 'Failed to place order due to network or server issue' });
+        // }
+        res.status(500).json({ error: 'Failed to place order due to network or server issue' });
     }
 });
-
 
 // Start server
 const PORT = process.env.PORT || 3000;
