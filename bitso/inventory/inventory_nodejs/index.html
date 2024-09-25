@@ -40,12 +40,12 @@
             margin-top: 20px;
         }
 
-        #topofbook {
+        #top-of-book-section {
             margin-bottom: 40px;
             /* Space between sections */
         }
 
-        #trade-div {
+        #trade-coinbase-section {
             display: none;
         }
 
@@ -57,6 +57,19 @@
         .sell-button {
             background-color: lightcoral;
             color: white;
+        }
+
+        .toggle-button {
+            cursor: pointer;
+            padding: 5px 10px;
+            background-color: #007bff97;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+
+        #bitso-active-orders-div {
+            display: none;
         }
     </style>
 </head>
@@ -74,7 +87,7 @@
         </select>
     </div>
 
-    <div id="topofbook">
+    <div id="top-of-book-section">
         <h2>Top of Book (Coinbase)</h2>
         <table>
             <thead>
@@ -101,7 +114,7 @@
     </div>
 
     <!-- New Trade Form (Hidden Initially) -->
-    <div id="trade-div">
+    <div id="trade-coinbase-section">
         <h2>Trade (Coinbase) </h2>
         <!-- Add Auto Update Checkbox -->
         <label for="auto-update">Auto Update</label>
@@ -121,7 +134,7 @@
                 <tr>
                     <td id="buy-symbol">BTC-USD</td>
                     <td>Limit</td>
-                    <td><input type="number" id="buy-price" readonly></td>
+                    <td><input type="number" id="buy-price"></td>
                     <td><input type="number" id="buy-size" onchange="updateNotional('buy')"></td>
                     <td><input type="number" id="buy-notional" value="10"></td>
                     <td><button class="buy-button" onclick="executeTrade('buy')">Buy</button></td>
@@ -129,7 +142,7 @@
                 <tr>
                     <td id="sell-symbol">BTC-USD</td>
                     <td>Limit</td>
-                    <td><input type="number" id="sell-price" readonly></td>
+                    <td><input type="number" id="sell-price"></td>
                     <td><input type="number" id="sell-size" onchange="updateNotional('sell')"></td>
                     <td><input type="number" id="sell-notional" value="10"></td>
                     <td><button class="sell-button" onclick="executeTrade('sell')">Sell</button></td>
@@ -146,11 +159,12 @@
                 <tr>
                     <th>Order ID</th>
                     <th>Symbol</th>
-                    <th>Size</th>
+                    <th>Quantity</th>
                     <th>Side</th>
-                    <th>Status</th>
                     <th>Price</th>
-                    <th>Filled Size</th>
+                    <th>Status</th>
+                    <th>PostOnly</th>
+                    <th>Filled Qty</th>
                     <th>TIF</th>
                     <th>Action</th>
                 </tr>
@@ -210,6 +224,87 @@
         </table>
     </div>
 
+    <!-- New Trade Form (Hidden Initially) -->
+    <div id="bitso-trade-section">
+        <h2>Trade (Bitso) </h2>
+        <!-- Add Auto Update Checkbox -->
+        <label for="bitso-auto-update">Auto Update</label>
+        <input type="checkbox" id="bitso-auto-update" checked>
+        <table>
+            <thead>
+                <tr>
+                    <th>Symbol</th>
+                    <th>Order Type</th>
+                    <th>Price</th>
+                    <th>Size</th>
+                    <th>Notional Value</th>
+                    <th>Trade</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td id="bitso-buy-symbol">BTC-USD</td>
+                    <td>Limit</td>
+                    <td><input type="number" id="bitso-buy-price"></td>
+                    <td><input type="number" id="bitso-buy-size" onchange="updateNotional('buy')"></td>
+                    <td><input type="number" id="bitso-buy-notional" value="10"></td>
+                    <td><button class="buy-button" onclick="executeBitsoTrade('buy')">Buy</button></td>
+                </tr>
+                <tr>
+                    <td id="bitso-sell-symbol">BTC-USD</td>
+                    <td>Limit</td>
+                    <td><input type="number" id="bitso-sell-price"></td>
+                    <td><input type="number" id="bitso-sell-size" onchange="updateNotional('sell')"></td>
+                    <td><input type="number" id="bitso-sell-notional" value="10"></td>
+                    <td><button class="sell-button" onclick="executeBitsoTrade('sell')">Sell</button></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Active Orders (Bitso) Section (Hidden Initially) -->
+    <div id="bitso-active-orders-div">
+        <h2>Active Orders (Bitso)</h2>
+        <table id="bitso-active-orders-table">
+            <thead>
+                <tr>
+                    <th>Order ID</th>
+                    <th>Symbol</th>
+                    <th>Quantity</th>
+                    <th>Side</th>
+                    <th>Price</th>
+                    <th>Status</th>
+                    <th>Unfilled Qty</th>
+                    <th>TIF</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="bitso-active-orders-body">
+                <!-- Active orders will be dynamically inserted here -->
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Bitso Fills Table Section (Hidden Initially) -->
+    <div id="bitso-fills-table-div">
+        <h2>Order Fills (Bitso)</h2>
+        <table id="bitso-fills-table">
+            <thead>
+                <tr>
+                    <th>Trade ID</th>
+                    <th>Product</th>
+                    <th>Price</th>
+                    <th>Size</th>
+                    <th>Fee</th>
+                </tr>
+            </thead>
+            <tbody id="bitso-fills-table-body">
+                <!-- Fills will be dynamically inserted here -->
+            </tbody>
+        </table>
+    </div>
+    </br>
+
     <!-- New Bitso Balances Section -->
     <div id="bitso-balance-section">
         <h2>Wallet Balance (Bitso)</h2>
@@ -217,15 +312,26 @@
             <thead>
                 <tr>
                     <th>Currency Name</th>
-                    <th>Currency Available Balance</th>
-                    <th>Currency Total Balance</th>
+                    <th>Currency Balance</th>
                     <th>Available USD</th>
                     <th>Last Updated</th>
+                    <th>Action</th>
+                    <th>Orders</th>
+                    <th>Fills</th>
                 </tr>
             </thead>
-            <tbody id="bitso-balances-body">
-                <!-- Bitso balances will be populated here -->
+            <tbody>
+                <tr>
+                    <td id="bitso-wallet-currency">-</td>
+                    <td id="bitso-wallet-balance">-</td>
+                    <td id="bitso-wallet-usd">-</td>
+                    <td id="bitso-wallet-update-time">-</td>
+                    <td><button onclick="toggleBitsoTradeForm()">Rebalance</button></td>
+                    <td><button id="bitso-orders-btn" class="toggle-button" onclick="toggleBitsoOrders()">Show</button></td>
+                    <td><button id="bitso-toggle-fills-btn" class="toggle-button" onclick="toggleBitsoFills()">Show</button></td>
+                </tr>
             </tbody>
+
         </table>
     </div>
 
@@ -243,22 +349,15 @@
                 // Fetch available USD balance
                 const usdResponse = await fetch(`http://localhost:3000/api/bitso/balances/usd`);
                 const usdBalance = await usdResponse.json();
-
-                // Populate the Bitso balance table
-                const bitsoBalancesBody = document.getElementById('bitso-balances-body');
-                bitsoBalancesBody.innerHTML = ''; // Clear the existing rows
-
+                const availableUSD = parseFloat(usdBalance.available).toFixed(2);
                 const updateTime = new Date().toLocaleTimeString();
 
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${ccyBalances.currency}</td>
-                    <td>${ccyBalances.available}</td>
-                    <td>${ccyBalances.total}</td>
-                    <td>${usdBalance.available}</td> 
-                    <td>${updateTime}</td>
-                `;
-                bitsoBalancesBody.appendChild(row);
+                // Update wallet balance table
+                document.getElementById('bitso-wallet-currency').innerText = ccyBalances.currency;
+                document.getElementById('bitso-wallet-balance').innerText = ccyBalances.total;
+                document.getElementById('bitso-wallet-usd').innerText = availableUSD;
+                document.getElementById('bitso-wallet-update-time').innerText = updateTime;
+
             } catch (error) {
                 console.error('Error fetching Bitso balances:', error);
             }
@@ -354,6 +453,33 @@
             }
         }
 
+        // Function to fetch fills for the selected product
+        async function fetchBitsoFills() {
+            /********* disabled until backend support verified *************/
+            // try {
+            //     const response = await fetch(`http://localhost:3000/api/bitso/fills/${currentPair}`);
+            //     const fills = await response.json();
+
+            //     // Populate the Fills table
+            //     const fillsTableBody = document.getElementById('bitso-fills-table-body');
+            //     fillsTableBody.innerHTML = ''; // Clear existing rows
+
+            //     fills.forEach(fill => {
+            //         const row = document.createElement('tr');
+            //         row.innerHTML = `
+            //             <td>${fill.TradeID}</td>
+            //             <td>${fill.Product}</td>
+            //             <td>${fill.Price}</td>
+            //             <td>${fill.Size}</td>
+            //             <td>${fill.Fee}</td>
+            //         `;
+            //         fillsTableBody.appendChild(row);
+            //     });
+            // } catch (error) {
+            //     console.error('Error fetching fills:', error);
+            // }
+        }
+
         // Toggle the visibility of the Fills table
         function toggleFills() {
             const fillsDiv = document.getElementById('fills-table-div');
@@ -369,6 +495,66 @@
             }
         }
 
+        // Toggle the visibility of the Fills table
+        function toggleBitsoFills() {
+            const fillsDiv = document.getElementById('bitso-fills-table-div');
+            const toggleButton = document.getElementById('bitso-toggle-fills-btn');
+
+            if (fillsDiv.style.display === 'none') {
+                fillsDiv.style.display = 'block';
+                toggleButton.innerText = 'Hide';
+                fetchBitsoFills(); // Fetch fills when showing the table
+            } else {
+                fillsDiv.style.display = 'none';
+                toggleButton.innerText = 'Show';
+            }
+        }
+
+        // Function to fetch active orders from Bitso
+        async function fetchBitsoActiveOrders() {
+            try {
+                const response = await fetch('http://localhost:3000/api/bitso/orders');
+                const orders = await response.json();
+
+                // Populate the Active Orders (Bitso) table
+                const activeOrdersBody = document.getElementById('bitso-active-orders-body');
+                activeOrdersBody.innerHTML = ''; // Clear existing rows
+
+                orders.forEach(order => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${order.OrderId}</td>
+                        <td>${order.Symbol}</td>
+                        <td>${order.Size}</td>
+                        <td>${order.Side}</td>
+                        <td>${order.Price || '-'}</td>
+                        <td>${order.Status || '-'}</td>
+                        <td>${order.UnFilledQty || '0.00'}</td>
+                        <td>${order.TIF}</td>
+                        <td><button onclick="cancelBitsoOrder('${order.OrderId}')">Cancel</button></td>
+                    `;
+                    activeOrdersBody.appendChild(row);
+                });
+            } catch (error) {
+                console.error('Error fetching Bitso active orders:', error);
+            }
+        }
+
+        // Toggle the visibility of Bitso Active Orders table
+        function toggleBitsoOrders() {
+            const bitsoOrdersDiv = document.getElementById('bitso-active-orders-div');
+            const toggleButton = document.getElementById('bitso-orders-btn');
+
+            if (bitsoOrdersDiv.style.display === 'none') {
+                bitsoOrdersDiv.style.display = 'block';
+                toggleButton.innerText = 'Hide';
+                fetchBitsoActiveOrders();  // Fetch active orders when showing the table
+            } else {
+                bitsoOrdersDiv.style.display = 'none';
+                toggleButton.innerText = 'Show';
+            }
+        }
+
         // Function to start the automatic update every second
         function startAutoUpdate() {
             intervalId = setInterval(() => {
@@ -376,8 +562,13 @@
                 fetchQuote();
                 if (document.getElementById('auto-update').checked)
                     reloadTradeForm();
+                if (document.getElementById('bitso-auto-update').checked)
+                    reloadBitsoTradeForm();
                 if (document.getElementById('active-orders-section').style.display !== 'none') {
                     fetchActiveOrders();
+                }
+                if (document.getElementById('bitso-active-orders-div').style.display !== 'none') {
+                    fetchBitsoActiveOrders();
                 }
                 if (document.getElementById('fills-table-div').style.display !== 'none') {
                     fetchFills();
@@ -389,10 +580,11 @@
         function updatePair() {
             currentPair = document.getElementById('pair').value;
 
-            clearInterval(intervalId);  // Stop the current interval
+            clearInterval(intervalId);   // Stop the current interval
             fetchQuote();                // Fetch the latest quote for the new pair
             startAutoUpdate();           // Restart the interval
-            reloadTradeForm();  // Preload values on page load
+            reloadTradeForm();           // Preload values on page load
+            reloadBitsoTradeForm();      // Preload bitso trade form
         }
 
         // Initial call to start fetching the top-of-book quote and wallet balance every second
@@ -401,12 +593,15 @@
             startAutoUpdate();  // Start automatic updates
             document.getElementById('active-orders-section').style.display = 'none';
             document.getElementById('fills-table-div').style.display = 'none'; // Hide fills table initially
-            document.getElementById('trade-div').style.display = 'none';
+            document.getElementById('trade-coinbase-section').style.display = 'none';
+            document.getElementById('bitso-active-orders-div').style.display = 'none';  // Hide bitso orders table initially
+            document.getElementById('bitso-fills-table-div').style.display = 'none';
+            document.getElementById('bitso-trade-section').style.display = 'none';
         };
 
         // Toggles the trade form visibility
         function toggleTradeForm() {
-            const tradeDiv = document.getElementById('trade-div');
+            const tradeDiv = document.getElementById('trade-coinbase-section');
             if (tradeDiv.style.display === 'none') {
                 tradeDiv.style.display = 'block';
                 reloadTradeForm();
@@ -440,8 +635,48 @@
             const sellSize = (sellNotional / askPrice).toFixed(4);
             document.getElementById('buy-size').value = buySize;
             document.getElementById('sell-size').value = sellSize;
-            document.getElementById('buy-notional').value = allowedNotional;
-            document.getElementById('sell-notional').value = allowedNotional;
+            document.getElementById('buy-notional').value = buyNotional;
+            document.getElementById('sell-notional').value = sellNotional;
+        }
+
+        // Toggles the trade form visibility
+        function toggleBitsoTradeForm() {
+            const tradeDiv = document.getElementById('bitso-trade-section');
+            if (tradeDiv.style.display === 'none') {
+                tradeDiv.style.display = 'block';
+                reloadBitsoTradeForm();
+            } else {
+                tradeDiv.style.display = 'none';
+            }
+        }
+
+        // Preload the trade form values based on the top-of-book data
+        function reloadBitsoTradeForm() {
+            const bidPrice = parseFloat(document.getElementById('bid').innerText);
+            const askPrice = parseFloat(document.getElementById('ask').innerText);
+            const symbol = document.getElementById('currency').innerText;
+            const currentSym = document.getElementById('bitso-buy-size').innerText;
+            if (currentSym == symbol)
+                return;
+
+            // Set symbol
+            document.getElementById('bitso-buy-symbol').innerText = symbol;
+            document.getElementById('bitso-sell-symbol').innerText = symbol;
+
+            // Set prices
+            document.getElementById('bitso-buy-price').value = bidPrice;
+            document.getElementById('bitso-sell-price').value = askPrice;
+
+            buyNotional = document.getElementById('bitso-buy-notional').value;
+            sellNotional = document.getElementById('bitso-sell-notional').value;
+
+            // Set notional values and sizes
+            const buySize = (buyNotional / bidPrice).toFixed(4);
+            const sellSize = (sellNotional / askPrice).toFixed(4);
+            document.getElementById('bitso-buy-size').value = buySize;
+            document.getElementById('bitso-sell-size').value = sellSize;
+            document.getElementById('bitso-buy-notional').value = buyNotional;
+            document.getElementById('bitso-sell-notional').value = sellNotional;
         }
 
         // Update the notional value based on the size and price
@@ -470,8 +705,9 @@
                         <td>${order.Symbol}</td>
                         <td>${order.Size}</td>
                         <td>${order.Side}</td>
-                        <td>${order.Status || '-'}</td>
                         <td>${order.Price || '-'}</td>
+                        <td>${order.Status || '-'}</td>
+                        <td>${order.PostOnly || '-'}</td>
                         <td>${order.FilledSize || '0.00'}</td>
                         <td>${order.TIF}</td>
                         <td><button onclick="cancelCoinbaseOrder('${order.OrderId}')">Cancel</button></td>
@@ -520,6 +756,87 @@
             }
         }
 
+        // Function to cancel coinbase order
+        async function cancelBitsoOrder(orderId) {
+            try {
+                const response = await fetch(`http://localhost:3000/api/bitso/orders/${orderId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+                // const data = await response.json();
+
+                if (response.ok) {
+                    alert(`Cancel Order succeed for id: ${orderId}`)
+                    fetchBitsoActiveOrders();
+                } else {
+                    alert(`Cancel Order failed for id: ${orderId}`)
+                }
+            } catch (error) {
+                console.error('Error fetching available USD:', error);
+            }
+        }
+
+        // Function to execute trade on Bitso
+        async function executeBitsoTrade(side) {
+            const price = document.getElementById(`bitso-${side}-price`).value;
+            const size = document.getElementById(`${side}-size`).value;
+            const symbol = document.getElementById(`${side}-symbol`).innerText;
+
+            // Construct the trade details
+            const tradeDetails = {
+                symbol: symbol,
+                side: side,  // 'buy' or 'sell'
+                size: size,
+                price: price
+            };
+
+            try {
+                // Send trade details to the backend
+                const response = await fetch('http://localhost:3000/api/bitso/orders', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(tradeDetails),
+                });
+
+                console.log(response);
+                // const result = await response.json();
+                try {
+                    const result = await response.json();
+
+                    if (response.ok) {
+                        alert(`Success! Placed ${side} ${size} of ${symbol} at ${price}. Order ID: ${result.data.oid}`);
+                    } else {
+                        alert(`Error: ${result.error || 'Failed to place order'}`);
+                    }
+                } catch (error) {
+                    // console.log('Failed to pull json from response:', error);
+                    // alert('An error occurred while placing the trade. Please try again.');
+
+                    // Check if the error response has a status and data field
+                    if (error.response) {
+                        const { status, data } = error.response;
+                        if (status === 400) {
+                            // Invalid parameters
+                            alert(data.message || 'Invalid request parameters');
+                        } else {
+                            // Handle other status codes if necessary
+                            alert(`${status} - Error placing new order: ${data.message}`);
+                        }
+                    } else {
+                        // If no response or status is available (network error, etc.)
+                        console.error('Error placing new order:', error.message);
+                        alert('Error placing new order:', error.message);
+                    }
+                }
+            } catch (error) {
+                console.error('Error executing trade:', error);
+                alert('An error occurred while placing the trade. Please try again.');
+            }
+        }
 
         // Function to execute trade (buy or sell)
         async function executeTrade(type) {

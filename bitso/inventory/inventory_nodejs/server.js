@@ -5,20 +5,16 @@ const crypto = require('crypto');  // Needed for API authentication
 require('dotenv').config(); // To load environment variables
 
 const app = express();
+
+app.use(express.static(__dirname + '/'));
 app.use(cors());    // Ensures that clients from different domains can make requests 
 app.use(express.json());    // Ensures that the JSON payload is parsed and made available as req.body.
 
-// Function to format the timestamp
+
+// Timestamp formatter
 function getFormattedTimestamp() {
     const date = new Date();
-    const YYYY = date.getFullYear();
-    const MM = String(date.getMonth() + 1).padStart(2, '0');
-    const DD = String(date.getDate()).padStart(2, '0');
-    const HH = String(date.getHours()).padStart(2, '0');
-    const mm = String(date.getMinutes()).padStart(2, '0');
-    const SS = String(date.getSeconds()).padStart(2, '0');
-
-    return `${YYYY}${MM}${DD}-${HH}:${mm}:${SS}`;
+    return `${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, '0')}${String(date.getDate()).padStart(2, '0')}-${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}:${String(date.getSeconds()).padStart(2, '0')}`;
 }
 
 // Middleware to log requests and responses
@@ -27,7 +23,7 @@ app.use((req, res, next) => {
     const timestamp = getFormattedTimestamp();
 
     // Log the request
-    console.log(`[${timestamp}] ${req.method} ${req.url} - Incoming request`);
+    console.log(`[${timestamp}] CLT-IN : ${req.method} ${req.url}`);
 
     // Capture the response body by overriding res.send
     const originalSend = res.send;
@@ -36,8 +32,8 @@ app.use((req, res, next) => {
         const responseStatus = res.statusCode;
 
         // Log the response
-        console.log(`[${timestamp}] ${req.method} ${req.url} - Response: ${responseStatus}, Duration: ${duration}ms`);
-        console.log(`[${timestamp}] Response body:`, typeof body === 'object' ? JSON.stringify(body) : body);
+        console.log(`[${timestamp}] CLT-OUT: ${req.method} ${req.url} - Response: ${responseStatus}, Duration: ${duration}ms`);
+        console.log(`[${timestamp}] CLT-OUT: body:`, typeof body === 'object' ? JSON.stringify(body) : body);
 
         // Call the original res.send
         originalSend.call(this, body);
@@ -46,8 +42,43 @@ app.use((req, res, next) => {
     next();
 });
 
+// Add Axios request and response interceptors for logging
+axios.interceptors.request.use(request => {
+    const timestamp = `[${getFormattedTimestamp()}] SRV-OUT:`;
+    const method_url = `Method: ${request.method.toUpperCase()} URL: ${request.url}`;
+    const headers = `Headers: ${JSON.stringify(request.headers)}`;
+    const body = request.data ? JSON.stringify(request.data) : '';
+    console.log(`${timestamp} ${method_url} ${headers} ${body}`);
+    return request;
+}, error => {
+    console.error(`[${getFormattedTimestamp()}] SRV-OUT: Error in request: ${error}`);
+    return Promise.reject(error);
+});
+
+axios.interceptors.response.use(response => {
+    const timestamp = `[${getFormattedTimestamp()}] SRV-IN :`;
+    const status = `Status: ${response.status}`;
+    const data = `Response Data: ${JSON.stringify(response.data)}`;
+    console.log(`${timestamp} ${status} ${data}`);
+    return response;
+}, error => {
+    if (error.response) {
+        // Coinbase API returned an error response
+        const timestamp = `[${getFormattedTimestamp()}] SRV-IN: Error response:`;
+        const status = `Status: ${error.response.status}`;
+        const data = `Error Data: ${JSON.stringify(error.response.data)}`;
+        console.log(`${timestamp} ${status} ${data}`);
+    } else {
+        // Other errors (e.g., network errors)
+        console.error(`[${getFormattedTimestamp()}] Error in Axios request: ${error.message}`);
+    }
+    return Promise.reject(error);
+});
+
 // Coinbase API keys
-const COINBASE_API_URL = 'https://api-public.sandbox.exchange.coinbase.com';
+// SANDBOX:    'https://api-public.sandbox.exchange.coinbase.com'
+// PRODUCTION: 'https://api.exchange.coinbase.com'
+const COINBASE_API_URL = process.env.COINBASE_API_URL;
 const API_KEY = process.env.COINBASE_API_KEY;
 const API_PASSPHRASE = process.env.COINBASE_API_PASSPHRASE;
 const API_SECRET = process.env.COINBASE_API_SECRET; // Secret for signing requests
@@ -55,6 +86,9 @@ const API_SECRET = process.env.COINBASE_API_SECRET; // Secret for signing reques
 // Bitso API keys from environment variables
 const BITSO_API_KEY = process.env.BITSO_API_KEY;
 const BITSO_API_SECRET = process.env.BITSO_API_SECRET;
+const BITSO_API_URL = process.env.BITSO_API_URL;
+// SANDBOX:    'https://api-stage.bitso.com'
+// PRODUCTION: 'https://api.bitso.com'
 
 // Helper function to create a nonce
 function getNonce() {
@@ -67,6 +101,160 @@ function generateBitsoSignature(httpMethod, requestPath, nonce, apiKey, apiSecre
     return crypto.createHmac('sha256', apiSecret).update(message).digest('hex');
 }
 
+// Function to fetch open orders from Bitso
+async function fetchBitsoOpenOrders() {
+    const nonce = getNonce();
+    const requestPath = '/v3/open_orders/';
+    const method = 'GET';
+    const body = '';  // GET requests have an empty body
+
+    // Generate the signature
+    const signature = generateBitsoSignature(method, requestPath, nonce, BITSO_API_KEY, BITSO_API_SECRET, body);
+
+    try {
+        const response = await axios.get(BITSO_API_URL + requestPath, {
+            headers: {
+                'Authorization': `Bitso ${BITSO_API_KEY}:${nonce}:${signature}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        const orders = response.data.payload;
+
+        // Process and map orders to desired format
+        const processedOrders = orders.map(order => ({
+            OrderId: order.oid,
+            Symbol: order.book,
+            Size: order.original_amount,
+            Side: order.side,
+            Status: order.status,
+            Price: order.price,
+            UnFilledQty: order.unfilled_amount,  // Assuming this corresponds to filled amount
+            TIF: order.time_in_force
+        }));
+
+        return processedOrders;
+    } catch (error) {
+        console.error('Error fetching Bitso open orders:', error);
+        return [];
+    }
+}
+
+// Function to place a new order on Bitso
+async function placeBitsoOrder(symbol, price, size, side) {
+    const nonce = getNonce();
+    const requestPath = '/v3/orders/';
+    const method = 'POST';
+
+    // Create the body with the parameters received from the client
+    const body = JSON.stringify({
+        book: symbol.replace('-','_').toLowerCase(),
+        price: price,
+        major: size,
+        side: side,
+        type: 'limit'  // You can adjust the order type as needed
+    });
+
+    // Generate the signature
+    const signature = generateBitsoSignature(method, requestPath, nonce, BITSO_API_KEY, BITSO_API_SECRET, body);
+
+    try {
+        const response = await axios.post(BITSO_API_URL + requestPath, body, {
+            headers: {
+                'Authorization': `Bitso ${BITSO_API_KEY}:${nonce}:${signature}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        // Return the response from the Bitso API
+        return {
+            success: true,
+            message: 'Order placed successfully',
+            data: response.data.payload
+        };
+    } catch (error) {
+        console.error('Error placing Bitso order:', error);
+
+        // Handle error and return appropriate response
+        return {
+            success: false,
+            message: 'Error placing order',
+            error: error.response ? error.response.data : error.message
+        };
+    }
+}
+
+// Route to place a new Bitso order
+app.post('/api/bitso/orders', async (req, res) => {
+    const { symbol, price, size, side } = req.body;
+
+    // Validate the input
+    if (!symbol || !price || !size || !side) {
+        return res.status(400).send('Missing parameters: symbol, price, size, and side are required');
+    }
+
+    try {
+        const result = await placeBitsoOrder(symbol, price, size, side);
+
+        if (result.success) {
+            res.json(result);
+        } else {
+            res.status(500).json(result);
+        }
+    } catch (error) {
+        console.error('Error in placing order:', error);
+        res.status(500).json({error: `Error placing order - ${error}`});
+    }
+});
+
+
+// Helper function to cancel Bitso order
+async function cancelBitsoOrder(orderId) {
+    try {
+        const method = 'DELETE';
+        const nonce = getNonce();
+        const requestPath = `/api/v3/orders/${orderId}/`;
+        const body = '';  // GET requests have an empty body
+    
+        // Generate the signature
+        const signature = generateBitsoSignature(method, requestPath, nonce, BITSO_API_KEY, BITSO_API_SECRET, body);
+    
+        const response = await axios.delete(BITSO_API_URL + requestPath, {
+            headers: {
+                'Authorization': `Bitso ${BITSO_API_KEY}:${nonce}:${signature}`,
+                'Content-Type': 'application/json'
+            }
+        });
+    
+        return response.data;
+    } catch (error) {
+        console.error('Error cancelling order:', error);
+        throw error;
+    }
+}
+
+// Route to fetch Bitso open orders
+app.get('/api/bitso/orders', async (req, res) => {
+    const orders = await fetchBitsoOpenOrders();
+    res.json(orders);
+});
+
+// API endpoint to cancel an order
+app.delete('/api/bitso/orders/:orderId', async (req, res) => {
+    const { orderId } = req.params;
+    if (!orderId) {
+        return res.status(400).send('OrderId is required');
+    }
+
+    try {
+        const result = await cancelBitsoOrder(orderId);
+        res.json({ message: 'Order cancelled successfully', result });
+    } catch (error) {
+        res.status(500).send('Error cancelling order');
+    }
+});
+
+
 // Function to fetch balances from Bitso
 async function fetchBitsoBalance() {
     const nonce = getNonce();
@@ -78,7 +266,7 @@ async function fetchBitsoBalance() {
     const signature = generateBitsoSignature(method, requestPath, nonce, BITSO_API_KEY, BITSO_API_SECRET, body);
 
     try {
-        const response = await axios.get('https://api-stage.bitso.com' + requestPath, {
+        const response = await axios.get(BITSO_API_URL + requestPath, {
             headers: {
                 'Authorization': `Bitso ${BITSO_API_KEY}:${nonce}:${signature}`,
                 'Content-Type': 'application/json'
@@ -122,7 +310,7 @@ app.get('/api/bitso/balances/:currency', async (req, res) => {
 });
 
 // Function to sign the Coinbase API request
-function getSignature(timestamp, method, requestPath, body) {
+function getCoinbaseSignature(timestamp, method, requestPath, body) {
     const what = timestamp + method + requestPath + body;
     const key = Buffer.from(API_SECRET, 'base64');
     return crypto.createHmac('sha256', key).update(what).digest('base64');
@@ -141,14 +329,23 @@ app.get('/api/book/:pair', async (req, res) => {
     }
 });
 
-// Route to get wallet balance
-app.get('/api/balance/:currency', async (req, res) => {
-    const currency = req.params.currency;
+// Cache for storing account IDs
+const accountIdCache = {};
+
+// Function to fetch account ID for a specific instrument (e.g., BTC) with caching
+async function getAccountIdForInstrument(instrument) {
+    // Check if accountId is already in the cache
+    if (accountIdCache[instrument]) {
+        console.log(`Cache hit: Account ID for ${instrument}`);
+        return accountIdCache[instrument];  // Return cached accountId
+    }
+
+    console.log(`Cache miss: Fetching Account ID for ${instrument} from Coinbase`);
+
     const timestamp = Date.now() / 1000;
     const requestPath = `/accounts`;
     const method = 'GET';
-
-    const signature = getSignature(timestamp, method, requestPath, '');
+    const signature = getCoinbaseSignature(timestamp, method, requestPath, '');
 
     try {
         const response = await axios({
@@ -159,22 +356,69 @@ app.get('/api/balance/:currency', async (req, res) => {
                 'CB-ACCESS-SIGN': signature,
                 'CB-ACCESS-TIMESTAMP': timestamp,
                 'CB-ACCESS-PASSPHRASE': API_PASSPHRASE,
-                'Content-Type': 'application/json',
-            },
+                'Content-Type': 'application/json'
+            }
         });
 
-        // Find the balance for the selected currency
-        const account = response.data.find(acc => acc.currency === currency);
+        // Find the account ID for the specified instrument (e.g., 'BTC')
+        const account = response.data.find(acc => acc.currency === instrument);
         if (account) {
-            res.json({ balance: account.balance });
+            // Cache the account ID for future use
+            accountIdCache[instrument] = account.id;
+            return account.id; // Return the account ID for the instrument
         } else {
-            res.json({ balance: '0.00' }); // No balance if the account does not exist
+            throw new Error(`No account found for instrument ${instrument}`);
         }
     } catch (error) {
-        console.error(error);
-        res.status(500).send('>>>Error fetching balance from Coinbase API');
+        console.error('Error fetching account ID:', error);
+        throw error;
+    }
+}
+
+// Function to fetch balance for a specific instrument (by account ID)
+async function getBalanceForInstrument(instrument) {
+    try {
+        const accountId = await getAccountIdForInstrument(instrument); // Cached function
+        const timestamp = Date.now() / 1000;
+        const requestPath = `/accounts/${accountId}`;
+        const method = 'GET';
+        const signature = getCoinbaseSignature(timestamp, method, requestPath, '');
+
+        const response = await axios({
+            method,
+            url: `${COINBASE_API_URL}${requestPath}`,
+            headers: {
+                'CB-ACCESS-KEY': API_KEY,
+                'CB-ACCESS-SIGN': signature,
+                'CB-ACCESS-TIMESTAMP': timestamp,
+                'CB-ACCESS-PASSPHRASE': API_PASSPHRASE,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        return {
+            currency: response.data.currency,
+            balance: response.data.balance,
+            available: response.data.available
+        };
+    } catch (error) {
+        console.error(`Error fetching balance for ${instrument}:`, error);
+        throw error;
+    }
+}
+
+// Route to fetch balance for a specific instrument
+app.get('/api/balance/:instrument', async (req, res) => {
+    const { instrument } = req.params; // Example: BTC, ETH
+
+    try {
+        const balance = await getBalanceForInstrument(instrument);
+        res.json(balance);
+    } catch (error) {
+        res.status(500).json({ error: `Failed to fetch balance for ${instrument}` });
     }
 });
+
 
 // Helper function to fetch active orders from Coinbase API
 async function fetchCoinbaseOrders() {
@@ -182,7 +426,7 @@ async function fetchCoinbaseOrders() {
     const requestPath = `/orders`;
     const method = 'GET';
 
-    const signature = getSignature(timestamp, method, requestPath, '');
+    const signature = getCoinbaseSignature(timestamp, method, requestPath, '');
 
     try {
         const response = await axios({
@@ -234,7 +478,7 @@ async function placeNewOrder(symbol, side, size, price) {
             post_only: true, // save cost
             time_in_force: 'GTC'
         });
-        const signature = getSignature(timestamp, method, requestPath, body);
+        const signature = getCoinbaseSignature(timestamp, method, requestPath, body);
 
         const response = await axios({
             method,
@@ -280,7 +524,7 @@ async function cancelOrder(orderId) {
         const method = 'DELETE';
         const requestPath = `/orders/${orderId}`;
         const timestamp = Date.now() / 1000;
-        const signature = getSignature(timestamp, method, requestPath, '');
+        const signature = getCoinbaseSignature(timestamp, method, requestPath, '');
 
         const response = await axios({
             method,
@@ -293,17 +537,6 @@ async function cancelOrder(orderId) {
                 'Content-Type': 'application/json',
             },
         });
-
-        // const response = await axios.delete(`${COINBASE_API_URL}${requestPath}`, {
-        //     headers: {
-        //         'CB-ACCESS-KEY': API_KEY,
-        //         'CB-ACCESS-SIGN': signature,
-        //         'CB-ACCESS-TIMESTAMP': timestamp,
-        //         'CB-ACCESS-PASSPHRASE': API_PASSPHRASE,
-        //         'Content-Type': 'application/json'
-        //     }
-        // });
-
         return response.data;
     } catch (error) {
         console.error('Error cancelling order:', error);
@@ -362,13 +595,13 @@ app.post('/api/coinbase/orders', async (req, res) => {
 });
 
 // Function to fetch all fills from Coinbase
-async function fetchAllFills() {
+async function fetchCoinbaseFills() {
     const timestamp = Date.now() / 1000;
     const requestPath = `/fills`;
     const method = 'GET';
     const body = '';  // GET request has no body
 
-    const signature = getSignature(timestamp, method, requestPath, body);
+    const signature = getCoinbaseSignature(timestamp, method, requestPath, body);
 
     try {
         const response = await axios({
@@ -400,13 +633,13 @@ async function fetchAllFills() {
 }
 
 // Function to fetch fills for a specific currency pair from Coinbase
-async function fetchFillsByCurrency(product_id) {
+async function fetchCoinbaseFillsByCurrency(product_id) {
     const timestamp = Date.now() / 1000;
     const requestPath = `/fills?product_id=${product_id}`;
     const method = 'GET';
     const body = '';  // GET request has no body
 
-    const signature = getSignature(timestamp, method, requestPath, body);
+    const signature = getCoinbaseSignature(timestamp, method, requestPath, body);
 
     try {
         const response = await axios({
@@ -440,7 +673,7 @@ async function fetchFillsByCurrency(product_id) {
 // Route to get all fills
 app.get('/api/coinbase/fills', async (req, res) => {
     try {
-        const fills = await fetchAllFills();
+        const fills = await fetchCoinbaseFills();
         res.json(fills);
     } catch (error) {
         res.status(500).send('Error fetching all fills');
@@ -452,7 +685,7 @@ app.get('/api/coinbase/fills/:currencyPair', async (req, res) => {
     const { currencyPair } = req.params;
 
     try {
-        const fills = await fetchFillsByCurrency(currencyPair);
+        const fills = await fetchCoinbaseFillsByCurrency(currencyPair);
         res.json(fills);
     } catch (error) {
         res.status(500).send(`Error fetching fills for ${currencyPair}`);
